@@ -49,101 +49,91 @@ async function createBrands() {
     {
       name: 'DJI',
       slug: 'dji',
-      description: 'Líderes em tecnologia de drones',
-      color: '#131313',
+      description: 'Liderança mundial em drones',
+      color: '#000000',
       logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/dji/logo.png',
     },
     {
       name: 'Geonav',
       slug: 'geonav',
-      description: 'Eletrônicos automotivos',
-      color: '#1976d2',
+      description: 'Navegação GPS avançada',
+      color: '#1B4F72',
       logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/geonav/logo.png',
-    },
+    }
   ];
 
-  for (const brandData of brands) {
-    await prisma.brand.upsert({
-      where: { slug: brandData.slug },
-      update: brandData,
-      create: brandData,
+  for (const brand of brands) {
+    const existingBrand = await prisma.brand.findUnique({
+      where: { slug: brand.slug }
     });
+
+    if (!existingBrand) {
+      await prisma.brand.create({
+        data: brand
+      });
+      console.log(`✓ Marca criada: ${brand.name}`);
+    }
   }
-  
-  console.log('✅ Marcas criadas!');
 }
 
 async function createCategories() {
   console.log('📂 Criando categorias...');
   
-  // Buscar brands para associar
-  const apple = await prisma.brand.findUnique({ where: { slug: 'apple' } });
-  const jbl = await prisma.brand.findUnique({ where: { slug: 'jbl' } });
-  const xiaomi = await prisma.brand.findUnique({ where: { slug: 'xiaomi' } });
-  const dji = await prisma.brand.findUnique({ where: { slug: 'dji' } });
-
   const categories = [
-    {
-      name: 'Fones de Ouvido',
-      slug: 'fones-de-ouvido',
-      description: 'Fones de ouvido premium e acessórios de áudio',
-      icon: 'Headphones',
-      color: '#3B82F6',
-      sortOrder: 1,
-      brandId: jbl?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/fones-de-ouvido/image.png',
-    },
     {
       name: 'Celulares',
       slug: 'celulares',
-      description: 'Smartphones e dispositivos móveis',
-      icon: 'Smartphone',
-      color: '#10B981',
-      sortOrder: 2,
-      brandId: apple?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/celulares/image.png',
+      description: 'Smartphones e celulares das melhores marcas',
+      color: '#E74C3C',
+    },
+    {
+      name: 'Fones de Ouvido',
+      slug: 'fones-de-ouvido', 
+      description: 'Fones e headsets para todas as necessidades',
+      color: '#3498DB',
     },
     {
       name: 'Acessórios',
       slug: 'acessorios',
-      description: 'Capas, carregadores e acessórios móveis',
-      icon: 'Cable',
-      color: '#8B5CF6',
-      sortOrder: 3,
-      brandId: xiaomi?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/acessorios/image.png',
+      description: 'Acessórios para seus dispositivos',
+      color: '#F39C12',
     },
     {
       name: 'Drones',
       slug: 'drones',
       description: 'Drones profissionais e recreativos',
-      icon: 'Plane',
-      color: '#F59E0B',
-      sortOrder: 4,
-      brandId: dji?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/drones/image.png',
+      color: '#9B59B6',
     },
+    {
+      name: 'GPS e Navegação',
+      slug: 'gps-navegacao',
+      description: 'Sistemas de navegação GPS',
+      color: '#27AE60',
+    }
   ];
 
-  for (const categoryData of categories) {
-    await prisma.category.upsert({
-      where: { slug: categoryData.slug },
-      update: categoryData,
-      create: categoryData,
+  for (const category of categories) {
+    const existing = await prisma.category.findUnique({
+      where: { slug: category.slug }
     });
+
+    if (!existing) {
+      await prisma.category.create({
+        data: category
+      });
+      console.log(`✓ Categoria criada: ${category.name}`);
+    }
   }
-  
-  console.log('✅ Categorias criadas!');
 }
 
 async function createProducts() {
   console.log('📱 Criando produtos...');
 
-  // Buscar brands e categories
+  // Get brand and category IDs
   const brands = await prisma.brand.findMany();
   const categories = await prisma.category.findMany();
-
-  const brandMap = new Map(brands.map(b => [b.slug, b.id]));
+  
+  const brandMap = new Map(brands.map(b => [b.name.toLowerCase(), b.id]));
   const categoryMap = new Map(categories.map(c => [c.slug, c.id]));
 
   const products = [
@@ -158,13 +148,12 @@ async function createProducts() {
       featured: true,
       categoryId: categoryMap.get('celulares')!,
       brandId: brandMap.get('apple')!,
-      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/back.png',
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/main.png',
       specifications: JSON.stringify({
         processor: 'A17 Pro',
         storage: '256GB',
         display: '6.7" Super Retina XDR',
         camera: '48MP principal + 12MP ultra angular',
-        battery: 'Até 29 horas de reprodução de vídeo',
         os: 'iOS 17'
       }),
       weight: 0.221,
@@ -193,7 +182,6 @@ async function createProducts() {
       warranty: 12,
       tags: 'smartphone,apple,ios'
     },
-
     // JBL Products
     {
       name: 'JBL Tune 760NC',
@@ -205,19 +193,16 @@ async function createProducts() {
       featured: true,
       categoryId: categoryMap.get('fones-de-ouvido')!,
       brandId: brandMap.get('jbl')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/jbl-tune-760nc/main.png'
-      ],
-      specifications: {
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/jbl-tune-760nc/main.png',
+      specifications: JSON.stringify({
         type: 'Over-ear',
         connectivity: 'Bluetooth 5.0',
         battery: '50 horas',
-        anc: 'Cancelamento ativo de ruído',
-        driver: '40mm'
-      },
+        anc: 'Cancelamento ativo de ruído'
+      }),
       weight: 0.22,
       warranty: 12,
-      tags: ['fones', 'bluetooth', 'anc', 'jbl']
+      tags: 'fones,bluetooth,anc,jbl'
     },
     {
       name: 'JBL Flip 6',
@@ -229,21 +214,17 @@ async function createProducts() {
       featured: false,
       categoryId: categoryMap.get('fones-de-ouvido')!,
       brandId: brandMap.get('jbl')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/jbl-flip-6/main.png'
-      ],
-      specifications: {
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/jbl-flip-6/main.png',
+      specifications: JSON.stringify({
         type: 'Caixa de som portátil',
         connectivity: 'Bluetooth 5.1',
         battery: '12 horas',
-        waterproof: 'IP67',
-        power: '20W RMS'
-      },
+        waterproof: 'IP67'
+      }),
       weight: 0.55,
       warranty: 12,
-      tags: ['caixa-som', 'bluetooth', 'portátil', 'à-prova-dagua']
+      tags: 'caixa-som,bluetooth,portátil'
     },
-
     // Xiaomi Products
     {
       name: 'Redmi Note 13 Pro',
@@ -255,19 +236,17 @@ async function createProducts() {
       featured: true,
       categoryId: categoryMap.get('celulares')!,
       brandId: brandMap.get('xiaomi')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/redmi-note-13-pro/main.png'
-      ],
-      specifications: {
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/redmi-note-13-pro/main.png',
+      specifications: JSON.stringify({
         processor: 'Snapdragon 7s Gen 2',
         storage: '256GB',
         ram: '8GB',
         display: '6.67" AMOLED 120Hz',
         camera: '200MP principal'
-      },
+      }),
       weight: 0.187,
       warranty: 12,
-      tags: ['smartphone', 'xiaomi', 'android', '5g', 'camera']
+      tags: 'smartphone,xiaomi,android,5g'
     },
     {
       name: 'Xiaomi Power Bank 20000mAh',
@@ -279,131 +258,129 @@ async function createProducts() {
       featured: false,
       categoryId: categoryMap.get('acessorios')!,
       brandId: brandMap.get('xiaomi')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/xiaomi-power-bank-20000/main.png'
-      ],
-      specifications: {
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/xiaomi-power-bank/main.png',
+      specifications: JSON.stringify({
         capacity: '20000mAh',
         input: 'USB-C 18W',
-        output: 'Dual USB-A + USB-C',
-        fastCharge: 'Quick Charge 3.0'
-      },
+        output: 'Dual USB-A + USB-C'
+      }),
       weight: 0.434,
       warranty: 6,
-      tags: ['powerbank', 'carregador', 'portátil', 'xiaomi']
+      tags: 'powerbank,carregador,portátil'
     },
-
     // DJI Products
     {
       name: 'DJI Mini 4 Pro',
       slug: 'dji-mini-4-pro',
       description: 'Drone compacto com câmera 4K e detecção omnidirecional de obstáculos.',
-      price: 4999.99,
-      discountPrice: 4499.99,
+      price: 4599.99,
+      discountPrice: 3999.99,
       stock: 30,
       featured: true,
       categoryId: categoryMap.get('drones')!,
       brandId: brandMap.get('dji')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/dji-mini-4-pro/main.png'
-      ],
-      specifications: {
-        camera: '4K/60fps HDR',
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/dji-mini-4-pro/main.png',
+      specifications: JSON.stringify({
+        camera: '4K/60fps',
         flightTime: '34 minutos',
-        transmission: 'O4 20km',
+        range: '20km',
         weight: '249g',
-        obstacles: 'Detecção omnidirecional'
-      },
+        obstacleDetection: 'Omnidirecional'
+      }),
       weight: 0.249,
       warranty: 12,
-      tags: ['drone', 'camera', '4k', 'dji', 'mini']
+      tags: 'drone,4k,compacto,dji'
     },
     {
       name: 'DJI Air 3',
       slug: 'dji-air-3',
-      description: 'Drone com câmera dupla e transmissão O4 de longo alcance.',
-      price: 7999.99,
-      discountPrice: 7499.99,
-      stock: 20,
+      description: 'Drone com câmeras duplas e voo inteligente para criadores de conteúdo.',
+      price: 6999.99,
+      discountPrice: 5999.99,
+      stock: 25,
       featured: false,
       categoryId: categoryMap.get('drones')!,
       brandId: brandMap.get('dji')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/dji-air-3/main.png'
-      ],
-      specifications: {
-        camera: 'Dual 4K HDR',
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/dji-air-3/main.png',
+      specifications: JSON.stringify({
+        camera: 'Dual 4K cameras',
         flightTime: '46 minutos',
-        transmission: 'O4 20km',
-        weight: '720g'
-      },
+        range: '32km',
+        features: 'ActiveTrack 360°'
+      }),
       weight: 0.72,
       warranty: 12,
-      tags: ['drone', 'camera', '4k', 'dji', 'pro']
+      tags: 'drone,dual-camera,profissional'
     },
-
     // Geonav Products
     {
       name: 'Geonav G550',
       slug: 'geonav-g550',
-      description: 'Central multimídia com GPS, Android Auto e CarPlay.',
-      price: 1299.99,
-      discountPrice: 999.99,
-      stock: 40,
+      description: 'GPS automotivo com tela de 5" e mapas atualizados do Brasil.',
+      price: 399.99,
+      discountPrice: 299.99,
+      stock: 60,
       featured: false,
-      categoryId: categoryMap.get('acessorios')!,
+      categoryId: categoryMap.get('gps-navegacao')!,
       brandId: brandMap.get('geonav')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/geonav-g550/main.png'
-      ],
-      specifications: {
-        display: '7" touchscreen',
-        os: 'Android 11',
-        connectivity: 'Android Auto, CarPlay',
-        gps: 'GPS integrado',
-        bluetooth: 'Bluetooth 5.0'
-      },
-      weight: 1.2,
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/geonav-g550/main.png',
+      specifications: JSON.stringify({
+        display: '5" touchscreen',
+        maps: 'Mapas do Brasil',
+        features: 'Alertas de trânsito',
+        battery: '3 horas'
+      }),
+      weight: 0.18,
       warranty: 12,
-      tags: ['central-multimidia', 'gps', 'android-auto', 'carplay']
+      tags: 'gps,navegação,automotivo'
     }
   ];
 
-  for (const productData of products) {
-    await prisma.product.upsert({
-      where: { slug: productData.slug },
-      update: productData,
-      create: productData,
+  for (const product of products) {
+    const existing = await prisma.product.findUnique({
+      where: { slug: product.slug }
     });
-  }
 
-  console.log('✅ Produtos criados!');
+    if (!existing) {
+      await prisma.product.create({
+        data: product
+      });
+      console.log(`✓ Produto criado: ${product.name}`);
+    }
+  }
 }
 
 async function createAdminUser() {
-  console.log('👤 Criando usuário admin...');
+  console.log('👤 Criando usuário administrador...');
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-
-  await prisma.user.upsert({
-    where: { email: 'admin@ussbrasil.com' },
-    update: {},
-    create: {
-      name: 'Admin USS Brasil',
-      email: 'admin@ussbrasil.com',
-      password: hashedPassword,
-      role: 'ADMIN',
-      phone: '(11) 99999-9999',
-      isActive: true,
-    },
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: 'admin@ussbrasil.com' }
   });
 
-  console.log('✅ Usuário admin criado! Email: admin@ussbrasil.com | Senha: admin123');
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+
+    await prisma.user.create({
+      data: {
+        name: 'USS Brasil Admin',
+        email: 'admin@ussbrasil.com',
+        password: hashedPassword,
+        role: 'ADMIN',
+        phone: '(11) 99999-9999',
+        city: 'São Paulo',
+        state: 'SP',
+        country: 'Brasil'
+      }
+    });
+    console.log('✓ Usuário admin criado com sucesso!');
+    console.log('📧 Email: admin@ussbrasil.com');
+    console.log('🔑 Senha: admin123');
+  }
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erro no seed:', e);
+    console.error('❌ Erro durante o seed:', e);
     process.exit(1);
   })
   .finally(async () => {

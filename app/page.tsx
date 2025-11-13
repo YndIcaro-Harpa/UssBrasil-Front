@@ -5,66 +5,26 @@ import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'fra
 import { 
     ShoppingCart, Heart, Star, Play, Pause, ChevronRight, ChevronLeft,
     Zap, Eye, Truck, Shield, HeadphonesIcon, Award, TrendingUp,
-    Sparkles, ArrowRight, Filter, Search, Grid, List, Monitor,
-    Smartphone, Headphones, Camera, Watch, Gamepad2, Laptop, Tag,
-    Clock, Users, Globe, CheckCircle
+    Sparkles, ArrowRight, Monitor, Smartphone, Headphones, Camera, 
+    Watch, Gamepad2, Laptop, Users, Globe, CheckCircle, Clock,
+    Tag, Package
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useModal } from '@/contexts/ModalContext'
 import { toast } from 'sonner'
-import data from '@/db.json'
+import apiClient, { Product, Category, Brand, formatPrice } from '@/lib/api-client'
 
 // Interfaces
-interface Product {
-    id: string
-    name: string
-    price: number
-    discountPrice?: number
-    image: string
-    images?: string[]
-    category: string
-    marca: string
-    rating?: number
-    stock: number
-    featured?: boolean
-    description?: string
+interface CarouselProduct extends Product {
     isNew?: boolean
     isBestSeller?: boolean
 }
-
-// Função para ajustar caminhos das imagens
-const fixPath = (path: string) => {
-    if (!path) return '/fallback-product.png'
-    if (path.startsWith('Ecommerce-UssBrasil/public/')) {
-        return `/${path.replace('Ecommerce-UssBrasil/public/', '')}`
-    }
-    return path.startsWith('/') ? path : `/${path}`
-}
-
-// Data
-const products: Product[] = (data.products as any[]).map((p: any, index: number) => ({
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    discountPrice: p.discountPrice || undefined,
-    category: p.category,
-    marca: p.brand || p.marca || 'Marca',
-    stock: p.stock || 100,
-    featured: p.featured || false,
-    description: p.description || '',
-    rating: p.rating || (4 + Math.random()),
-    image: fixPath(p.image),
-    images: p.images?.map(fixPath) || [fixPath(p.image)],
-    isNew: index < 6,
-    isBestSeller: index % 3 === 0,
-})).slice(0, 24)
 
 // Videos para hero section
 const heroVideos = [
@@ -94,15 +54,17 @@ const heroVideos = [
     }
 ]
 
-// Categorias
-const categories = [
-    { icon: Smartphone, name: 'Smartphones', count: 8 },
-    { icon: Laptop, name: 'Laptops', count: 5 },
-    { icon: Headphones, name: 'Audio', count: 12 },
-    { icon: Watch, name: 'Wearables', count: 6 },
-    { icon: Camera, name: 'Câmeras', count: 7 },
-    { icon: Gamepad2, name: 'Gaming', count: 9 }
-]
+// Mapeamento de ícones para categorias
+const categoryIcons = {
+    'smartphones': Smartphone,
+    'laptops': Laptop,
+    'audio': Headphones,
+    'wearables': Watch,
+    'cameras': Camera,
+    'gaming': Gamepad2,
+    'monitores': Monitor,
+    'default': Package
+}
 
 // Features
 const features = [
@@ -219,7 +181,7 @@ function VideoHeroSection() {
                             transition={{ delay: 0.2 }}
                             className="flex items-center gap-2 mb-6"
                         >
-                            <Sparkles className="h-5 w-5 text-primary" />
+                            <Sparkles className="h-5 w-5 text-blue-400" />
                             <span className="text-sm uppercase tracking-wider font-medium">
                                 Lançamento Exclusivo
                             </span>
@@ -247,7 +209,7 @@ function VideoHeroSection() {
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
-                            className="text-lg md:text-xl mb-10 text-muted-foreground max-w-2xl"
+                            className="text-lg md:text-xl mb-10 text-gray-300 max-w-2xl"
                         >
                             {currentVideo.description}
                         </motion.p>
@@ -261,7 +223,7 @@ function VideoHeroSection() {
                             <Link href={currentVideo.link}>
                                 <Button 
                                     size="lg" 
-                                    className="px-10 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 group"
+                                    className="px-10 py-4 text-lg font-semibold bg-blue-900 hover:bg-blue-800 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 group"
                                 >
                                     {currentVideo.cta}
                                     <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -326,8 +288,8 @@ function VideoHeroSection() {
     )
 }
 
-// Component: Product Card
-function ProductCard({ product, index }: { product: Product; index: number }) {
+// Component: Product Card (Conectado com Backend)
+function ProductCard({ product, index }: { product: CarouselProduct; index: number }) {
     const { addToCart } = useCart()
     const { favorites, toggleFavorite, user } = useAuth()
     const { openAuthModal } = useModal()
@@ -345,12 +307,10 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
             id: Number(product.id),
             name: product.name,
             price: product.discountPrice || product.price,
-            image: product.image,
-            category: product.category
+            image: product.images?.[0] || '/fallback-product.png',
+            category: product.category?.name || 'Geral'
         })
-        toast.success(`${product.name} adicionado ao carrinho!`, {
-            description: 'Produto disponível no seu carrinho',
-        })
+        toast.success(`${product.name} adicionado ao carrinho!`)
     }
 
     const handleToggleFavorite = (e: React.MouseEvent) => {
@@ -370,12 +330,12 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             whileHover={{ y: -10, scale: 1.02 }}
-            className="group relative card-uss hover-lift overflow-hidden"
+            className="group relative overflow-hidden bg-white rounded-xl border border-gray-100 hover:shadow-xl transition-all duration-300"
         >
-            <Link href={`/produtos/${product.category?.toLowerCase().replace(/\s+/g, '-') || 'geral'}/${product.id}`} className="block">
-                <div className="aspect-square relative overflow-hidden bg-[var(--bg-secondary)]">
+            <Link href={`/produto/${product.slug}`} className="block">
+                <div className="aspect-square relative overflow-hidden bg-gray-50">
                     <Image
-                        src={product.image}
+                        src={product.images?.[0] || '/fallback-product.png'}
                         alt={product.name}
                         fill
                         className="object-contain p-4 group-hover:scale-110 transition-transform duration-700"
@@ -383,27 +343,21 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
                     
                     {/* Badges */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
-                        {product.isNew && (
-                            <Badge className="bg-uss-accent text-white border-0 px-3 py-1 rounded-full shadow-sm">
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                Novo
-                            </Badge>
-                        )}
-                        {product.isBestSeller && (
-                            <Badge variant="secondary" className="bg-uss-primary text-white border-0 px-3 py-1 rounded-full shadow-sm">
-                                <TrendingUp className="h-3 w-3 mr-1" />
-                                Best Seller
-                            </Badge>
-                        )}
                         {product.featured && (
-                            <Badge variant="outline" className="border-uss-primary text-uss-primary bg-[var(--bg-primary)] px-3 py-1 rounded-full shadow-sm">
-                                <Zap className="h-3 w-3 mr-1" />
+                            <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-0 px-3 py-1 rounded-full shadow-sm">
+                                <Sparkles className="h-3 w-3 mr-1" />
                                 Destaque
                             </Badge>
                         )}
                         {discountPercentage > 0 && (
-                            <Badge variant="destructive" className="bg-uss-error text-white border-0 px-3 py-1 rounded-full shadow-sm font-bold">
+                            <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0 px-3 py-1 rounded-full shadow-sm font-bold">
                                 -{discountPercentage}%
+                            </Badge>
+                        )}
+                        {product.isNew && (
+                            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-3 py-1 rounded-full shadow-sm">
+                                <Tag className="h-3 w-3 mr-1" />
+                                Novo
                             </Badge>
                         )}
                     </div>
@@ -414,11 +368,11 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
                             size="sm"
                             variant="secondary"
                             onClick={handleToggleFavorite}
-                            className="h-10 w-10 p-0 shadow-sm rounded-full bg-[var(--bg-primary)]/95 hover:bg-[var(--bg-primary)] border-0"
+                            className="h-10 w-10 p-0 shadow-md rounded-full bg-white/95 hover:bg-white border border-gray-200 hover:border-gray-300"
                         >
                             <Heart 
                                 className={`h-4 w-4 transition-colors ${
-                                    isFavorite ? 'fill-current text-uss-error' : 'text-[var(--text-secondary)] hover:text-uss-error'
+                                    isFavorite ? 'fill-current text-red-500' : 'text-gray-500 hover:text-red-500'
                                 }`}
                             />
                         </Button>
@@ -426,16 +380,16 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
                         <Button
                             size="sm"
                             variant="secondary"
-                            className="h-10 w-10 p-0 shadow-sm rounded-full bg-[var(--bg-primary)]/95 hover:bg-[var(--bg-primary)] border-0"
+                            className="h-10 w-10 p-0 shadow-md rounded-full bg-white/95 hover:bg-white border border-gray-200 hover:border-gray-300"
                         >
-                            <Eye className="h-4 w-4 text-[var(--text-secondary)]" />
+                            <Eye className="h-4 w-4 text-gray-500" />
                         </Button>
                     </div>
 
                     {/* Stock Warning */}
                     {product.stock < 10 && product.stock > 0 && (
                         <div className="absolute bottom-4 left-4">
-                            <Badge variant="destructive" className="bg-uss-warning text-white px-3 py-1 rounded-full shadow-sm">
+                            <Badge className="bg-amber-500 text-white px-3 py-1 rounded-full shadow-sm">
                                 Últimas {product.stock} unidades
                             </Badge>
                         </div>
@@ -443,58 +397,51 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
                 </div>
             </Link>
 
-            <div className="p-6">
-                {/* Rating */}
+            <div className="p-6 bg-white">
+                {/* Brand & Category */}
                 <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="outline" className="text-xs font-medium border-blue-600 text-blue-600 bg-blue-50">
+                        {product.brand?.name || 'Marca'}
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                        {product.category?.name || 'Categoria'}
+                    </Badge>
+                </div>
+
+                {/* Product Name */}
+                <h3 className="font-bold text-lg line-clamp-2 mb-4 group-hover:text-blue-600 transition-colors duration-300 text-gray-900">
+                    {product.name}
+                </h3>
+
+                {/* Rating */}
+                <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
                             <Star
                                 key={i}
                                 className={`h-4 w-4 ${
-                                    i < Math.floor(product.rating || 4.5) 
-                                        ? 'fill-current text-uss-warning' 
-                                        : 'text-[var(--text-tertiary)]'
+                                    i < 4 ? 'fill-current text-amber-400' : 'text-gray-300'
                                 }`}
                             />
                         ))}
                     </div>
-                    <span className="text-sm text-[var(--text-primary)] font-medium">
-                        {product.rating?.toFixed(1) || '4.5'}
-                    </span>
-                    <span className="text-xs text-[var(--text-secondary)]">
-                        (127 avaliações)
-                    </span>
+                    <span className="text-sm text-gray-900 font-medium">4.5</span>
                 </div>
-
-                {/* Brand & Category */}
-                <div className="flex items-center gap-2 mb-3">
-                    <Badge variant="outline" className="text-xs font-medium border-uss-primary text-uss-primary">
-                        {product.marca}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs bg-[var(--bg-tertiary)] text-[var(--text-primary)]">
-                        {product.category}
-                    </Badge>
-                </div>
-
-                {/* Product Name */}
-                <h3 className="font-bold text-lg line-clamp-2 mb-4 group-hover:text-uss-primary transition-colors duration-300 text-[var(--text-primary)]">
-                    {product.name}
-                </h3>
 
                 {/* Price */}
                 <div className="flex items-center justify-between mb-6">
                     {product.discountPrice ? (
                         <div className="flex flex-col">
-                            <span className="text-sm line-through text-[var(--text-secondary)]">
-                                R$ {product.price.toLocaleString('pt-BR')}
+                            <span className="text-sm line-through text-gray-500">
+                                {formatPrice(product.price)}
                             </span>
-                            <span className="text-2xl font-bold text-uss-primary">
-                                R$ {product.discountPrice.toLocaleString('pt-BR')}
+                            <span className="text-2xl font-bold text-blue-600">
+                                {formatPrice(product.discountPrice)}
                             </span>
                         </div>
                     ) : (
-                        <span className="text-2xl font-bold text-uss-primary">
-                            R$ {product.price.toLocaleString('pt-BR')}
+                        <span className="text-2xl font-bold text-blue-600">
+                            {formatPrice(product.price)}
                         </span>
                     )}
                 </div>
@@ -502,7 +449,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
                 {/* Action Button */}
                 <Button 
                     onClick={handleAddToCart}
-                    className="btn-uss-primary w-full py-3 px-4 rounded-lg group/btn"
+                    className="w-full py-3 px-4 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-semibold transition-colors duration-200 group/btn"
                     disabled={product.stock === 0}
                 >
                     <ShoppingCart className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform" />
@@ -513,23 +460,32 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
     )
 }
 
-// Component: Categories Grid
-function CategoriesSection() {
+// Component: Categories Grid (Reformulado com Background Diferenciado)
+function CategoriesSection({ categories }: { categories: Category[] }) {
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true })
 
+    const categoryColors = [
+        'bg-gradient-to-br from-blue-500 to-blue-600',
+        'bg-gradient-to-br from-purple-500 to-purple-600',
+        'bg-gradient-to-br from-green-500 to-green-600',
+        'bg-gradient-to-br from-orange-500 to-orange-600',
+        'bg-gradient-to-br from-red-500 to-red-600',
+        'bg-gradient-to-br from-teal-500 to-teal-600',
+    ]
+
     return (
-        <section ref={ref} className="py-20 bg-[var(--bg-secondary)]">
+        <section ref={ref} className="py-20 bg-gray-50">
             <div className="container mx-auto px-6">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-4xl font-bold mb-6 text-[var(--text-primary)]">
-                        Explore por Categoria
+                    <h2 className="text-4xl font-bold mb-6 text-gray-900">
+                        🗂️ Explore por Categoria
                     </h2>
-                    <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto">
+                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                         Encontre exatamente o que você procura em nossas categorias especializadas
                     </p>
                 </motion.div>
@@ -540,27 +496,93 @@ function CategoriesSection() {
                     animate={isInView ? "animate" : "initial"}
                     className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
                 >
-                    {categories.map((category, _index) => (
-                        <motion.div
-                            key={category.name}
-                            variants={fadeInUp}
-                            whileHover={{ scale: 1.05, y: -5 }}
-                            className="group card-uss p-8 cursor-pointer hover-lift"
-                        >
-                            <div className="text-center">
-                                <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-uss-accent/10 flex items-center justify-center text-uss-primary shadow-sm group-hover:scale-110 transition-transform duration-300">
-                                    <category.icon className="h-8 w-8" />
-                                </div>
-                                
-                                <h3 className="font-bold text-lg mb-2 group-hover:text-uss-primary transition-colors text-[var(--text-primary)]">
-                                    {category.name}
+                    {categories.map((category, index) => {
+                        const IconComponent = categoryIcons[category.name?.toLowerCase() as keyof typeof categoryIcons] || categoryIcons.default
+                        const bgColor = categoryColors[index % categoryColors.length]
+                        
+                        return (
+                            <Link key={category.id} href={`/categorias/${category.slug}`}>
+                                <motion.div
+                                    variants={fadeInUp}
+                                    whileHover={{ scale: 1.05, y: -5 }}
+                                    className="group bg-white rounded-xl p-8 cursor-pointer hover:shadow-xl transition-all duration-300"
+                                >
+                                    <div className="text-center">
+                                        <div className={`w-16 h-16 mx-auto mb-4 rounded-lg ${bgColor} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                            <IconComponent className="h-8 w-8 text-white" />
+                                        </div>
+                                        
+                                        <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors text-gray-900">
+                                            {category.name}
+                                        </h3>
+                                        
+                                        <p className="text-sm text-gray-600">
+                                            Ver produtos
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            </Link>
+                        )
+                    })}
+                </motion.div>
+            </div>
+        </section>
+    )
+}
+
+// Component: Brands Section (Reformulado)
+function BrandsSection({ brands }: { brands: Brand[] }) {
+    const ref = useRef(null)
+    const isInView = useInView(ref, { once: true })
+
+    return (
+        <section ref={ref} className="py-20 bg-white">
+            <div className="container mx-auto px-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    className="text-center mb-16"
+                >
+                    <h2 className="text-4xl font-bold mb-6 text-gray-900">
+                        🏷️ Explore por Marca
+                    </h2>
+                    <p className="text-xl text-gray-600">
+                        Produtos premium das melhores marcas do mundo
+                    </p>
+                </motion.div>
+
+                <motion.div
+                    variants={staggerChildren}
+                    initial="initial"
+                    animate={isInView ? "animate" : "initial"}
+                    className="grid grid-cols-2 md:grid-cols-4 gap-8"
+                >
+                    {brands.map((brand, index) => (
+                        <Link key={brand.id} href={`/marcas/${brand.slug}`}>
+                            <motion.div
+                                variants={fadeInUp}
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                className="bg-white rounded-xl p-8 text-center group hover:shadow-xl transition-all duration-300 border border-gray-100"
+                            >
+                                {brand.logo ? (
+                                    <div className="relative h-20 mb-6">
+                                        <Image
+                                            src={brand.logo}
+                                            alt={brand.name}
+                                            fill
+                                            className="object-contain group-hover:scale-110 transition-transform duration-300"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="h-20 mb-6 flex items-center justify-center bg-gray-100 rounded-lg">
+                                        <span className="text-2xl font-bold text-gray-600">{brand.name.charAt(0)}</span>
+                                    </div>
+                                )}
+                                <h3 className="font-bold text-lg group-hover:text-blue-600 transition-colors text-gray-900">
+                                    {brand.name}
                                 </h3>
-                                
-                                <p className="text-sm text-[var(--text-secondary)]">
-                                    {category.count} produtos
-                                </p>
-                            </div>
-                        </motion.div>
+                            </motion.div>
+                        </Link>
                     ))}
                 </motion.div>
             </div>
@@ -568,13 +590,13 @@ function CategoriesSection() {
     )
 }
 
-// Component: Stats Section
-function StatsSection() {
+// Component: Features Section (Mantido)
+function FeaturesSection() {
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true })
 
     return (
-        <section ref={ref} className="py-20 bg-uss-primary text-white">
+        <section ref={ref} className="py-20 bg-gray-50">
             <div className="container mx-auto px-6">
                 <motion.div
                     variants={staggerChildren}
@@ -582,7 +604,57 @@ function StatsSection() {
                     animate={isInView ? "animate" : "initial"}
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
                 >
-                    {stats.map((stat, _index) => (
+                    {features.map((feature, index) => (
+                        <Card key={feature.title} className="bg-white text-center group hover:shadow-lg transition-all duration-300">
+                            <CardContent className="p-8">
+                                <div className="w-20 h-20 mx-auto rounded-lg bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-all duration-300">
+                                    <feature.icon className="h-10 w-10 text-blue-600" />
+                                </div>
+                                
+                                <h3 className="text-xl font-bold mb-2 text-gray-900">
+                                    {feature.title}
+                                </h3>
+                                
+                                <p className="text-gray-600">
+                                    {feature.description}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </motion.div>
+            </div>
+        </section>
+    )
+}
+
+// Component: Stats Section (Movido para o final)
+function StatsSection() {
+    const ref = useRef(null)
+    const isInView = useInView(ref, { once: true })
+
+    return (
+        <section ref={ref} className="py-20 bg-blue-900 text-white">
+            <div className="container mx-auto px-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    className="text-center mb-16"
+                >
+                    <h2 className="text-4xl font-bold mb-6 text-white">
+                        📊 Nossa Performance
+                    </h2>
+                    <p className="text-xl text-blue-100">
+                        Números que comprovam nossa excelência no mercado
+                    </p>
+                </motion.div>
+
+                <motion.div
+                    variants={staggerChildren}
+                    initial="initial"
+                    animate={isInView ? "animate" : "initial"}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+                >
+                    {stats.map((stat, index) => (
                         <motion.div
                             key={stat.label}
                             variants={fadeInUp}
@@ -597,7 +669,7 @@ function StatsSection() {
                                 {stat.value}
                             </h3>
                             
-                            <p className="text-white/80">
+                            <p className="text-blue-100">
                                 {stat.label}
                             </p>
                         </motion.div>
@@ -608,68 +680,109 @@ function StatsSection() {
     )
 }
 
-// Component: Features Section
-function FeaturesSection() {
-    const ref = useRef(null)
-    const isInView = useInView(ref, { once: true })
+// Main Component - Homepage Refatorada
+export default function HomePage() {
+    const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+    const [promoProducts, setPromoProducts] = useState<Product[]>([])
+    const [allProducts, setAllProducts] = useState<Product[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
+    const [brands, setBrands] = useState<Brand[]>([])
+    const [loading, setLoading] = useState(true)
+
+    // Carregar dados do backend
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setLoading(true)
+                
+                // Buscar produtos em destaque
+                const featuredResponse = await apiClient.getFeaturedProducts()
+                setFeaturedProducts(featuredResponse.slice(0, 8))
+                
+                // Buscar produtos em promoção (com discountPrice)
+                const allProductsResponse = await apiClient.getProducts({ limit: 20 })
+                const allProds = allProductsResponse || []
+                setAllProducts(allProds.slice(0, 12))
+                
+                const promoProds = allProds.filter((p: Product) => p.discountPrice && p.discountPrice < p.price)
+                setPromoProducts(promoProds.slice(0, 8))
+                
+                // Buscar categorias
+                const categoriesResponse = await apiClient.getCategories()
+                setCategories(categoriesResponse.slice(0, 6))
+                
+                // Buscar marcas
+                const brandsResponse = await apiClient.getBrands()
+                setBrands(brandsResponse.slice(0, 4))
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error)
+                toast.error('Erro ao carregar dados da loja')
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        loadData()
+    }, [])
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-900"></div>
+                    <p className="mt-4 text-gray-600">Carregando loja...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
-        <section ref={ref} className="py-20 bg-[var(--bg-primary)]">
-            <div className="container mx-auto px-6">
-                <motion.div
-                    variants={staggerChildren}
-                    initial="initial"
-                    animate={isInView ? "animate" : "initial"}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-                >
-                    {features.map((feature, _index) => (
-                        <Card key={feature.title} className="card-uss text-center group hover-lift">
-                            <CardContent className="p-8">
-                                <div className="w-20 h-20 mx-auto rounded-lg bg-uss-primary/10 flex items-center justify-center mb-4 group-hover:bg-uss-primary/20 transition-all duration-300">
-                                    <feature.icon className="h-10 w-10 text-uss-primary" />
-                                </div>
-                                
-                                <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">
-                                    {feature.title}
-                                </h3>
-                                
-                                <p className="text-[var(--text-secondary)]">
-                                    {feature.description}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </motion.div>
-            </div>
-        </section>
+        <div className="min-h-screen bg-white transition-colors duration-300">
+            <VideoHeroSection />
+            
+            {/* Produtos em Destaque */}
+            <FeaturedProductsSection products={featuredProducts} />
+            
+            {/* Produtos em Promoção */}
+            <PromoProductsSection products={promoProducts} />
+            
+            {/* Carrossel Todos os Produtos */}
+            <AllProductsCarousel products={allProducts} />
+            
+            {/* Explorar por Categoria - Reformulado */}
+            <CategoriesSection categories={categories} />
+            
+            {/* Explorar por Marca */}
+            <BrandsSection brands={brands} />
+            
+            {/* Features */}
+            <FeaturesSection />
+            
+            {/* Stats no final */}
+            <StatsSection />
+        </div>
     )
 }
 
-// Component: Brands Section
-function BrandsSection() {
-    const brands = [
-        { name: 'Apple', logo: '/Empresa/02.png', url: '/marcas/apple' },
-        { name: 'JBL', logo: '/icons/jbl-logo.png', url: '/marcas/jbl' },
-        { name: 'DJI', logo: '/icons/dji-logo.png', url: '/marcas/dji' },
-        { name: 'Xiaomi', logo: '/icons/xiaomi-logo.png', url: '/marcas/xiaomi' }
-    ]
-
+// Seção Produtos em Destaque
+function FeaturedProductsSection({ products }: { products: Product[] }) {
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true })
 
     return (
-        <section ref={ref} className="py-20 bg-[var(--bg-secondary)]">
+        <section ref={ref} className="py-20 bg-white">
             <div className="container mx-auto px-6">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-4xl font-bold mb-6 text-[var(--text-primary)]">
-                        Marcas de Confiança
+                    <h2 className="text-4xl font-bold mb-6 text-gray-900">
+                        🌟 Produtos em Destaque
                     </h2>
-                    <p className="text-xl text-[var(--text-secondary)]">
-                        Parceiros premium para experiências excepcionais
+                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                        Selecionados especialmente para você com as melhores ofertas e novidades
                     </p>
                 </motion.div>
 
@@ -677,28 +790,14 @@ function BrandsSection() {
                     variants={staggerChildren}
                     initial="initial"
                     animate={isInView ? "animate" : "initial"}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-8"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
                 >
-                    {brands.map((brand, _index) => (
-                        <Link key={brand.name} href={brand.url}>
-                            <motion.div
-                                variants={fadeInUp}
-                                whileHover={{ scale: 1.05, y: -5 }}
-                                className="card-uss p-8 text-center group hover-lift"
-                            >
-                                <div className="relative h-20 mb-6">
-                                    <Image
-                                        src={brand.logo}
-                                        alt={brand.name}
-                                        fill
-                                        className="object-contain group-hover:scale-110 transition-transform duration-300"
-                                    />
-                                </div>
-                                <h3 className="font-bold text-lg group-hover:text-uss-primary transition-colors text-[var(--text-primary)]">
-                                    {brand.name}
-                                </h3>
-                            </motion.div>
-                        </Link>
+                    {products.map((product, index) => (
+                        <ProductCard 
+                            key={`featured-${product.id}`} 
+                            product={{ ...product, featured: true }} 
+                            index={index} 
+                        />
                     ))}
                 </motion.div>
             </div>
@@ -706,115 +805,128 @@ function BrandsSection() {
     )
 }
 
-// Main Component
-export default function HomePage() {
-    const featuredProducts = products.filter(p => p.featured).slice(0, 8)
-    const newProducts = products.filter(p => p.isNew).slice(0, 8)
-    const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8)
+// Seção Produtos em Promoção
+function PromoProductsSection({ products }: { products: Product[] }) {
+    const ref = useRef(null)
+    const isInView = useInView(ref, { once: true })
 
     return (
-        <div className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
-            <VideoHeroSection />
-            <CategoriesSection />
-            <StatsSection />
-            <FeaturesSection />
-            
-            {/* Featured Products Section */}
-            <section className="py-20 bg-[var(--bg-primary)]">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                        >
-                            <h2 className="text-4xl font-bold mb-6 text-[var(--text-primary)]">
-                                Produtos em Destaque
-                            </h2>
-                            <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto">
-                                Selecionados especialmente para você com as melhores ofertas e novidades
-                            </p>
-                        </motion.div>
-                    </div>
+        <section ref={ref} className="py-20 bg-gray-50">
+            <div className="container mx-auto px-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    className="text-center mb-16"
+                >
+                    <h2 className="text-4xl font-bold mb-6 text-gray-900">
+                        🔥 Produtos em Promoção
+                    </h2>
+                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                        Aproveite descontos imperdíveis nos melhores produtos
+                    </p>
+                </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {featuredProducts.map((product, index) => (
-                            <ProductCard key={product.id} product={product} index={index} />
-                        ))}
-                    </div>
+                <motion.div
+                    variants={staggerChildren}
+                    initial="initial"
+                    animate={isInView ? "animate" : "initial"}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+                >
+                    {products.map((product, index) => (
+                        <ProductCard 
+                            key={`promo-${product.id}`} 
+                            product={product} 
+                            index={index} 
+                        />
+                    ))}
+                </motion.div>
+            </div>
+        </section>
+    )
+}
 
-                    <motion.div 
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="text-center mt-16"
+// Carrossel de Todos os Produtos
+function AllProductsCarousel({ products }: { products: Product[] }) {
+    const [currentIndex, setCurrentIndex] = useState(0)
+    const productsPerPage = 4
+    const maxIndex = Math.max(0, products.length - productsPerPage)
+    
+    const ref = useRef(null)
+    const isInView = useInView(ref, { once: true })
+
+    const nextSlide = () => {
+        setCurrentIndex(prev => Math.min(prev + 1, maxIndex))
+    }
+
+    const prevSlide = () => {
+        setCurrentIndex(prev => Math.max(prev - 1, 0))
+    }
+
+    return (
+        <section ref={ref} className="py-20 bg-white">
+            <div className="container mx-auto px-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    className="text-center mb-16"
+                >
+                    <h2 className="text-4xl font-bold mb-6 text-gray-900">
+                        📦 Todos os Produtos
+                    </h2>
+                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                        Explore nossa coleção completa de produtos premium
+                    </p>
+                </motion.div>
+
+                <div className="relative">
+                    {/* Navigation Buttons */}
+                    <button
+                        onClick={prevSlide}
+                        disabled={currentIndex === 0}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center disabled:opacity-50 hover:bg-gray-50 transition-all"
                     >
-                        <Link href="/produtos">
-                            <Button 
-                                size="lg" 
-                                className="btn-uss-primary font-semibold px-10 py-4 text-lg rounded-lg hover-lift group"
-                            >
-                                Ver Todos os Produtos
-                                <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </Link>
-                    </motion.div>
-                </div>
-            </section>
+                        <ChevronLeft className="h-5 w-5 text-gray-600" />
+                    </button>
 
-            <BrandsSection />
+                    <button
+                        onClick={nextSlide}
+                        disabled={currentIndex >= maxIndex}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center disabled:opacity-50 hover:bg-gray-50 transition-all"
+                    >
+                        <ChevronRight className="h-5 w-5 text-gray-600" />
+                    </button>
 
-            {/* Best Sellers Section */}
-            <section className="py-20 bg-[var(--bg-secondary)]">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                    {/* Products Grid */}
+                    <div className="overflow-hidden">
+                        <motion.div 
+                            className="flex transition-transform duration-500"
+                            style={{ transform: `translateX(-${currentIndex * (100 / productsPerPage)}%)` }}
                         >
-                            <h2 className="text-4xl font-bold mb-6 text-[var(--text-primary)]">
-                                Mais Vendidos
-                            </h2>
-                            <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto">
-                                Os produtos preferidos pelos nossos clientes
-                            </p>
+                            {products.map((product, index) => (
+                                <div key={product.id} className="w-1/4 flex-shrink-0 px-4">
+                                    <ProductCard product={product} index={index} />
+                                </div>
+                            ))}
                         </motion.div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {bestSellers.map((product, index) => (
-                            <ProductCard key={`bestseller-${product.id}`} product={product} index={index} />
-                        ))}
-                    </div>
                 </div>
-            </section>
 
-            {/* New Products Section */}
-            <section className="py-20 bg-[var(--bg-primary)]">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    className="text-center mt-16"
+                >
+                    <Link href="/produtos">
+                        <Button 
+                            size="lg" 
+                            className="bg-blue-900 hover:bg-blue-800 font-semibold px-10 py-4 text-lg rounded-lg group"
                         >
-                            <h2 className="text-4xl font-bold mb-6 text-[var(--text-primary)]">
-                                Lançamentos
-                            </h2>
-                            <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto">
-                                As últimas novidades em tecnologia acabaram de chegar
-                            </p>
-                        </motion.div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {newProducts.map((product, index) => (
-                            <ProductCard key={`new-${product.id}`} product={product} index={index} />
-                        ))}
-                    </div>
-                </div>
-            </section>
-        </div>
+                            Ver Todos os Produtos
+                            <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                    </Link>
+                </motion.div>
+            </div>
+        </section>
     )
 }

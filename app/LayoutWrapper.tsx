@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import NavbarEnhanced from '@/components/navbar-enhanced'
+import NavbarImproved from '@/components/navbar-improved'
 import ModernFooter from '@/components/navigation/modern-footer'
 import GlobalModals from '@/components/modals'
 
@@ -11,7 +11,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <>
-      {!isAdminRoute && <NavbarEnhanced />}
+      {!isAdminRoute && <NavbarImproved />}
       <main className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
         <div className="relative">
           {children}
