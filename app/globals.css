@@ -3,9 +3,12 @@
    Importações dos Módulos de Design System
    ========================================== */
 
+/* Tailwind CSS v4 - Deve ser importado PRIMEIRO */
+@import "tailwindcss";
+
+/* Design System e Componentes customizados */
 @import "../styles/design-system.css";
 @import "../styles/components.css";
-@import "tailwindcss";
 
 /* ==========================================
    CUSTOMIZAÇÕES ESPECÍFICAS DA APLICAÇÃO

@@ -3,7 +3,7 @@
    Design System Complete v2.0
    ========================================== */
 
-@import "tailwindcss";
+/* Tailwind é importado em globals.css - não duplicar aqui */
 
 :root {
   /* ==========================================

@@ -100,13 +100,13 @@ function base32Decode(encoded: string): Uint8Array {
 async function hmacSha1(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key,
+    key.buffer as ArrayBuffer,
     { name: 'HMAC', hash: 'SHA-1' },
     false,
     ['sign']
   )
   
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, data)
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, data.buffer as ArrayBuffer)
   return new Uint8Array(signature)
 }
 
@@ -309,3 +309,75 @@ export interface TwoFactorVerifyResult {
   success: boolean
   message: string
 }
+
+// Default export with all methods grouped
+const twoFactorAuth = {
+  // Setup and configuration
+  setup: setup2FA,
+  enable: (userId: string) => {
+    const result = setup2FA(userId)
+    return {
+      secret: result.secret,
+      backupCodes: result.backupCodes,
+      provisioningURI: result.uri
+    }
+  },
+  confirm: async (userId: string, code: string) => {
+    const result = await verify2FA(userId, code)
+    return result
+  },
+  disable: disable2FA,
+  
+  // Verification
+  verify: async (userId: string, code: string) => {
+    const data = userSecrets.get(userId)
+    if (!data?.enabled) return { valid: false, method: null }
+    
+    // Try TOTP first
+    const totpValid = await verifyTOTP(data.secret, code)
+    if (totpValid) return { valid: true, method: 'totp' }
+    
+    // Try backup code
+    const backupIndex = data.backupCodes.indexOf(code)
+    if (backupIndex !== -1) {
+      data.backupCodes.splice(backupIndex, 1)
+      userSecrets.set(userId, data)
+      return { valid: true, method: 'backup' }
+    }
+    
+    return { valid: false, method: null }
+  },
+  
+  // Status checks
+  isEnabled: is2FAEnabled,
+  getBackupCodesCount: (userId: string) => {
+    const data = userSecrets.get(userId)
+    return data?.backupCodes?.length || 0
+  },
+  
+  // Backup codes
+  regenerateBackupCodes: async (userId: string, code: string) => {
+    const valid = await verify2FACode(userId, code)
+    if (!valid) return null
+    
+    const data = userSecrets.get(userId)
+    if (!data) return null
+    
+    const newCodes = generateBackupCodes(10)
+    data.backupCodes = newCodes
+    userSecrets.set(userId, data)
+    return newCodes
+  },
+  
+  // Email verification
+  generateEmailCode,
+  verifyEmailCode,
+  
+  // Core functions
+  generateSecret: generateTOTPSecret,
+  generateTOTP,
+  verifyTOTP,
+  generateBackupCodes
+}
+
+export default twoFactorAuth

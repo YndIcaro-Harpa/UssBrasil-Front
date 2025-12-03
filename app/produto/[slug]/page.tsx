@@ -222,7 +222,7 @@ function ProductInfo({
     return product.storage
   })()
   
-  const isFavorite = favorites.includes(product.id)
+  const isFavorite = favorites.includes(String(product.id))
   const discountPercentage = product.discountPrice 
     ? Math.round((1 - product.discountPrice / product.price) * 100)
     : 0
@@ -253,7 +253,7 @@ function ProductInfo({
       openAuthModal()
       return
     }
-    toggleFavorite(product.id)
+    toggleFavorite(String(product.id))
     toast.success(isFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos', {
       icon: isFavorite ? '💔' : '❤️'
     })

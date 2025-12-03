@@ -243,7 +243,7 @@ const ProductCard = ({ product, viewMode }: { product: Product; viewMode: 'grid'
         whileHover="hover"
         className="group"
       >
-        <Link href={`/produtos/${category.slug}/${product.id}`}>
+        <Link href={`/produto/${product.id}`}>
           <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-white dark:bg-gray-900">
             <div className="flex">
               {/* Image Section */}
@@ -382,7 +382,7 @@ const ProductCard = ({ product, viewMode }: { product: Product; viewMode: 'grid'
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link href={`/produtos/${category.slug}/${product.id}`}>
+      <Link href={`/produto/${product.id}`}>
         <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-white dark:bg-gray-900">
           <div className="relative h-64 overflow-hidden">
             {/* Product Image with Hover Effect */}
