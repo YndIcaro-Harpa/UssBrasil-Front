@@ -18,9 +18,19 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2 } from 'lucide-react';
+import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check } from 'lucide-react';
 import { Product } from '@/hooks/use-admin-crud';
 import { toast } from 'sonner';
+
+// Interface para Fornecedor
+interface Supplier {
+  id: string;
+  name: string;
+  cnpj?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -75,8 +85,21 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     isFeatured: false,
     colors: [{ name: '', code: '', image: '' }],
     storage: [''],
-    specifications: {} as Record<string, string>
+    specifications: {} as Record<string, string>,
+    supplierId: ''
   });
+
+  // Estado para fornecedores
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    name: '',
+    cnpj: '',
+    email: '',
+    phone: '',
+    address: ''
+  });
+  const [savingSupplier, setSavingSupplier] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -156,30 +179,84 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     receivable: 0
   });
 
+  // Carregar fornecedores
+  useEffect(() => {
+    const loadSuppliers = async () => {
+      try {
+        const response = await fetch(`${API_URL}/suppliers`);
+        if (response.ok) {
+          const data = await response.json();
+          setSuppliers(data.data || data || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar fornecedores:', error);
+      }
+    };
+    loadSuppliers();
+  }, []);
+
+  // Salvar novo fornecedor
+  const handleSaveSupplier = async () => {
+    if (!newSupplier.name.trim()) {
+      toast.error('Nome do fornecedor é obrigatório');
+      return;
+    }
+
+    setSavingSupplier(true);
+    try {
+      const response = await fetch(`${API_URL}/suppliers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSupplier)
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        setSuppliers(prev => [...prev, created]);
+        setFormData(prev => ({ ...prev, supplierId: created.id }));
+        setShowSupplierModal(false);
+        setNewSupplier({ name: '', cnpj: '', email: '', phone: '', address: '' });
+        toast.success('Fornecedor cadastrado com sucesso!');
+      } else {
+        throw new Error('Erro ao criar fornecedor');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro ao cadastrar fornecedor');
+    } finally {
+      setSavingSupplier(false);
+    }
+  };
+
+  // Aplicar preço sugerido
+  const applyProposedPrice = () => {
+    setFormData(prev => ({ ...prev, price: Math.round(priceCalculations.proposed * 100) / 100 }));
+    toast.success('Preço sugerido aplicado!');
+  };
+
   // Calculate prices whenever base price changes
   useEffect(() => {
     const basePrice = Number(formData.price) || 0;
     
-    // 1. Valor com 12% de desconto
+    // 1. Valor com 12% de desconto (Preço à vista para o cliente)
     const discounted = basePrice * 0.88;
     
-    // 2. Valor Proposto (Base + 15%)
-    const proposed = basePrice * 1.15;
+    // 2. Valor Proposto/Sugerido (Custo + 15% de margem)
+    const costPrice = Number(formData.originalPrice) || 0;
+    const proposed = costPrice > 0 ? costPrice * 1.15 : basePrice * 1.15;
     
-    // 3. Valor Recebível
-    // (Proposto com 12% de desconto) - Taxas
+    // 3. Valor que você recebe (após taxas)
     // Taxas: Stripe (~3.99% + 0.39) + 7% Fixo (Nota Fiscal)
-    const proposedDiscounted = proposed * 0.88;
-    const stripeFee = (proposedDiscounted * 0.0399) + 0.39;
-    const taxFee = proposedDiscounted * 0.07;
-    const receivable = proposedDiscounted - stripeFee - taxFee;
+    const stripeFee = (discounted * 0.0399) + 0.39;
+    const taxFee = discounted * 0.07;
+    const receivable = discounted - stripeFee - taxFee;
 
     setPriceCalculations({
       discounted,
       proposed,
       receivable
     });
-  }, [formData.price]);
+  }, [formData.price, formData.originalPrice]);
 
   useEffect(() => {
     if (product && (mode === 'edit' || mode === 'view')) {
@@ -387,6 +464,46 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* Row 1.5: Fornecedor */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4">
+              <div className="lg:col-span-2 space-y-1">
+                <Label className="text-black text-sm flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-gray-600" />
+                  Fornecedor
+                </Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.supplierId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value }))}
+                    disabled={mode === 'view'}
+                  >
+                    <SelectTrigger className="h-9 text-black flex-1">
+                      <SelectValue placeholder="Selecione um fornecedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map(supplier => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name} {supplier.cnpj && `(${supplier.cnpj})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {mode !== 'view' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowSupplierModal(true)}
+                      className="h-9 px-3 bg-white hover:bg-gray-50"
+                      title="Adicionar novo fornecedor"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -758,18 +875,36 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
 
               {/* Price Summary */}
               <div className="space-y-2">
-                <div className="p-3 bg-[#001941] rounded-lg">
-                  <p className="text-blue-200 text-xs uppercase">À Vista (12% OFF)</p>
-                  <p className="text-xl font-bold text-white">{formatCurrency(priceCalculations.discounted)}</p>
-                </div>
+                {/* Preço de Venda (com taxas) */}
                 <div className="p-3 bg-white rounded-lg border border-gray-200">
-                  <p className="text-gray-500 text-xs uppercase">Preço Sugerido</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-gray-500 text-xs uppercase">Preço de Venda</p>
+                    {mode !== 'view' && (
+                      <button
+                        type="button"
+                        onClick={applyProposedPrice}
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        title="Aplicar este valor ao preço"
+                      >
+                        <Check className="h-3 w-3" />
+                        Aplicar
+                      </button>
+                    )}
+                  </div>
                   <p className="text-lg font-bold text-blue-600">{formatCurrency(priceCalculations.proposed)}</p>
+                  <p className="text-[9px] text-gray-500">Custo + 15% de margem</p>
                 </div>
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <p className="text-gray-500 text-xs uppercase">Líquido Est.</p>
-                  <p className="text-lg font-bold text-gray-700">{formatCurrency(priceCalculations.receivable)}</p>
-                  <p className="text-[9px] text-gray-500">Após taxas (~11%)</p>
+                {/* Valor com Desconto (à vista para cliente) */}
+                <div className="p-3 bg-[#001941] rounded-lg">
+                  <p className="text-blue-200 text-xs uppercase">Valor c/ Desconto</p>
+                  <p className="text-xl font-bold text-white">{formatCurrency(priceCalculations.discounted)}</p>
+                  <p className="text-[9px] text-blue-300">Preço à vista (12% OFF)</p>
+                </div>
+                {/* Valor Recebido (líquido após taxas) */}
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-green-700 text-xs uppercase">Você Recebe</p>
+                  <p className="text-lg font-bold text-green-700">{formatCurrency(priceCalculations.receivable)}</p>
+                  <p className="text-[9px] text-green-600">Após taxas Stripe + NF (~11%)</p>
                 </div>
               </div>
             </div>
@@ -788,6 +923,121 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
             </div>
           </div>
         </form>
+
+        {/* Modal de Cadastro de Fornecedor */}
+        <AnimatePresence>
+          {showSupplierModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowSupplierModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-md"
+              >
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                    Novo Fornecedor
+                  </h3>
+                  <button
+                    onClick={() => setShowSupplierModal(false)}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  <div className="space-y-1">
+                    <Label className="text-black text-sm">Nome *</Label>
+                    <Input
+                      value={newSupplier.name}
+                      onChange={(e) => setNewSupplier(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome do fornecedor"
+                      className="text-black h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-black text-sm">CNPJ</Label>
+                    <Input
+                      value={newSupplier.cnpj}
+                      onChange={(e) => setNewSupplier(prev => ({ ...prev, cnpj: e.target.value }))}
+                      placeholder="00.000.000/0000-00"
+                      className="text-black h-9"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-black text-sm">Email</Label>
+                      <Input
+                        type="email"
+                        value={newSupplier.email}
+                        onChange={(e) => setNewSupplier(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="email@exemplo.com"
+                        className="text-black h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-black text-sm">Telefone</Label>
+                      <Input
+                        value={newSupplier.phone}
+                        onChange={(e) => setNewSupplier(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="(00) 00000-0000"
+                        className="text-black h-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-black text-sm">Endereço</Label>
+                    <Input
+                      value={newSupplier.address}
+                      onChange={(e) => setNewSupplier(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Endereço completo"
+                      className="text-black h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 border-t border-gray-200 flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSupplierModal(false)}
+                    className="h-9"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveSupplier}
+                    disabled={savingSupplier}
+                    className="h-9 bg-[#001941] hover:bg-blue-900"
+                  >
+                    {savingSupplier ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      'Cadastrar'
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
