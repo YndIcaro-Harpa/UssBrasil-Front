@@ -1,7 +1,5 @@
 'use client'
 
-export const runtime = 'edge'
-
 import { useParams } from 'next/navigation'
 
 export default function BrandPage() {

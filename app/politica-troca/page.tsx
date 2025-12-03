@@ -1,7 +1,5 @@
 'use client'
 
-export const runtime = 'edge'
-
 export default function PoliticaTrocaPage() {
   return (
     <div className="container mx-auto px-4 py-8">
