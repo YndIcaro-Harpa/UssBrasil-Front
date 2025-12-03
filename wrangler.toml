@@ -13,4 +13,17 @@ main = ".open-next/worker.js"
 assets = { directory = ".open-next/assets", binding = "ASSETS" }
 
 [vars]
+# Backend API URL
 NEXT_PUBLIC_BACKEND_URL = "https://ussbrasil-back.onrender.com"
+NEXT_PUBLIC_API_URL = "https://ussbrasil-back.onrender.com"
+
+# NextAuth Configuration
+NEXTAUTH_URL = "https://ussbrasil-front.pages.dev"
+NEXTAUTH_SECRET = "your-production-secret-change-this"
+
+# Cloudinary Configuration
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "dnmazlvs6"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "uss-brasil"
+
+# Stripe Configuration (use your production key)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_51O49XgH5ZUZLNkrznDBAV7SCKaSoTqL10KHpqVyXUCicYqY1GSVcH0BpSfBQkAaJBXW10eyN3TqZzTH8mERnPq2D00syAXD04t"
