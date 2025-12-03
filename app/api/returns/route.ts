@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const runtime = 'edge'
+
 // NOTE: You don't currently have a Return model. This uses a dynamic table name assumption.
 // To persist, add a Prisma model (e.g., ReturnRequest) then regenerate. Fallback returns in-memory error.
 

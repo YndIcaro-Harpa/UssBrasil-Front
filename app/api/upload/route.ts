@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { applyRateLimit } from '@/lib/rate-limiter'
 
+export const runtime = 'edge'
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export async function POST(request: NextRequest) {

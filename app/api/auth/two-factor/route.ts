@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import twoFactorAuth from '@/lib/two-factor-auth'
 
+export const runtime = 'edge'
+
 // Helper to get user from token
 function getUserFromToken(request: NextRequest): { userId: string; email: string } | null {
   const authHeader = request.headers.get('authorization')

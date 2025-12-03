@@ -4,8 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { applyRateLimit } from '@/lib/rate-limiter'
 
-// Force Node.js runtime for this API route
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 const registerSchema = z.object({

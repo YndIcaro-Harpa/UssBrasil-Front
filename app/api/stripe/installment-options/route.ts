@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 // Taxas de juros por número de parcelas (padrão brasileiro)
 const interestRates: Record<number, number> = {
   1: 0,
