@@ -18,13 +18,15 @@ import {
   Loader2,
   RefreshCw,
   FileSpreadsheet,
-  FileText
+  FileText,
+  ShoppingBag
 } from 'lucide-react'
 import Link from 'next/link'
 import PageHeader from '@/components/admin/PageHeader'
 import StatCard from '@/components/admin/StatCard'
 import ProductImage from '@/components/admin/ProductImage'
 import { ProductModal } from '@/components/admin/ProductModal'
+import { ProductOrdersModal } from '@/components/admin/ProductOrdersModal'
 import PremiumButton from '@/components/ui/PremiumButton'
 import { api, Product, Category } from '@/services/api'
 import { toast } from 'sonner'
@@ -90,6 +92,17 @@ export default function AdminProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
+  
+  // Estado para modal de pedidos do produto
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false)
+  const [ordersProductId, setOrdersProductId] = useState('')
+  const [ordersProductName, setOrdersProductName] = useState('')
+
+  const openOrdersModal = (product: Product) => {
+    setOrdersProductId(product.id)
+    setOrdersProductName(product.name)
+    setIsOrdersModalOpen(true)
+  }
 
   const handleSaveProduct = async (productData: any) => {
     try {
@@ -625,13 +638,21 @@ export default function AdminProductsPage() {
                     <td className="p-2 lg:p-4">
                       <div className="flex items-center space-x-1 lg:space-x-2">
                         <Link href={`/produto/${product.slug}`}>
-                          <button className="p-1 lg:p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all">
+                          <button className="p-1 lg:p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all" title="Ver produto">
                             <Eye className="w-3 h-3 lg:w-4 lg:h-4" />
                           </button>
                         </Link>
                         <button 
+                          onClick={() => openOrdersModal(product)}
+                          className="p-1 lg:p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                          title="Ver pedidos"
+                        >
+                          <ShoppingBag className="w-3 h-3 lg:w-4 lg:h-4" />
+                        </button>
+                        <button 
                           onClick={() => openEditModal(product)}
                           className="p-1 lg:p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+                          title="Editar produto"
                         >
                           <Edit className="w-3 h-3 lg:w-4 lg:h-4" />
                         </button>
@@ -639,6 +660,7 @@ export default function AdminProductsPage() {
                           onClick={() => handleDelete(product.id, product.name)}
                           disabled={deleting === product.id}
                           className="p-1 lg:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                          title="Excluir produto"
                         >
                           {deleting === product.id ? (
                             <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin" />
@@ -672,6 +694,13 @@ export default function AdminProductsPage() {
         product={transformedProduct}
         onSave={handleSaveProduct}
         mode={modalMode}
+      />
+
+      <ProductOrdersModal
+        isOpen={isOrdersModalOpen}
+        onClose={() => setIsOrdersModalOpen(false)}
+        productId={ordersProductId}
+        productName={ordersProductName}
       />
     </div>
   )

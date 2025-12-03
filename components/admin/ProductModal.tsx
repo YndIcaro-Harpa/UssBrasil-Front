@@ -444,7 +444,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-black text-sm">Preço "De"</Label>
+                <Label className="text-black text-sm">Custo do Produto</Label>
                 <Input
                   type="number"
                   step="0.01"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Save, 
   X, 
@@ -12,7 +12,11 @@ import {
   FileText,
   Layers,
   Trash2,
-  Loader2
+  Loader2,
+  Plus,
+  Edit2,
+  Barcode,
+  Hash
 } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAdminAuth } from '@/hooks/useAdminAuth'
@@ -30,6 +34,19 @@ function FormLabel({ label, required = false }: { label: string; required?: bool
       {required && <span className="text-red-500 ml-0.5">*</span>}
     </p>
   )
+}
+
+// Interface para variação de produto com SKU/NCM único
+interface ProductVariation {
+  id: string
+  name: string           // Ex: "iPhone 15 Pro 256GB Preto"
+  sku: string            // SKU único da variação
+  ncm: string            // NCM da variação
+  image: string          // URL da imagem da variação
+  stock: number          // Estoque desta variação
+  priceAdjustment: number // Ajuste de preço (+/- em relação ao preço base)
+  serialNumbers: string[] // Números de série das unidades
+  isActive: boolean
 }
 
 interface ProductFormData {
@@ -53,6 +70,7 @@ interface ProductFormData {
   // Outros campos
   stock: number
   sku: string
+  ncm: string
   brandId: string
   categoryId: string
   featured: boolean
@@ -64,6 +82,9 @@ interface ProductFormData {
   weight?: number
   dimensions?: string
   warranty?: number
+  // Variações de produto com SKU/NCM
+  productVariations: ProductVariation[]
+  hasVariations: boolean
 }
 
 interface Brand {
@@ -89,6 +110,7 @@ export default function EditProductPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const variationImageInputRef = useRef<HTMLInputElement>(null)
   
   const [formData, setFormData] = useState<ProductFormData>({
     id: '',
@@ -111,6 +133,7 @@ export default function EditProductPage() {
     // Outros
     stock: 0,
     sku: '',
+    ncm: '',
     brandId: '',
     categoryId: '',
     featured: false,
@@ -121,15 +144,110 @@ export default function EditProductPage() {
     tags: '',
     weight: 0,
     dimensions: '',
-    warranty: 12
+    warranty: 12,
+    // Variações
+    productVariations: [],
+    hasVariations: false
   })
 
   const [specKey, setSpecKey] = useState('')
   const [specValue, setSpecValue] = useState('')
+  
+  // Estados para variações de produto com SKU/NCM
+  const [showVariationModal, setShowVariationModal] = useState(false)
+  const [editingVariation, setEditingVariation] = useState<ProductVariation | null>(null)
+  const [variationForm, setVariationForm] = useState({
+    name: '',
+    sku: '',
+    ncm: '',
+    image: '',
+    stock: 0,
+    priceAdjustment: 0,
+    serialNumbers: ''
+  })
 
   // Helper para formatar moeda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
+
+  // Função para calcular estoque total a partir das variações
+  const calculateTotalStockFromVariations = (variations: ProductVariation[]) => {
+    return variations.reduce((total, v) => total + v.stock, 0)
+  }
+
+  // Efeito para atualizar estoque quando variações mudam
+  useEffect(() => {
+    if (formData.hasVariations && formData.productVariations.length > 0) {
+      const totalStock = calculateTotalStockFromVariations(formData.productVariations)
+      if (totalStock !== formData.stock) {
+        setFormData(prev => ({ ...prev, stock: totalStock }))
+      }
+    }
+  }, [formData.productVariations, formData.hasVariations, formData.stock])
+
+  // Função para adicionar/editar variação
+  const handleSaveVariation = () => {
+    if (!variationForm.name || !variationForm.sku) {
+      toast.error('Nome e SKU são obrigatórios')
+      return
+    }
+
+    const newVariation: ProductVariation = {
+      id: editingVariation?.id || `var-${Date.now()}`,
+      name: variationForm.name,
+      sku: variationForm.sku,
+      ncm: variationForm.ncm,
+      image: variationForm.image,
+      stock: variationForm.stock,
+      priceAdjustment: variationForm.priceAdjustment,
+      serialNumbers: variationForm.serialNumbers.split(',').map(s => s.trim()).filter(Boolean),
+      isActive: true
+    }
+
+    if (editingVariation) {
+      setFormData(prev => ({
+        ...prev,
+        productVariations: prev.productVariations.map(v => 
+          v.id === editingVariation.id ? newVariation : v
+        )
+      }))
+      toast.success('Variação atualizada!')
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        productVariations: [...prev.productVariations, newVariation]
+      }))
+      toast.success('Variação adicionada!')
+    }
+
+    setVariationForm({ name: '', sku: '', ncm: '', image: '', stock: 0, priceAdjustment: 0, serialNumbers: '' })
+    setEditingVariation(null)
+    setShowVariationModal(false)
+  }
+
+  // Função para editar variação
+  const handleEditVariation = (variation: ProductVariation) => {
+    setVariationForm({
+      name: variation.name,
+      sku: variation.sku,
+      ncm: variation.ncm,
+      image: variation.image,
+      stock: variation.stock,
+      priceAdjustment: variation.priceAdjustment,
+      serialNumbers: variation.serialNumbers.join(', ')
+    })
+    setEditingVariation(variation)
+    setShowVariationModal(true)
+  }
+
+  // Função para remover variação
+  const handleRemoveVariation = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      productVariations: prev.productVariations.filter(v => v.id !== id)
+    }))
+    toast.success('Variação removida!')
   }
 
   // Função para calcular todos os preços automaticamente
@@ -252,6 +370,7 @@ export default function EditProductPage() {
           // Outros campos
           stock: product.stock,
           sku: product.sku || product.slug || '',
+          ncm: (product as any).ncm || '',
           brandId: product.brandId || '',
           categoryId: product.categoryId || '',
           featured: product.featured || false,
@@ -262,7 +381,10 @@ export default function EditProductPage() {
           tags: product.tags || '',
           weight: product.weight || 0,
           dimensions: product.dimensions || '',
-          warranty: product.warranty || 12
+          warranty: product.warranty || 12,
+          // Variações
+          productVariations: (product as any).productVariations || [],
+          hasVariations: (product as any).hasVariations || false
         })
       } else {
         toast.error('Produto não encontrado')
@@ -770,9 +892,21 @@ export default function EditProductPage() {
               </div>
             )}
 
-            {/* Estoque */}
+            {/* Estoque e Identificação */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <FormLabel label="NCM" />
+                  <Input
+                    id="ncm"
+                    type="text"
+                    value={formData.ncm}
+                    onChange={(e) => setFormData({ ...formData, ncm: e.target.value })}
+                    placeholder="Ex: 8517.12.31"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Nomenclatura Comum do Mercosul</p>
+                </div>
                 <div>
                   <FormLabel label="Estoque" required />
                   <Input
@@ -783,8 +917,25 @@ export default function EditProductPage() {
                     onChange={(e) => handleNumericChange('stock', e.target.value)}
                     placeholder="0"
                     required
-                    className="mt-1"
+                    disabled={formData.hasVariations}
+                    className={`mt-1 ${formData.hasVariations ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   />
+                  {formData.hasVariations && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Estoque calculado automaticamente pelas variações
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer mt-6">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasVariations}
+                      onChange={(e) => setFormData({ ...formData, hasVariations: e.target.checked })}
+                      className="w-4 h-4 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Produto com Variações</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -992,6 +1143,348 @@ export default function EditProductPage() {
               )}
             </div>
           </motion.div>
+
+          {/* Variações de Produto com SKU/NCM */}
+          {formData.hasVariations && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-2xl shadow-sm p-6 mb-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                    <Barcode className="h-5 w-5 text-cyan-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Variações com SKU/NCM</h2>
+                    <p className="text-sm text-gray-500">Gerencie SKU, NCM, estoque e números de série por variação</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setVariationForm({ name: '', sku: '', ncm: '', image: '', stock: 0, priceAdjustment: 0, serialNumbers: '' })
+                    setEditingVariation(null)
+                    setShowVariationModal(true)
+                  }}
+                  className="bg-cyan-500 hover:bg-cyan-600"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Variação
+                </Button>
+              </div>
+
+              {/* Lista de Variações */}
+              {formData.productVariations.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                  <Barcode className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2">Nenhuma variação cadastrada</p>
+                  <p className="text-sm text-gray-400">
+                    Clique em &quot;Nova Variação&quot; para adicionar variações com SKU, NCM e estoque individual
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {formData.productVariations.map((variation) => (
+                    <div
+                      key={variation.id}
+                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-cyan-300 transition-colors"
+                    >
+                      {/* Imagem da Variação */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0">
+                        {variation.image ? (
+                          <img
+                            src={variation.image}
+                            alt={variation.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="h-6 w-6 text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Informações da Variação */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 truncate">{variation.name}</h4>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
+                          <span className="text-gray-600">
+                            <span className="font-medium">SKU:</span> {variation.sku}
+                          </span>
+                          {variation.ncm && (
+                            <span className="text-gray-600">
+                              <span className="font-medium">NCM:</span> {variation.ncm}
+                            </span>
+                          )}
+                          <span className="text-gray-600">
+                            <span className="font-medium">Estoque:</span>{' '}
+                            <span className={variation.stock > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {variation.stock} un
+                            </span>
+                          </span>
+                          {variation.priceAdjustment !== 0 && (
+                            <span className={variation.priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}>
+                              {variation.priceAdjustment > 0 ? '+' : ''}{formatCurrency(variation.priceAdjustment)}
+                            </span>
+                          )}
+                        </div>
+                        {variation.serialNumbers.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            <Hash className="h-3 w-3 inline mr-1" />
+                            {variation.serialNumbers.length} número(s) de série
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Ações */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditVariation(variation)}
+                          className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                          title="Editar variação"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVariation(variation.id)}
+                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Remover variação"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Resumo do Estoque */}
+                  <div className="flex items-center justify-between p-4 bg-cyan-50 rounded-xl border border-cyan-200 mt-4">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-cyan-600" />
+                      <span className="font-medium text-cyan-900">Estoque Total</span>
+                    </div>
+                    <span className="text-xl font-bold text-cyan-700">
+                      {calculateTotalStockFromVariations(formData.productVariations)} unidades
+                    </span>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Modal de Variação */}
+          <AnimatePresence>
+            {showVariationModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setShowVariationModal(false)
+                    setEditingVariation(null)
+                  }
+                }}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                >
+                  <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {editingVariation ? 'Editar Variação' : 'Nova Variação'}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Defina SKU, NCM, estoque e números de série para esta variação
+                    </p>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    {/* Nome da Variação */}
+                    <div>
+                      <FormLabel label="Nome da Variação" required />
+                      <Input
+                        value={variationForm.name}
+                        onChange={(e) => setVariationForm({ ...variationForm, name: e.target.value })}
+                        placeholder="Ex: iPhone 15 Pro 256GB Preto"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    {/* SKU e NCM */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <FormLabel label="SKU" required />
+                        <Input
+                          value={variationForm.sku}
+                          onChange={(e) => setVariationForm({ ...variationForm, sku: e.target.value })}
+                          placeholder="Ex: IPH15-PRO-256-BLK"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <FormLabel label="NCM" />
+                        <Input
+                          value={variationForm.ncm}
+                          onChange={(e) => setVariationForm({ ...variationForm, ncm: e.target.value })}
+                          placeholder="Ex: 8517.12.31"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Estoque e Ajuste de Preço */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <FormLabel label="Estoque" required />
+                        <Input
+                          type="number"
+                          min="0"
+                          value={variationForm.stock || ''}
+                          onChange={(e) => setVariationForm({ ...variationForm, stock: parseInt(e.target.value) || 0 })}
+                          placeholder="0"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <FormLabel label="Ajuste de Preço (R$)" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={variationForm.priceAdjustment || ''}
+                          onChange={(e) => setVariationForm({ ...variationForm, priceAdjustment: parseFloat(e.target.value) || 0 })}
+                          placeholder="0.00"
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Positivo para aumentar, negativo para diminuir
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Imagem da Variação */}
+                    <div>
+                      <FormLabel label="Imagem da Variação" />
+                      <div className="mt-1 flex items-center gap-4">
+                        {variationForm.image ? (
+                          <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group">
+                            <img
+                              src={variationForm.image}
+                              alt="Variação"
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setVariationForm({ ...variationForm, image: '' })}
+                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                            >
+                              <X className="h-6 w-6 text-white" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => variationImageInputRef.current?.click()}
+                            className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-cyan-400 hover:text-cyan-500 transition-colors"
+                          >
+                            <Upload className="h-6 w-6" />
+                            <span className="text-xs mt-1">Upload</span>
+                          </button>
+                        )}
+                        <input
+                          ref={variationImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            
+                            setUploading(true)
+                            try {
+                              const formDataUpload = new FormData()
+                              formDataUpload.append('image', file)
+                              
+                              const response = await fetch('/api/upload', {
+                                method: 'POST',
+                                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                                body: formDataUpload
+                              })
+                              
+                              if (response.ok) {
+                                const data = await response.json()
+                                if (data.url) {
+                                  setVariationForm(prev => ({ ...prev, image: data.url }))
+                                  toast.success('Imagem enviada!')
+                                }
+                              } else {
+                                toast.error('Erro ao enviar imagem')
+                              }
+                            } catch {
+                              toast.error('Erro ao enviar imagem')
+                            } finally {
+                              setUploading(false)
+                              e.target.value = ''
+                            }
+                          }}
+                        />
+                        {uploading && (
+                          <div className="flex items-center gap-2 text-cyan-600">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">Enviando...</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Números de Série */}
+                    <div>
+                      <FormLabel label="Números de Série" />
+                      <Textarea
+                        value={variationForm.serialNumbers}
+                        onChange={(e) => setVariationForm({ ...variationForm, serialNumbers: e.target.value })}
+                        placeholder="Separe os números de série por vírgula. Ex: SN001, SN002, SN003"
+                        rows={3}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {variationForm.serialNumbers.split(',').filter(s => s.trim()).length} número(s) de série informado(s)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Botões do Modal */}
+                  <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowVariationModal(false)
+                        setEditingVariation(null)
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSaveVariation}
+                      className="bg-cyan-500 hover:bg-cyan-600"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {editingVariation ? 'Atualizar' : 'Adicionar'}
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Botões de Ação */}
           <motion.div

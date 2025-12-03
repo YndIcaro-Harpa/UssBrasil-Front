@@ -42,6 +42,18 @@ export interface Address {
   createdAt: string
 }
 
+export interface ProductVariation {
+  id: string
+  name: string
+  sku: string
+  ncm: string
+  image: string
+  stock: number
+  priceAdjustment: number
+  serialNumbers: string[]
+  isActive: boolean
+}
+
 export interface Product {
   id: string
   name: string
@@ -66,6 +78,7 @@ export interface Product {
   updatedAt: string
   // Campos de precificação
   sku?: string
+  ncm?: string
   costPrice?: number
   suggestedPrice?: number
   originalPrice?: number
@@ -77,6 +90,9 @@ export interface Product {
   profitMargin?: number
   profitValue?: number
   isPreOrder?: boolean
+  // Variações de produto
+  productVariations?: ProductVariation[]
+  hasVariations?: boolean
 }
 
 export interface Category {
