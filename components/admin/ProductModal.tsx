@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check } from 'lucide-react';
+import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers } from 'lucide-react';
 import { Product } from '@/hooks/use-admin-crud';
 import { toast } from 'sonner';
 
@@ -100,6 +100,11 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     address: ''
   });
   const [savingSupplier, setSavingSupplier] = useState(false);
+  const [showSuppliersListModal, setShowSuppliersListModal] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  
+  // Estado para modal de variações
+  const [showVariationsModal, setShowVariationsModal] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -276,7 +281,8 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         isFeatured: product.isFeatured,
         colors: (product.colors || []).map(c => ({ name: c.name || '', code: c.code || '', image: (c as any).image || '' })),
         storage: product.storage || [''],
-        specifications: product.specifications
+        specifications: product.specifications,
+        supplierId: (product as any).supplierId || ''
       });
     } else if (mode === 'create') {
       setFormData({
@@ -298,7 +304,8 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         isFeatured: false,
         colors: [{ name: '', code: '', image: '' }],
         storage: [''],
-        specifications: {}
+        specifications: {},
+        supplierId: ''
       });
     }
   }, [product, mode]);
@@ -492,18 +499,48 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     </SelectContent>
                   </Select>
                   {mode !== 'view' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowSupplierModal(true)}
-                      className="h-9 px-3 bg-white hover:bg-gray-50"
-                      title="Adicionar novo fornecedor"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowSupplierModal(true)}
+                        className="h-9 px-3 bg-white hover:bg-gray-50"
+                        title="Adicionar novo fornecedor"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowSuppliersListModal(true)}
+                        className="h-9 px-3 bg-white hover:bg-gray-50"
+                        title="Gerenciar fornecedores"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </>
                   )}
                 </div>
+              </div>
+              
+              {/* Botão de Variações */}
+              <div className="lg:col-span-2 space-y-1">
+                <Label className="text-black text-sm flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-gray-600" />
+                  Variações do Produto
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowVariationsModal(true)}
+                  className="h-9 w-full justify-start text-black bg-white hover:bg-gray-50"
+                >
+                  <Palette className="h-4 w-4 mr-2 text-gray-600" />
+                  {formData.colors.filter(c => c.name).length} cores, {formData.storage.filter(s => s).length} armazenamentos
+                  <Settings className="h-4 w-4 ml-auto text-gray-400" />
+                </Button>
               </div>
             </div>
 
@@ -727,76 +764,45 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                   </div>
                 </div>
                 
-                {/* Colors inline */}
+                {/* Preview das variações */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="text-black text-sm">Cores:</Label>
-                  {formData.colors.map((color, index) => (
+                  {formData.colors.filter(c => c.name).map((color, index) => (
                     <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1">
-                      <input
-                        type="color"
-                        value={color.code || '#000000'}
-                        onChange={(e) => {
-                          const newColors = [...formData.colors];
-                          newColors[index] = { ...newColors[index], code: e.target.value };
-                          setFormData(prev => ({ ...prev, colors: newColors }));
-                        }}
-                        disabled={mode === 'view'}
-                        className="w-5 h-5 border-0 p-0 cursor-pointer"
+                      <div
+                        className="w-4 h-4 rounded-full border border-gray-300"
+                        style={{ backgroundColor: color.code || '#ccc' }}
                       />
-                      <Input
-                        value={color.name}
-                        onChange={(e) => {
-                          const newColors = [...formData.colors];
-                          newColors[index] = { ...newColors[index], name: e.target.value };
-                          setFormData(prev => ({ ...prev, colors: newColors }));
-                        }}
-                        disabled={mode === 'view'}
-                        placeholder="Nome"
-                        className="w-20 h-7 text-xs text-black"
-                      />
-                      {mode !== 'view' && formData.colors.length > 1 && (
-                        <button type="button" onClick={() => removeColor(index)} className="text-red-500 hover:text-red-700">
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
+                      <span className="text-xs text-black">{color.name}</span>
                     </div>
                   ))}
-                  {mode !== 'view' && (
-                    <Button type="button" variant="outline" size="sm" onClick={addColor} className="h-7 px-2 text-xs">
-                      + Cor
-                    </Button>
+                  {formData.colors.filter(c => c.name).length === 0 && (
+                    <span className="text-xs text-gray-400">Nenhuma cor definida</span>
                   )}
                 </div>
 
-                {/* Storage inline */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="text-black text-sm">Armazenamento:</Label>
-                  {formData.storage.map((storage, index) => (
-                    <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1">
-                      <Input
-                        value={storage}
-                        onChange={(e) => {
-                          const newStorage = [...formData.storage];
-                          newStorage[index] = e.target.value;
-                          setFormData(prev => ({ ...prev, storage: newStorage }));
-                        }}
-                        disabled={mode === 'view'}
-                        className="w-16 h-7 text-xs text-black"
-                        placeholder="128GB"
-                      />
-                      {mode !== 'view' && formData.storage.length > 1 && (
-                        <button type="button" onClick={() => removeStorage(index)} className="text-red-500 hover:text-red-700">
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
+                  {formData.storage.filter(s => s).map((storage, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {storage}
+                    </Badge>
                   ))}
-                  {mode !== 'view' && (
-                    <Button type="button" variant="outline" size="sm" onClick={addStorage} className="h-7 px-2 text-xs">
-                      + Armazenamento
-                    </Button>
+                  {formData.storage.filter(s => s).length === 0 && (
+                    <span className="text-xs text-gray-400">Nenhum armazenamento definido</span>
                   )}
                 </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowVariationsModal(true)}
+                  className="h-8 text-xs"
+                >
+                  <Settings className="h-3 w-3 mr-1" />
+                  Editar Variações
+                </Button>
               </div>
             </div>
 
@@ -1032,6 +1038,295 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     ) : (
                       'Cadastrar'
                     )}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Lista de Fornecedores */}
+        <AnimatePresence>
+          {showSuppliersListModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowSuppliersListModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+              >
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                    Gerenciar Fornecedores
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setShowSuppliersListModal(false);
+                        setShowSupplierModal(true);
+                      }}
+                      className="h-8 bg-[#001941] hover:bg-blue-900"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Novo
+                    </Button>
+                    <button
+                      onClick={() => setShowSuppliersListModal(false)}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  {suppliers.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Nenhum fornecedor cadastrado</p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setShowSuppliersListModal(false);
+                          setShowSupplierModal(true);
+                        }}
+                        className="mt-4 h-8 bg-[#001941] hover:bg-blue-900"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Cadastrar Fornecedor
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {suppliers.map(supplier => (
+                        <div
+                          key={supplier.id}
+                          className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                            formData.supplierId === supplier.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300 bg-white'
+                          }`}
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, supplierId: supplier.id }));
+                            toast.success(`Fornecedor "${supplier.name}" selecionado`);
+                          }}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">{supplier.name}</h4>
+                                {formData.supplierId === supplier.id && (
+                                  <Badge className="bg-blue-500 text-white text-xs">Selecionado</Badge>
+                                )}
+                              </div>
+                              {supplier.cnpj && (
+                                <p className="text-sm text-gray-500">CNPJ: {supplier.cnpj}</p>
+                              )}
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500">
+                                {supplier.email && <span>{supplier.email}</span>}
+                                {supplier.phone && <span>{supplier.phone}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 border-t border-gray-200 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSuppliersListModal(false)}
+                    className="h-9"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Variações */}
+        <AnimatePresence>
+          {showVariationsModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowVariationsModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+              >
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Layers className="h-5 w-5 text-indigo-600" />
+                    Variações do Produto
+                  </h3>
+                  <button
+                    onClick={() => setShowVariationsModal(false)}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                  {/* Cores */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-black font-semibold flex items-center gap-2">
+                        <Palette className="h-4 w-4 text-pink-500" />
+                        Cores
+                      </Label>
+                      {mode !== 'view' && (
+                        <Button type="button" variant="outline" size="sm" onClick={addColor} className="h-7 px-2 text-xs">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Adicionar Cor
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {formData.colors.map((color, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                          <input
+                            type="color"
+                            value={color.code || '#000000'}
+                            onChange={(e) => {
+                              const newColors = [...formData.colors];
+                              newColors[index] = { ...newColors[index], code: e.target.value };
+                              setFormData(prev => ({ ...prev, colors: newColors }));
+                            }}
+                            disabled={mode === 'view'}
+                            className="w-10 h-10 border-2 border-gray-200 rounded-lg p-0 cursor-pointer"
+                          />
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <Input
+                              value={color.name}
+                              onChange={(e) => {
+                                const newColors = [...formData.colors];
+                                newColors[index] = { ...newColors[index], name: e.target.value };
+                                setFormData(prev => ({ ...prev, colors: newColors }));
+                              }}
+                              disabled={mode === 'view'}
+                              placeholder="Nome da cor (ex: Preto)"
+                              className="h-9 text-black"
+                            />
+                            <Input
+                              value={color.image}
+                              onChange={(e) => {
+                                const newColors = [...formData.colors];
+                                newColors[index] = { ...newColors[index], image: e.target.value };
+                                setFormData(prev => ({ ...prev, colors: newColors }));
+                              }}
+                              disabled={mode === 'view'}
+                              placeholder="URL da imagem (opcional)"
+                              className="h-9 text-black"
+                            />
+                          </div>
+                          {mode !== 'view' && formData.colors.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeColor(index)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Armazenamento */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-black font-semibold flex items-center gap-2">
+                        <HardDrive className="h-4 w-4 text-purple-500" />
+                        Armazenamento
+                      </Label>
+                      {mode !== 'view' && (
+                        <Button type="button" variant="outline" size="sm" onClick={addStorage} className="h-7 px-2 text-xs">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Adicionar
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {formData.storage.map((storage, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <Input
+                            value={storage}
+                            onChange={(e) => {
+                              const newStorage = [...formData.storage];
+                              newStorage[index] = e.target.value;
+                              setFormData(prev => ({ ...prev, storage: newStorage }));
+                            }}
+                            disabled={mode === 'view'}
+                            className="w-24 h-8 text-sm text-black"
+                            placeholder="128GB"
+                          />
+                          {mode !== 'view' && formData.storage.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeStorage(index)}
+                              className="p-1 text-red-500 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Resumo */}
+                  <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h4 className="font-semibold text-indigo-900 mb-2">Resumo das Variações</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-indigo-700">Cores cadastradas:</span>
+                        <span className="font-bold text-indigo-900 ml-2">{formData.colors.filter(c => c.name).length}</span>
+                      </div>
+                      <div>
+                        <span className="text-indigo-700">Opções de armazenamento:</span>
+                        <span className="font-bold text-indigo-900 ml-2">{formData.storage.filter(s => s).length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border-t border-gray-200 flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={() => setShowVariationsModal(false)}
+                    className="h-9 bg-[#001941] hover:bg-blue-900"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Concluir
                   </Button>
                 </div>
               </motion.div>
