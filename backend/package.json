@@ -19,7 +19,10 @@
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
     "studio": "prisma studio",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "migrate:db-json": "ts-node prisma/migrate-db-json.ts",
+    "upload:images": "ts-node scripts/upload-images-and-seed.ts",
+    "update:brand-logos": "ts-node scripts/update-brand-logos.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed-new.ts"
@@ -52,12 +55,15 @@
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "react-confetti": "^6.4.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "sharp": "^0.32.6",
+    "stripe": "^20.0.0",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.18.3"
   },
@@ -70,6 +76,7 @@
     "@types/jest": "^29.5.14",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.0.0",
+    "@types/nodemailer": "^6.4.21",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@typescript-eslint/eslint-plugin": "^6.0.0",

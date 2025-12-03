@@ -43,8 +43,12 @@ export class ProductsService {
     if (brandId) where.brandId = brandId;
     if (featured !== undefined) where.featured = featured;
     if (search) {
+      // SQLite doesn't support mode: 'insensitive', so we use contains only
+      // The search will be case-sensitive in SQLite
+      const searchLower = search.toLowerCase();
       where.OR = [
         { name: { contains: search } },
+        { slug: { contains: searchLower } },
         { description: { contains: search } },
       ];
     }
@@ -56,6 +60,7 @@ export class ProductsService {
         take: limit,
         include: {
           category: true,
+          brand: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -182,6 +187,92 @@ export class ProductsService {
     });
   }
 
+  async bulkDelete(ids: string[]) {
+    const result = await this.prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { status: 'INACTIVE' },
+    });
+
+    return {
+      success: true,
+      deletedCount: result.count,
+      ids,
+    };
+  }
+
+  async bulkUpdateStatus(ids: string[], status: string) {
+    const result = await this.prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { status },
+    });
+
+    return {
+      success: true,
+      updatedCount: result.count,
+      ids,
+      status,
+    };
+  }
+
+  async bulkUpdateStock(updates: { id: string; stock: number }[]) {
+    const results = await Promise.all(
+      updates.map(({ id, stock }) =>
+        this.prisma.product.update({
+          where: { id },
+          data: { stock },
+          select: { id: true, name: true, stock: true },
+        })
+      )
+    );
+
+    return {
+      success: true,
+      updatedCount: results.length,
+      products: results,
+    };
+  }
+
+  async duplicate(id: string) {
+    const product = await this.findOne(id);
+    
+    const newSlug = this.generateSlug(`${product.name} Copy`);
+
+    return this.prisma.product.create({
+      data: {
+        name: `${product.name} (Cópia)`,
+        slug: newSlug,
+        description: product.description,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        discountPrice: product.discountPrice,
+        stock: product.stock,
+        images: product.images,
+        tags: product.tags,
+        specifications: product.specifications,
+        dimensions: product.dimensions,
+        weight: product.weight,
+        featured: false,
+        isFeatured: false,
+        isActive: false, // Novo produto inativo por padrão
+        status: 'DRAFT',
+        sku: product.sku ? `${product.sku}-COPY` : null,
+        categoryId: product.categoryId,
+        brandId: product.brandId,
+        seoTitle: product.seoTitle,
+        seoDescription: product.seoDescription,
+        warranty: product.warranty,
+        colors: product.colors,
+        sizes: product.sizes,
+        storage: product.storage,
+        rating: 0,
+        totalReviews: 0,
+      },
+      include: {
+        category: true,
+      },
+    });
+  }
+
   async uploadImages(id: string, files: Express.Multer.File[]) {
     const product = await this.findOne(id);
     
@@ -216,6 +307,75 @@ export class ProductsService {
         stock: {
           decrement: quantity,
         },
+      },
+    });
+  }
+
+  async getProductStats() {
+    const [
+      totalProducts,
+      activeProducts,
+      totalStockValue,
+      lowStockCount,
+      outOfStockCount,
+      featuredCount,
+    ] = await Promise.all([
+      this.prisma.product.count(),
+      this.prisma.product.count({ where: { isActive: true } }),
+      this.prisma.product.aggregate({
+        _sum: {
+          stock: true,
+        },
+        where: { isActive: true },
+      }),
+      this.prisma.product.count({
+        where: {
+          stock: { gt: 0, lte: 5 },
+          isActive: true,
+        },
+      }),
+      this.prisma.product.count({
+        where: {
+          stock: 0,
+          isActive: true,
+        },
+      }),
+      this.prisma.product.count({ where: { featured: true } }),
+    ]);
+
+    // Calcular valor total do estoque
+    const productsWithValue = await this.prisma.product.findMany({
+      where: { isActive: true },
+      select: { price: true, stock: true },
+    });
+    
+    const totalValue = productsWithValue.reduce(
+      (sum, p) => sum + (p.price * p.stock),
+      0
+    );
+
+    return {
+      totalProducts,
+      activeProducts,
+      totalStockUnits: totalStockValue._sum.stock || 0,
+      totalStockValue: totalValue,
+      lowStockCount,
+      outOfStockCount,
+      featuredCount,
+    };
+  }
+
+  async getLowStockProducts(threshold: number = 5, limit: number = 10) {
+    return this.prisma.product.findMany({
+      where: {
+        stock: { lte: threshold },
+        isActive: true,
+      },
+      take: limit,
+      orderBy: { stock: 'asc' },
+      include: {
+        category: true,
+        brand: true,
       },
     });
   }

@@ -18,6 +18,9 @@ async function main() {
   // 4. Criar usuário admin
   await createAdminUser();
 
+  // 5. Criar cupons de teste
+  await createCoupons();
+
   console.log('✅ Seed concluído com sucesso!');
 }
 
@@ -376,6 +379,74 @@ async function createAdminUser() {
     console.log('📧 Email: admin@ussbrasil.com');
     console.log('🔑 Senha: admin123');
   }
+}
+
+async function createCoupons() {
+  console.log('🎟️ Criando cupons de teste...');
+  
+  const now = new Date();
+  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+  const coupons = [
+    {
+      code: 'BEMVINDO10',
+      description: '10% de desconto na primeira compra',
+      type: 'PERCENTAGE',
+      value: 10,
+      minAmount: 100,
+      maxAmount: 50,
+      usageLimit: 1000,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      code: 'FRETEGRATIS',
+      description: 'Frete grátis em compras acima de R$ 200',
+      type: 'FREE_SHIPPING',
+      value: 0,
+      minAmount: 200,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      code: 'DESCONTO50',
+      description: 'R$ 50 de desconto em compras acima de R$ 500',
+      type: 'FIXED_AMOUNT',
+      value: 50,
+      minAmount: 500,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      code: 'USS20',
+      description: '20% de desconto exclusivo USS',
+      type: 'PERCENTAGE',
+      value: 20,
+      minAmount: 150,
+      maxAmount: 100,
+      usageLimit: 500,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+  ];
+
+  for (const couponData of coupons) {
+    await prisma.coupon.upsert({
+      where: { code: couponData.code },
+      update: couponData,
+      create: couponData,
+    });
+  }
+  
+  console.log('✅ Cupons de teste criados!');
+  console.log('🎟️ BEMVINDO10 - 10% off');
+  console.log('🎟️ FRETEGRATIS - Frete grátis');
+  console.log('🎟️ DESCONTO50 - R$ 50 off');
+  console.log('🎟️ USS20 - 20% off');
 }
 
 main()

@@ -10,6 +10,11 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { OrdersService, CreateOrderDto, UpdateOrderDto } from './orders.service';
 
+interface NotifyOrderDto {
+  status: string;
+  channels: ('email' | 'whatsapp')[];
+}
+
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
@@ -95,5 +100,63 @@ export class OrdersController {
     @Body() body: { paymentStatus: UpdateOrderDto['paymentStatus'] },
   ) {
     return this.ordersService.updatePaymentStatus(id, body.paymentStatus);
+  }
+
+  @Patch('bulk/status')
+  @ApiOperation({ summary: 'Atualizar status de múltiplos pedidos' })
+  @ApiResponse({ status: 200, description: 'Status atualizado com sucesso' })
+  bulkUpdateStatus(
+    @Body() body: { ids: string[]; status: UpdateOrderDto['status']; sendNotification?: boolean },
+  ) {
+    return this.ordersService.bulkUpdateStatus(body.ids, body.status, body.sendNotification);
+  }
+
+  @Patch('bulk/payment')
+  @ApiOperation({ summary: 'Atualizar status de pagamento de múltiplos pedidos' })
+  @ApiResponse({ status: 200, description: 'Status de pagamento atualizado com sucesso' })
+  bulkUpdatePaymentStatus(
+    @Body() body: { ids: string[]; paymentStatus: UpdateOrderDto['paymentStatus'] },
+  ) {
+    return this.ordersService.bulkUpdatePaymentStatus(body.ids, body.paymentStatus);
+  }
+
+  @Get('export/data')
+  @ApiOperation({ summary: 'Exportar pedidos (JSON ou CSV)' })
+  @ApiQuery({ name: 'format', required: false, type: String, enum: ['json', 'csv'] })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  exportOrders(
+    @Query('format') format: 'json' | 'csv' = 'json',
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.ordersService.exportOrders(
+      format,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+      status,
+    );
+  }
+
+  @Post(':id/notify')
+  @ApiOperation({ summary: 'Enviar notificação do pedido (email e/ou WhatsApp)' })
+  @ApiResponse({ status: 200, description: 'Notificação enviada com sucesso' })
+  async sendNotification(
+    @Param('id') id: string,
+    @Body() body: NotifyOrderDto,
+  ) {
+    return this.ordersService.sendOrderNotification(id, body.status, body.channels);
+  }
+
+  @Post(':id/refund')
+  @ApiOperation({ summary: 'Processar reembolso do pedido' })
+  @ApiResponse({ status: 200, description: 'Reembolso processado com sucesso' })
+  async processRefund(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.ordersService.processRefund(id, body.reason);
   }
 }

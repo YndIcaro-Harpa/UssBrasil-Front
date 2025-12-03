@@ -18,6 +18,9 @@ async function main() {
   // 4. Criar usuário admin
   await createAdminUser();
 
+  // 5. Criar cupons de teste
+  await createCoupons();
+
   console.log('✅ Seed concluído com sucesso!');
 }
 
@@ -30,35 +33,35 @@ async function createBrands() {
       slug: 'apple',
       description: 'Inovação e tecnologia premium',
       color: '#000000',
-      logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/apple/logo.png',
+      logo: '/logos/Apple_logo_black.svg',
     },
     {
       name: 'JBL',
       slug: 'jbl',
       description: 'Audio de qualidade profissional',
       color: '#FF6900',
-      logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/jbl/logo.png',
+      logo: '/logos/JBL Logo.png',
     },
     {
       name: 'Xiaomi',
       slug: 'xiaomi',
       description: 'Tecnologia acessível e inovadora',
       color: '#FF6900',
-      logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/xiaomi/logo.png',
+      logo: '/logos/Xiaomi_logo.svg.png',
     },
     {
       name: 'DJI',
       slug: 'dji',
       description: 'Líderes em tecnologia de drones',
       color: '#131313',
-      logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/dji/logo.png',
+      logo: '/logos/Dji logo.jpg',
     },
     {
       name: 'Geonav',
       slug: 'geonav',
       description: 'Eletrônicos automotivos',
       color: '#1976d2',
-      logo: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/brands/geonav/logo.png',
+      logo: '/logos/goenav.jpg',
     },
   ];
 
@@ -147,7 +150,79 @@ async function createProducts() {
   const categoryMap = new Map(categories.map(c => [c.slug, c.id]));
 
   const products = [
-    // Apple Products
+    // Apple iPhone 17 Products (Featured)
+    {
+      name: 'iPhone 17',
+      slug: 'iphone-17',
+      description: 'O novo iPhone 17 com chip A18 e câmera revolucionária de 48MP.',
+      price: 5499.99,
+      discountPrice: 4999.99,
+      stock: 80,
+      featured: true,
+      categoryId: categoryMap.get('celulares')!,
+      brandId: brandMap.get('apple')!,
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17/back.png',
+      specifications: JSON.stringify({
+        processor: 'A18',
+        storage: '256GB',
+        display: '6.1" Super Retina XDR',
+        camera: '48MP principal + 12MP ultra angular',
+        battery: 'Até 22 horas de reprodução de vídeo',
+        os: 'iOS 18'
+      }),
+      weight: 0.174,
+      dimensions: JSON.stringify({ width: 71.6, height: 147.6, depth: 7.8 }),
+      warranty: 12,
+      tags: 'smartphone,premium,apple,ios,5g,iphone17'
+    },
+    {
+      name: 'iPhone 17 Pro',
+      slug: 'iphone-17-pro',
+      description: 'iPhone 17 Pro com acabamento em titânio, chip A18 Pro e câmera profissional.',
+      price: 7999.99,
+      discountPrice: 7499.99,
+      stock: 60,
+      featured: true,
+      categoryId: categoryMap.get('celulares')!,
+      brandId: brandMap.get('apple')!,
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro/back.png',
+      specifications: JSON.stringify({
+        processor: 'A18 Pro',
+        storage: '256GB',
+        display: '6.3" ProMotion Super Retina XDR',
+        camera: '48MP principal + 48MP ultra angular + 12MP telephoto 5x',
+        battery: 'Até 27 horas de reprodução de vídeo',
+        os: 'iOS 18'
+      }),
+      weight: 0.199,
+      dimensions: JSON.stringify({ width: 73.6, height: 149.6, depth: 8.25 }),
+      warranty: 12,
+      tags: 'smartphone,premium,apple,ios,5g,iphone17,pro'
+    },
+    {
+      name: 'iPhone 17 Pro Max',
+      slug: 'iphone-17-pro-max',
+      description: 'O iPhone definitivo com tela de 6.9", chip A18 Pro e sistema de câmera profissional avançado.',
+      price: 9999.99,
+      discountPrice: 9499.99,
+      stock: 40,
+      featured: true,
+      categoryId: categoryMap.get('celulares')!,
+      brandId: brandMap.get('apple')!,
+      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro-max/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro-max/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro-max/back.png',
+      specifications: JSON.stringify({
+        processor: 'A18 Pro',
+        storage: '512GB',
+        display: '6.9" ProMotion Super Retina XDR',
+        camera: '48MP principal + 48MP ultra angular + 12MP telephoto 5x',
+        battery: 'Até 33 horas de reprodução de vídeo',
+        os: 'iOS 18'
+      }),
+      weight: 0.225,
+      dimensions: JSON.stringify({ width: 77.6, height: 163.0, depth: 8.25 }),
+      warranty: 12,
+      tags: 'smartphone,premium,apple,ios,5g,iphone17,promax'
+    },
     {
       name: 'iPhone 15 Pro Max',
       slug: 'iphone-15-pro-max',
@@ -155,7 +230,7 @@ async function createProducts() {
       price: 7999.99,
       discountPrice: 6999.99,
       stock: 50,
-      featured: true,
+      featured: false,
       categoryId: categoryMap.get('celulares')!,
       brandId: brandMap.get('apple')!,
       images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/back.png',
@@ -179,7 +254,7 @@ async function createProducts() {
       price: 4999.99,
       discountPrice: 4499.99,
       stock: 75,
-      featured: true,
+      featured: false,
       categoryId: categoryMap.get('celulares')!,
       brandId: brandMap.get('apple')!,
       images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-14/main.png',
@@ -370,10 +445,19 @@ async function createProducts() {
   ];
 
   for (const productData of products) {
+    // Converter arrays e objetos para strings
+    const normalizedData = {
+      ...productData,
+      images: Array.isArray(productData.images) ? productData.images.join(',') : productData.images,
+      tags: Array.isArray(productData.tags) ? productData.tags.join(',') : productData.tags,
+      specifications: typeof productData.specifications === 'string' ? productData.specifications : JSON.stringify(productData.specifications),
+      dimensions: typeof productData.dimensions === 'string' ? productData.dimensions : JSON.stringify(productData.dimensions),
+    };
+
     await prisma.product.upsert({
-      where: { slug: productData.slug },
-      update: productData,
-      create: productData,
+      where: { slug: normalizedData.slug },
+      update: normalizedData,
+      create: normalizedData,
     });
   }
 
@@ -399,6 +483,70 @@ async function createAdminUser() {
   });
 
   console.log('✅ Usuário admin criado! Email: admin@ussbrasil.com | Senha: admin123');
+}
+
+async function createCoupons() {
+  console.log('🎟️ Criando cupons de teste...');
+  
+  const now = new Date();
+  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+  const coupons = [
+    {
+      code: 'BEMVINDO10',
+      description: '10% de desconto na primeira compra',
+      type: 'PERCENTAGE',
+      value: 10,
+      minAmount: 100,
+      maxAmount: 50,
+      usageLimit: 1000,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      code: 'FRETEGRATIS',
+      description: 'Frete grátis em compras acima de R$ 200',
+      type: 'FREE_SHIPPING',
+      value: 0,
+      minAmount: 200,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      code: 'DESCONTO50',
+      description: 'R$ 50 de desconto em compras acima de R$ 500',
+      type: 'FIXED_AMOUNT',
+      value: 50,
+      minAmount: 500,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+    {
+      code: 'USS20',
+      description: '20% de desconto exclusivo USS',
+      type: 'PERCENTAGE',
+      value: 20,
+      minAmount: 150,
+      maxAmount: 100,
+      usageLimit: 500,
+      startDate: now,
+      endDate: oneYearFromNow,
+      isActive: true,
+    },
+  ];
+
+  for (const couponData of coupons) {
+    await prisma.coupon.upsert({
+      where: { code: couponData.code },
+      update: couponData,
+      create: couponData,
+    });
+  }
+  
+  console.log('✅ Cupons de teste criados!');
 }
 
 main()

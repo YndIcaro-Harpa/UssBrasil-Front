@@ -46,6 +46,7 @@ model User {
   password      String?
   role          String    @default("USER")
   phone         String?
+  cpf           String?   @unique
   address       String?
   city          String?
   state         String?
@@ -117,11 +118,28 @@ model Product {
   name          String
   description   String
   slug          String        @unique
-  price         Float
-  discountPrice Float?
+  sku           String?       @unique // SKU do produto
+  
+  // Campos de Precificação Completos
+  costPrice         Float?    // Preço de custo/compra do fornecedor
+  suggestedPrice    Float?    // Preço sugerido pelo fornecedor/mercado
+  originalPrice     Float?    // Preço original "de" (riscado)
+  price             Float     // Preço base de venda
+  discountPercent   Float?    // Percentual de desconto (ex: 10 = 10%)
+  discountPrice     Float?    // Preço com desconto calculado
+  stripeDiscount    Float?    // Desconto adicional para pagamento via Stripe (%)
+  stripeFinalPrice  Float?    // Preço final com desconto Stripe
+  finalPrice        Float?    // PREÇO FINAL exibido ao cliente (sem parcelamento)
+  markup            Float?    // Markup em porcentagem
+  profitMargin      Float?    // Margem de lucro em porcentagem
+  profitValue       Float?    // Valor do lucro em reais
+  
   stock         Int
   status        String        @default("ACTIVE")
+  isActive      Boolean       @default(true) // Controle de ativação
   featured      Boolean       @default(false)
+  isFeatured    Boolean       @default(false) // Destaque especial
+  isPreOrder    Boolean       @default(false) // Produto sob encomenda
   images        String        // Comma-separated URLs
   categoryId    String
   brandId       String
@@ -134,6 +152,9 @@ model Product {
   dimensions    String?       // JSON string for dimensions
   warranty      Int?         @default(12) // months
   tags          String?      // Comma-separated tags
+  colors        String?      // JSON array of colors
+  sizes         String?      // JSON array of sizes
+  storage       String?      // JSON array of storage options
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -160,23 +181,27 @@ model CartItem {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String
-  status          String      @default("PENDING")
-  paymentStatus   String      @default("PENDING")
-  paymentMethod   String
-  subtotal        Float
-  shipping        Float
-  discount        Float       @default(0)
-  total           Float
-  shippingAddress String      // JSON string
-  trackingCode    String?
-  notes           String?
-  couponId        String?
-  estimatedDelivery DateTime?
-  deliveredAt     DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                    String      @id @default(cuid())
+  userId                String
+  status                String      @default("PENDING")
+  paymentStatus         String      @default("PENDING")
+  paymentMethod         String
+  saleType              String      @default("online") // online ou presencial
+  subtotal              Float
+  shipping              Float
+  discount              Float       @default(0)
+  total                 Float
+  shippingAddress       String      // JSON string
+  trackingCode          String?
+  notes                 String?
+  couponId              String?
+  stripePaymentIntentId String?     // Stripe Payment Intent ID
+  stripeCustomerId      String?     // Stripe Customer ID
+  installments          Int         @default(1) // Número de parcelas
+  estimatedDelivery     DateTime?
+  deliveredAt           DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   user       User        @relation(fields: [userId], references: [id])
   coupon     Coupon?     @relation(fields: [couponId], references: [id])
@@ -189,6 +214,7 @@ model OrderItem {
   productId String
   quantity  Int
   price     Float
+  subtotal  Float  @default(0) // Subtotal do item (price * quantity)
   createdAt DateTime @default(now())
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)

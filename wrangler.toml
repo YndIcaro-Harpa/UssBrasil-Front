@@ -1,0 +1,11 @@
+# Cloudflare Pages Configuration
+name = "ussbrasil-front"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NEXT_PUBLIC_BACKEND_URL = "https://ussbrasil-back.onrender.com"
+
+# Build configuration for Cloudflare Pages
+# Build command: npx @cloudflare/next-on-pages
+# Build output directory: .vercel/output/static

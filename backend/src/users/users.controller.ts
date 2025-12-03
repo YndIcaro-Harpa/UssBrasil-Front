@@ -34,10 +34,43 @@ export class UsersController {
     return this.usersService.findAll(parseInt(page), parseInt(limit));
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Obter estatísticas de usuários' })
+  getStats() {
+    return this.usersService.getStats();
+  }
+
+  @Get('customers')
+  @ApiOperation({ summary: 'Listar clientes com estatísticas (admin)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  getCustomers(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.usersService.getCustomers(parseInt(page), parseInt(limit), search, status);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obter usuário por ID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Get(':id/orders')
+  @ApiOperation({ summary: 'Obter histórico de pedidos do usuário' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  getUserOrders(
+    @Param('id') id: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.usersService.getUserOrders(id, parseInt(page), parseInt(limit));
   }
 
   @Patch(':id')

@@ -53,6 +53,23 @@ export class ProductsController {
     );
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Obter estatísticas de produtos' })
+  getStats() {
+    return this.productsService.getProductStats();
+  }
+
+  @Get('low-stock')
+  @ApiOperation({ summary: 'Obter produtos com estoque baixo' })
+  @ApiQuery({ name: 'threshold', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  getLowStock(
+    @Query('threshold') threshold: string = '5',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.productsService.getLowStockProducts(parseInt(threshold), parseInt(limit));
+  }
+
   @Get('featured')
   @ApiOperation({ summary: 'Obter produtos em destaque' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -60,16 +77,16 @@ export class ProductsController {
     return this.productsService.getFeaturedProducts(parseInt(limit));
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Obter produto por ID' })
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
-  }
-
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Obter produto por slug' })
   findBySlug(@Param('slug') slug: string) {
     return this.productsService.findBySlug(slug);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obter produto por ID' })
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
   }
 
   @Get(':id/related')
@@ -92,6 +109,34 @@ export class ProductsController {
   @ApiOperation({ summary: 'Deletar produto (soft delete)' })
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
+  }
+
+  @Post('bulk/delete')
+  @ApiOperation({ summary: 'Deletar múltiplos produtos (soft delete)' })
+  @ApiResponse({ status: 200, description: 'Produtos deletados com sucesso' })
+  bulkDelete(@Body() body: { ids: string[] }) {
+    return this.productsService.bulkDelete(body.ids);
+  }
+
+  @Patch('bulk/status')
+  @ApiOperation({ summary: 'Atualizar status de múltiplos produtos' })
+  @ApiResponse({ status: 200, description: 'Status atualizado com sucesso' })
+  bulkUpdateStatus(@Body() body: { ids: string[]; status: string }) {
+    return this.productsService.bulkUpdateStatus(body.ids, body.status);
+  }
+
+  @Patch('bulk/stock')
+  @ApiOperation({ summary: 'Atualizar estoque de múltiplos produtos' })
+  @ApiResponse({ status: 200, description: 'Estoque atualizado com sucesso' })
+  bulkUpdateStock(@Body() body: { updates: { id: string; stock: number }[] }) {
+    return this.productsService.bulkUpdateStock(body.updates);
+  }
+
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplicar produto' })
+  @ApiResponse({ status: 201, description: 'Produto duplicado com sucesso' })
+  duplicate(@Param('id') id: string) {
+    return this.productsService.duplicate(id);
   }
 
   @Post(':id/images')

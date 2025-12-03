@@ -12,6 +12,10 @@ import { OrdersModule } from './orders/orders.module';
 import { CategoriesModule } from './categories/categories.module';
 import { BrandsModule } from './brands/brands.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { StripeModule } from './stripe/stripe.module';
+import { CouponsModule } from './coupons/coupons.module';
+import { EmailModule } from './email/email.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -22,20 +26,21 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
       {
         name: 'short',
         ttl: 1000,
-        limit: 3,
+        limit: 10, // Aumentado de 3 para 10
       },
       {
         name: 'medium',
         ttl: 10000,
-        limit: 20,
+        limit: 50, // Aumentado de 20 para 50
       },
       {
         name: 'long',
         ttl: 60000,
-        limit: 100,
+        limit: 300, // Aumentado de 100 para 300
       },
     ]),
     PrismaModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     ProductsModule,
@@ -43,6 +48,9 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     CategoriesModule,
     BrandsModule,
     CloudinaryModule,
+    StripeModule,
+    CouponsModule,
+    AnalyticsModule,
   ],
   providers: [
     {
