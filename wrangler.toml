@@ -3,7 +3,10 @@ name = "uss-brasil"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Main entrypoint for OpenNext
+# Build output directory for Cloudflare Pages
+pages_build_output_dir = ".open-next"
+
+# Main entrypoint for OpenNext (usado pelo Wrangler Workers)
 main = ".open-next/worker.js"
 
 # Assets directory
