@@ -1,21 +1,12 @@
 // Utils for password hashing compatible with Edge Runtime
-import { createHash } from 'crypto'
+// Uses Web Crypto API instead of Node.js crypto module
 
-// Simple hash function for Edge Runtime compatibility
-export function hashPassword(password: string): string {
-  // Use crypto.createHash which is available in Edge Runtime
-  return createHash('sha256').update(password + process.env.NEXTAUTH_SECRET).digest('hex')
-}
+const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'default-secret-key'
 
-export function verifyPassword(password: string, hashedPassword: string): boolean {
-  const hash = hashPassword(password)
-  return hash === hashedPassword
-}
-
-// Alternative implementation using Web Crypto API (preferred for Edge Runtime)
-export async function hashPasswordWebCrypto(password: string): Promise<string> {
+// Hash password using Web Crypto API (Edge Runtime compatible)
+export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
-  const data = encoder.encode(password + process.env.NEXTAUTH_SECRET)
+  const data = encoder.encode(password + SECRET_KEY)
   
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
@@ -24,7 +15,25 @@ export async function hashPasswordWebCrypto(password: string): Promise<string> {
   return hashHex
 }
 
-export async function verifyPasswordWebCrypto(password: string, hashedPassword: string): Promise<boolean> {
-  const hash = await hashPasswordWebCrypto(password)
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  const hash = await hashPassword(password)
+  return hash === hashedPassword
+}
+
+// Synchronous version using simple hash (for compatibility)
+export function hashPasswordSync(password: string): string {
+  // Simple hash implementation for sync operations
+  let hash = 0
+  const str = password + SECRET_KEY
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return Math.abs(hash).toString(16).padStart(16, '0')
+}
+
+export function verifyPasswordSync(password: string, hashedPassword: string): boolean {
+  const hash = hashPasswordSync(password)
   return hash === hashedPassword
 }

@@ -1,15 +1,13 @@
 /**
  * Two-Factor Authentication (2FA) System
- * Supports TOTP (Time-based One-Time Password) and Email verification
+ * Uses Web Crypto API for Edge Runtime compatibility
  */
-
-import { randomBytes, createHmac } from 'crypto'
 
 // TOTP Configuration
 const TOTP_CONFIG = {
   digits: 6,
   period: 30, // seconds
-  algorithm: 'SHA1',
+  algorithm: 'SHA-1',
   issuer: 'USS Brasil'
 }
 
@@ -29,17 +27,24 @@ const pendingEmailCodes = new Map<string, {
 }>()
 
 /**
+ * Generate random bytes using Web Crypto API
+ */
+function getRandomBytes(length: number): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(length))
+}
+
+/**
  * Generate a random base32 secret for TOTP
  */
 export function generateTOTPSecret(): string {
-  const buffer = randomBytes(20)
+  const buffer = getRandomBytes(20)
   return base32Encode(buffer)
 }
 
 /**
  * Base32 encoding for TOTP secrets
  */
-function base32Encode(buffer: Buffer): string {
+function base32Encode(buffer: Uint8Array): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
   let result = ''
   let bits = 0
@@ -65,7 +70,7 @@ function base32Encode(buffer: Buffer): string {
 /**
  * Base32 decoding
  */
-function base32Decode(encoded: string): Buffer {
+function base32Decode(encoded: string): Uint8Array {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
   const cleanedInput = encoded.replace(/=+$/, '').toUpperCase()
   
@@ -86,51 +91,61 @@ function base32Decode(encoded: string): Buffer {
     }
   }
   
-  return Buffer.from(result)
+  return new Uint8Array(result)
 }
 
 /**
- * Generate TOTP code based on secret and current time
+ * HMAC-SHA1 using Web Crypto API
  */
-export function generateTOTP(secret: string, timestamp?: number): string {
-  const time = timestamp ?? Date.now()
-  const counter = Math.floor(time / 1000 / TOTP_CONFIG.period)
+async function hmacSha1(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  )
   
-  // Convert counter to 8-byte buffer
-  const counterBuffer = Buffer.alloc(8)
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, data)
+  return new Uint8Array(signature)
+}
+
+/**
+ * Generate TOTP code
+ */
+export async function generateTOTP(secret: string, time?: number): Promise<string> {
+  const now = time || Math.floor(Date.now() / 1000)
+  const counter = Math.floor(now / TOTP_CONFIG.period)
+  
+  const secretBytes = base32Decode(secret)
+  const counterBytes = new Uint8Array(8)
+  let temp = counter
   for (let i = 7; i >= 0; i--) {
-    counterBuffer[i] = counter & 0xff
-    counter >>> 8
+    counterBytes[i] = temp & 0xff
+    temp = Math.floor(temp / 256)
   }
   
-  // Generate HMAC
-  const key = base32Decode(secret)
-  const hmac = createHmac('sha1', key)
-  hmac.update(counterBuffer)
-  const hash = hmac.digest()
+  const hmac = await hmacSha1(secretBytes, counterBytes)
+  const offset = hmac[hmac.length - 1] & 0x0f
+  const code = (
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff)
+  ) % Math.pow(10, TOTP_CONFIG.digits)
   
-  // Dynamic truncation
-  const offset = hash[hash.length - 1] & 0x0f
-  const code = ((hash[offset] & 0x7f) << 24) |
-               ((hash[offset + 1] & 0xff) << 16) |
-               ((hash[offset + 2] & 0xff) << 8) |
-               (hash[offset + 3] & 0xff)
-  
-  const otp = code % Math.pow(10, TOTP_CONFIG.digits)
-  return otp.toString().padStart(TOTP_CONFIG.digits, '0')
+  return code.toString().padStart(TOTP_CONFIG.digits, '0')
 }
 
 /**
  * Verify TOTP code with time window tolerance
  */
-export function verifyTOTP(secret: string, code: string, window: number = 1): boolean {
-  const now = Date.now()
+export async function verifyTOTP(secret: string, code: string, window: number = 1): Promise<boolean> {
+  const now = Math.floor(Date.now() / 1000)
   
-  // Check current and adjacent time windows
   for (let i = -window; i <= window; i++) {
-    const time = now + (i * TOTP_CONFIG.period * 1000)
-    const expectedCode = generateTOTP(secret, time)
-    
+    const time = now + (i * TOTP_CONFIG.period)
+    const expectedCode = await generateTOTP(secret, time)
     if (expectedCode === code) {
       return true
     }
@@ -140,127 +155,93 @@ export function verifyTOTP(secret: string, code: string, window: number = 1): bo
 }
 
 /**
- * Generate provisioning URI for authenticator apps
+ * Generate TOTP URI for QR code
  */
-export function generateProvisioningURI(
-  secret: string, 
-  userEmail: string,
-  issuer: string = TOTP_CONFIG.issuer
-): string {
-  const encodedEmail = encodeURIComponent(userEmail)
-  const encodedIssuer = encodeURIComponent(issuer)
-  
-  return `otpauth://totp/${encodedIssuer}:${encodedEmail}?` +
-         `secret=${secret}&issuer=${encodedIssuer}&algorithm=${TOTP_CONFIG.algorithm}&` +
-         `digits=${TOTP_CONFIG.digits}&period=${TOTP_CONFIG.period}`
+export function generateTOTPUri(secret: string, email: string): string {
+  const issuer = encodeURIComponent(TOTP_CONFIG.issuer)
+  const account = encodeURIComponent(email)
+  return `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}&algorithm=${TOTP_CONFIG.algorithm}&digits=${TOTP_CONFIG.digits}&period=${TOTP_CONFIG.period}`
 }
 
 /**
- * Generate backup codes for account recovery
+ * Generate backup codes
  */
-export function generateBackupCodes(count: number = 8): string[] {
+export function generateBackupCodes(count: number = 10): string[] {
   const codes: string[] = []
-  
   for (let i = 0; i < count; i++) {
-    const bytes = randomBytes(4)
-    const code = bytes.toString('hex').toUpperCase()
-    codes.push(`${code.slice(0, 4)}-${code.slice(4, 8)}`)
+    const bytes = getRandomBytes(4)
+    const code = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
+    codes.push(code.slice(0, 4) + '-' + code.slice(4))
   }
-  
   return codes
 }
 
 /**
- * Enable 2FA for a user
+ * Setup 2FA for a user
  */
-export function enableTwoFactor(userId: string): {
-  secret: string
-  provisioningURI: string
-  backupCodes: string[]
-} {
+export function setup2FA(userId: string): { secret: string; backupCodes: string[]; uri: string } {
   const secret = generateTOTPSecret()
   const backupCodes = generateBackupCodes()
   
   userSecrets.set(userId, {
     secret,
-    enabled: false, // Not enabled until verified
-    backupCodes
+    enabled: false,
+    backupCodes,
   })
   
   return {
     secret,
-    provisioningURI: generateProvisioningURI(secret, userId),
-    backupCodes
+    backupCodes,
+    uri: generateTOTPUri(secret, userId)
   }
 }
 
 /**
- * Confirm and activate 2FA after first successful verification
+ * Verify and enable 2FA
  */
-export function confirmTwoFactor(userId: string, code: string): boolean {
-  const userData = userSecrets.get(userId)
+export async function verify2FA(userId: string, code: string): Promise<boolean> {
+  const data = userSecrets.get(userId)
+  if (!data) return false
   
-  if (!userData) {
-    return false
+  const isValid = await verifyTOTP(data.secret, code)
+  if (isValid) {
+    data.enabled = true
+    data.verifiedAt = new Date().toISOString()
+    userSecrets.set(userId, data)
   }
   
-  if (verifyTOTP(userData.secret, code)) {
-    userData.enabled = true
-    userData.verifiedAt = new Date().toISOString()
-    userSecrets.set(userId, userData)
-    return true
-  }
-  
-  return false
+  return isValid
 }
 
 /**
- * Verify 2FA code (TOTP or backup code)
+ * Check if 2FA is enabled for user
  */
-export function verifyTwoFactor(userId: string, code: string): {
-  valid: boolean
-  method?: 'totp' | 'backup'
-} {
-  const userData = userSecrets.get(userId)
-  
-  if (!userData || !userData.enabled) {
-    return { valid: false }
-  }
+export function is2FAEnabled(userId: string): boolean {
+  const data = userSecrets.get(userId)
+  return data?.enabled || false
+}
+
+/**
+ * Verify 2FA code or backup code
+ */
+export async function verify2FACode(userId: string, code: string): Promise<boolean> {
+  const data = userSecrets.get(userId)
+  if (!data || !data.enabled) return false
   
   // Try TOTP first
-  if (verifyTOTP(userData.secret, code)) {
-    return { valid: true, method: 'totp' }
+  if (await verifyTOTP(data.secret, code)) {
+    return true
   }
   
   // Try backup codes
-  const normalizedCode = code.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  const formattedCode = `${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4, 8)}`
+  const normalizedCode = code.replace('-', '').toUpperCase()
+  const backupIndex = data.backupCodes.findIndex(bc => 
+    bc.replace('-', '').toUpperCase() === normalizedCode
+  )
   
-  const backupIndex = userData.backupCodes.indexOf(formattedCode)
   if (backupIndex !== -1) {
-    // Remove used backup code
-    userData.backupCodes.splice(backupIndex, 1)
-    userSecrets.set(userId, userData)
-    return { valid: true, method: 'backup' }
-  }
-  
-  return { valid: false }
-}
-
-/**
- * Disable 2FA for a user
- */
-export function disableTwoFactor(userId: string, code: string): boolean {
-  const userData = userSecrets.get(userId)
-  
-  if (!userData) {
-    return false
-  }
-  
-  // Require valid code to disable
-  const verification = verifyTwoFactor(userId, code)
-  if (verification.valid) {
-    userSecrets.delete(userId)
+    data.backupCodes.splice(backupIndex, 1)
+    userSecrets.set(userId, data)
     return true
   }
   
@@ -268,50 +249,18 @@ export function disableTwoFactor(userId: string, code: string): boolean {
 }
 
 /**
- * Check if user has 2FA enabled
+ * Disable 2FA for user
  */
-export function hasTwoFactorEnabled(userId: string): boolean {
-  const userData = userSecrets.get(userId)
-  return userData?.enabled ?? false
+export function disable2FA(userId: string): boolean {
+  return userSecrets.delete(userId)
 }
 
 /**
- * Get remaining backup codes count
- */
-export function getBackupCodesCount(userId: string): number {
-  const userData = userSecrets.get(userId)
-  return userData?.backupCodes.length ?? 0
-}
-
-/**
- * Regenerate backup codes
- */
-export function regenerateBackupCodes(userId: string, code: string): string[] | null {
-  const userData = userSecrets.get(userId)
-  
-  if (!userData || !userData.enabled) {
-    return null
-  }
-  
-  // Verify with current code first
-  if (!verifyTOTP(userData.secret, code)) {
-    return null
-  }
-  
-  const newCodes = generateBackupCodes()
-  userData.backupCodes = newCodes
-  userSecrets.set(userId, userData)
-  
-  return newCodes
-}
-
-// ============ Email-based 2FA (simpler alternative) ============
-
-/**
- * Generate and store email verification code
+ * Generate email verification code
  */
 export function generateEmailCode(userId: string): string {
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  const bytes = getRandomBytes(3)
+  const code = Array.from(bytes).map(b => (b % 10).toString()).join('')
   
   pendingEmailCodes.set(userId, {
     code,
@@ -325,76 +274,38 @@ export function generateEmailCode(userId: string): string {
 /**
  * Verify email code
  */
-export function verifyEmailCode(userId: string, code: string): {
-  valid: boolean
-  expired?: boolean
-  maxAttempts?: boolean
-} {
+export function verifyEmailCode(userId: string, code: string): boolean {
   const pending = pendingEmailCodes.get(userId)
-  
-  if (!pending) {
-    return { valid: false }
-  }
+  if (!pending) return false
   
   if (Date.now() > pending.expiresAt) {
     pendingEmailCodes.delete(userId)
-    return { valid: false, expired: true }
+    return false
   }
   
   pending.attempts++
-  
-  if (pending.attempts > 5) {
+  if (pending.attempts > 3) {
     pendingEmailCodes.delete(userId)
-    return { valid: false, maxAttempts: true }
+    return false
   }
   
   if (pending.code === code) {
     pendingEmailCodes.delete(userId)
-    return { valid: true }
+    return true
   }
   
   pendingEmailCodes.set(userId, pending)
-  return { valid: false }
+  return false
 }
 
-/**
- * Clean up expired email codes (call periodically)
- */
-export function cleanupExpiredCodes(): number {
-  const now = Date.now()
-  let cleaned = 0
-  
-  for (const [userId, data] of pendingEmailCodes) {
-    if (now > data.expiresAt) {
-      pendingEmailCodes.delete(userId)
-      cleaned++
-    }
-  }
-  
-  return cleaned
+// Export types
+export interface TwoFactorSetupResult {
+  secret: string
+  backupCodes: string[]
+  uri: string
 }
 
-// Cleanup expired codes every 5 minutes
-if (typeof setInterval !== 'undefined') {
-  setInterval(cleanupExpiredCodes, 5 * 60 * 1000)
-}
-
-export default {
-  // TOTP
-  generateSecret: generateTOTPSecret,
-  generateTOTP,
-  verifyTOTP,
-  generateProvisioningURI,
-  generateBackupCodes,
-  // User management
-  enable: enableTwoFactor,
-  confirm: confirmTwoFactor,
-  verify: verifyTwoFactor,
-  disable: disableTwoFactor,
-  isEnabled: hasTwoFactorEnabled,
-  getBackupCodesCount,
-  regenerateBackupCodes,
-  // Email-based
-  generateEmailCode,
-  verifyEmailCode
+export interface TwoFactorVerifyResult {
+  success: boolean
+  message: string
 }
