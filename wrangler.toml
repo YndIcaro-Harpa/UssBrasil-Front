@@ -1,16 +1,12 @@
-# Cloudflare Pages Configuration
+# Cloudflare Pages Configuration for Next.js
 name = "uss-brasil"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Assets directory for static files
-[assets]
-directory = ".next/static"
+# Para Cloudflare Pages com Next.js:
+# Build command: npx @cloudflare/next-on-pages
+# Build output directory: .vercel/output/static
+pages_build_output_dir = ".vercel/output/static"
 
 [vars]
 NEXT_PUBLIC_BACKEND_URL = "https://ussbrasil-back.onrender.com"
-
-# Para Cloudflare Pages:
-# Build command: npm run build
-# Build output directory: .next
-# Root directory: /
