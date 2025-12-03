@@ -37,7 +37,30 @@ const nextConfig: NextConfig = {
   distDir: '.next',
   generateBuildId: async () => {
     return `build-${Date.now()}`
-  }
+  },
+  // Adicionar headers para cache
+  async headers() {
+    return [
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*.css',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
