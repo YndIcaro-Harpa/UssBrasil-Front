@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
           )
         }
         
-        const result = twoFactorAuth.verify(user.userId, code)
+        const result = await twoFactorAuth.verify(user.userId, code)
         
         if (!result.valid) {
           return NextResponse.json(
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
           )
         }
         
-        const newCodes = twoFactorAuth.regenerateBackupCodes(user.userId, code)
+        const newCodes = await twoFactorAuth.regenerateBackupCodes(user.userId, code)
         
         if (!newCodes) {
           return NextResponse.json(
@@ -182,25 +182,11 @@ export async function POST(request: NextRequest) {
           )
         }
         
-        const result = twoFactorAuth.verifyEmailCode(user.userId, code)
+        const isValid = twoFactorAuth.verifyEmailCode(user.userId, code)
         
-        if (result.expired) {
+        if (!isValid) {
           return NextResponse.json(
-            { error: 'Código expirado. Solicite um novo.' },
-            { status: 400 }
-          )
-        }
-        
-        if (result.maxAttempts) {
-          return NextResponse.json(
-            { error: 'Muitas tentativas. Solicite um novo código.' },
-            { status: 400 }
-          )
-        }
-        
-        if (!result.valid) {
-          return NextResponse.json(
-            { error: 'Código incorreto' },
+            { error: 'Código incorreto, expirado ou muitas tentativas' },
             { status: 400 }
           )
         }
@@ -245,7 +231,16 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
-    const disabled = twoFactorAuth.disable(user.userId, code)
+    // Verificar código antes de desativar
+    const verifyResult = await twoFactorAuth.verify(user.userId, code)
+    if (!verifyResult.valid) {
+      return NextResponse.json(
+        { error: 'Código inválido' },
+        { status: 400 }
+      )
+    }
+    
+    const disabled = twoFactorAuth.disable(user.userId)
     
     if (!disabled) {
       return NextResponse.json(
