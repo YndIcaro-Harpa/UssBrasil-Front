@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers } from 'lucide-react';
+import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers, Copy, Save, DollarSign, Barcode, Archive } from 'lucide-react';
 import { Product } from '@/hooks/use-admin-crud';
 import { toast } from 'sonner';
 
@@ -30,6 +30,24 @@ interface Supplier {
   email?: string;
   phone?: string;
   address?: string;
+}
+
+// Interface para Variação de Produto
+interface ProductVariation {
+  id: string;
+  name: string;
+  sku: string;
+  ncm: string;
+  color: { name: string; code: string; image: string };
+  storage: string;
+  size: string;
+  price: number;
+  originalPrice: number;
+  stock: number;
+  supplierId: string;
+  supplierName: string;
+  image: string;
+  status: 'active' | 'inactive' | 'out_of_stock';
 }
 
 interface ProductModalProps {
@@ -105,6 +123,24 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
   
   // Estado para modal de variações
   const [showVariationsModal, setShowVariationsModal] = useState(false);
+  const [productVariations, setProductVariations] = useState<ProductVariation[]>([]);
+  const [currentVariation, setCurrentVariation] = useState<ProductVariation>({
+    id: '',
+    name: '',
+    sku: '',
+    ncm: '',
+    color: { name: '', code: '#000000', image: '' },
+    storage: '',
+    size: '',
+    price: 0,
+    originalPrice: 0,
+    stock: 0,
+    supplierId: '',
+    supplierName: '',
+    image: '',
+    status: 'active'
+  });
+  const [editingVariationIndex, setEditingVariationIndex] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -237,6 +273,94 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
   const applyProposedPrice = () => {
     setFormData(prev => ({ ...prev, price: Math.round(priceCalculations.proposed * 100) / 100 }));
     toast.success('Preço sugerido aplicado!');
+  };
+
+  // Copiar dados do produto pai para variação
+  const copyFromParentProduct = () => {
+    const selectedSupplier = suppliers.find(s => s.id === formData.supplierId);
+    setCurrentVariation({
+      ...currentVariation,
+      name: formData.name,
+      sku: formData.sku ? `${formData.sku}-VAR-${productVariations.length + 1}` : '',
+      ncm: (formData.specifications as any)?.ncm || '',
+      price: formData.price,
+      originalPrice: formData.originalPrice,
+      stock: formData.stock,
+      supplierId: formData.supplierId,
+      supplierName: selectedSupplier?.name || '',
+      image: formData.images.main,
+      status: formData.status,
+      color: formData.colors[0] || { name: '', code: '#000000', image: '' },
+      storage: formData.storage[0] || ''
+    });
+    toast.success('Dados do produto copiados para a variação!');
+  };
+
+  // Salvar variação
+  const saveVariation = () => {
+    if (!currentVariation.name.trim()) {
+      toast.error('Nome da variação é obrigatório');
+      return;
+    }
+    if (!currentVariation.sku.trim()) {
+      toast.error('SKU da variação é obrigatório');
+      return;
+    }
+
+    if (editingVariationIndex !== null) {
+      // Editando variação existente
+      const updated = [...productVariations];
+      updated[editingVariationIndex] = { ...currentVariation, id: productVariations[editingVariationIndex].id };
+      setProductVariations(updated);
+      toast.success('Variação atualizada!');
+    } else {
+      // Nova variação
+      const newVariation: ProductVariation = {
+        ...currentVariation,
+        id: `var-${Date.now()}`
+      };
+      setProductVariations([...productVariations, newVariation]);
+      toast.success('Variação adicionada!');
+    }
+
+    // Reset form
+    resetVariationForm();
+  };
+
+  // Reset variation form
+  const resetVariationForm = () => {
+    setCurrentVariation({
+      id: '',
+      name: '',
+      sku: '',
+      ncm: '',
+      color: { name: '', code: '#000000', image: '' },
+      storage: '',
+      size: '',
+      price: 0,
+      originalPrice: 0,
+      stock: 0,
+      supplierId: '',
+      supplierName: '',
+      image: '',
+      status: 'active'
+    });
+    setEditingVariationIndex(null);
+  };
+
+  // Editar variação
+  const editVariation = (index: number) => {
+    setCurrentVariation(productVariations[index]);
+    setEditingVariationIndex(index);
+  };
+
+  // Excluir variação
+  const deleteVariation = (index: number) => {
+    if (confirm('Tem certeza que deseja excluir esta variação?')) {
+      const updated = productVariations.filter((_, i) => i !== index);
+      setProductVariations(updated);
+      toast.success('Variação excluída!');
+    }
   };
 
   // Calculate prices whenever base price changes
@@ -530,6 +654,11 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                 <Label className="text-black text-sm flex items-center gap-2">
                   <Layers className="h-4 w-4 text-gray-600" />
                   Variações do Produto
+                  {productVariations.length > 0 && (
+                    <Badge className="bg-indigo-100 text-indigo-700 text-xs ml-1">
+                      {productVariations.length} cadastrada(s)
+                    </Badge>
+                  )}
                 </Label>
                 <Button
                   type="button"
@@ -538,7 +667,10 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                   className="h-9 w-full justify-start text-black bg-white hover:bg-gray-50"
                 >
                   <Palette className="h-4 w-4 mr-2 text-gray-600" />
-                  {formData.colors.filter(c => c.name).length} cores, {formData.storage.filter(s => s).length} armazenamentos
+                  {productVariations.length > 0 
+                    ? `${productVariations.length} variação(ões) - Clique para gerenciar`
+                    : 'Clique para adicionar variações'
+                  }
                   <Settings className="h-4 w-4 ml-auto text-gray-400" />
                 </Button>
               </div>
@@ -1161,7 +1293,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
           )}
         </AnimatePresence>
 
-        {/* Modal de Variações */}
+        {/* Modal de Variações - Cadastro Completo */}
         <AnimatePresence>
           {showVariationsModal && (
             <motion.div
@@ -1177,12 +1309,12 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+                className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
               >
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                   <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <Layers className="h-5 w-5 text-indigo-600" />
-                    Variações do Produto
+                    Variações do Produto: {formData.name || 'Novo Produto'}
                   </h3>
                   <button
                     onClick={() => setShowVariationsModal(false)}
@@ -1192,141 +1324,413 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                  {/* Cores */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-black font-semibold flex items-center gap-2">
-                        <Palette className="h-4 w-4 text-pink-500" />
-                        Cores
-                      </Label>
-                      {mode !== 'view' && (
-                        <Button type="button" variant="outline" size="sm" onClick={addColor} className="h-7 px-2 text-xs">
-                          <Plus className="h-3 w-3 mr-1" />
-                          Adicionar Cor
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Formulário de Nova Variação */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-gray-900">
+                          {editingVariationIndex !== null ? 'Editar Variação' : 'Nova Variação'}
+                        </h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={copyFromParentProduct}
+                          className="h-8 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copiar do Produto
                         </Button>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {formData.colors.map((color, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      </div>
+
+                      {/* Nome e SKU */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">Nome da Variação *</Label>
+                          <Input
+                            value={currentVariation.name}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, name: e.target.value })}
+                            placeholder="Ex: iPhone 15 Pro Max - 256GB Preto"
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">SKU *</Label>
+                          <Input
+                            value={currentVariation.sku}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, sku: e.target.value })}
+                            placeholder="IPHONE15PM-256-BLK"
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                      </div>
+
+                      {/* NCM e Tamanho */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">NCM</Label>
+                          <Input
+                            value={currentVariation.ncm}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, ncm: e.target.value })}
+                            placeholder="8517.12.31"
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">Tamanho</Label>
+                          <Input
+                            value={currentVariation.size}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, size: e.target.value })}
+                            placeholder="6.7 polegadas"
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Cor */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-gray-600 flex items-center gap-1">
+                          <Palette className="h-3 w-3" />
+                          Cor
+                        </Label>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                           <input
                             type="color"
-                            value={color.code || '#000000'}
-                            onChange={(e) => {
-                              const newColors = [...formData.colors];
-                              newColors[index] = { ...newColors[index], code: e.target.value };
-                              setFormData(prev => ({ ...prev, colors: newColors }));
-                            }}
-                            disabled={mode === 'view'}
+                            value={currentVariation.color.code}
+                            onChange={(e) => setCurrentVariation({
+                              ...currentVariation,
+                              color: { ...currentVariation.color, code: e.target.value }
+                            })}
                             className="w-10 h-10 border-2 border-gray-200 rounded-lg p-0 cursor-pointer"
                           />
                           <div className="flex-1 grid grid-cols-2 gap-2">
                             <Input
-                              value={color.name}
-                              onChange={(e) => {
-                                const newColors = [...formData.colors];
-                                newColors[index] = { ...newColors[index], name: e.target.value };
-                                setFormData(prev => ({ ...prev, colors: newColors }));
-                              }}
-                              disabled={mode === 'view'}
-                              placeholder="Nome da cor (ex: Preto)"
-                              className="h-9 text-black"
+                              value={currentVariation.color.name}
+                              onChange={(e) => setCurrentVariation({
+                                ...currentVariation,
+                                color: { ...currentVariation.color, name: e.target.value }
+                              })}
+                              placeholder="Nome da cor"
+                              className="h-9 text-sm text-black"
                             />
                             <Input
-                              value={color.image}
-                              onChange={(e) => {
-                                const newColors = [...formData.colors];
-                                newColors[index] = { ...newColors[index], image: e.target.value };
-                                setFormData(prev => ({ ...prev, colors: newColors }));
-                              }}
-                              disabled={mode === 'view'}
-                              placeholder="URL da imagem (opcional)"
-                              className="h-9 text-black"
+                              value={currentVariation.color.image}
+                              onChange={(e) => setCurrentVariation({
+                                ...currentVariation,
+                                color: { ...currentVariation.color, image: e.target.value }
+                              })}
+                              placeholder="URL imagem (opcional)"
+                              className="h-9 text-sm text-black"
                             />
                           </div>
-                          {mode !== 'view' && formData.colors.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeColor(index)}
-                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Armazenamento */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-black font-semibold flex items-center gap-2">
-                        <HardDrive className="h-4 w-4 text-purple-500" />
-                        Armazenamento
-                      </Label>
-                      {mode !== 'view' && (
-                        <Button type="button" variant="outline" size="sm" onClick={addStorage} className="h-7 px-2 text-xs">
-                          <Plus className="h-3 w-3 mr-1" />
-                          Adicionar
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {formData.storage.map((storage, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                      {/* Armazenamento */}
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-600 flex items-center gap-1">
+                          <HardDrive className="h-3 w-3" />
+                          Armazenamento
+                        </Label>
+                        <Input
+                          value={currentVariation.storage}
+                          onChange={(e) => setCurrentVariation({ ...currentVariation, storage: e.target.value })}
+                          placeholder="256GB"
+                          className="h-9 text-sm text-black"
+                        />
+                      </div>
+
+                      {/* Preços */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600 flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            Preço de Custo (R$)
+                          </Label>
                           <Input
-                            value={storage}
-                            onChange={(e) => {
-                              const newStorage = [...formData.storage];
-                              newStorage[index] = e.target.value;
-                              setFormData(prev => ({ ...prev, storage: newStorage }));
-                            }}
-                            disabled={mode === 'view'}
-                            className="w-24 h-8 text-sm text-black"
-                            placeholder="128GB"
+                            type="number"
+                            step="0.01"
+                            value={currentVariation.originalPrice}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, originalPrice: Number(e.target.value) })}
+                            className="h-9 text-sm text-black"
                           />
-                          {mode !== 'view' && formData.storage.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeStorage(index)}
-                              className="p-1 text-red-500 hover:text-red-700"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600 flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            Preço de Venda (R$)
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={currentVariation.price}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, price: Number(e.target.value) })}
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                      </div>
 
-                  {/* Resumo */}
-                  <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <h4 className="font-semibold text-indigo-900 mb-2">Resumo das Variações</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-indigo-700">Cores cadastradas:</span>
-                        <span className="font-bold text-indigo-900 ml-2">{formData.colors.filter(c => c.name).length}</span>
+                      {/* Estoque e Fornecedor */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600 flex items-center gap-1">
+                            <Archive className="h-3 w-3" />
+                            Estoque
+                          </Label>
+                          <Input
+                            type="number"
+                            value={currentVariation.stock}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, stock: Number(e.target.value) })}
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600 flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            Fornecedor
+                          </Label>
+                          <Select
+                            value={currentVariation.supplierId}
+                            onValueChange={(value) => {
+                              const supplier = suppliers.find(s => s.id === value);
+                              setCurrentVariation({
+                                ...currentVariation,
+                                supplierId: value,
+                                supplierName: supplier?.name || ''
+                              });
+                            }}
+                          >
+                            <SelectTrigger className="h-9 text-sm text-black">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {suppliers.map(supplier => (
+                                <SelectItem key={supplier.id} value={supplier.id}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-indigo-700">Opções de armazenamento:</span>
-                        <span className="font-bold text-indigo-900 ml-2">{formData.storage.filter(s => s).length}</span>
+
+                      {/* Imagem e Status */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">Imagem URL</Label>
+                          <Input
+                            value={currentVariation.image}
+                            onChange={(e) => setCurrentVariation({ ...currentVariation, image: e.target.value })}
+                            placeholder="https://..."
+                            className="h-9 text-sm text-black"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">Status</Label>
+                          <Select
+                            value={currentVariation.status}
+                            onValueChange={(value: 'active' | 'inactive' | 'out_of_stock') =>
+                              setCurrentVariation({ ...currentVariation, status: value })
+                            }
+                          >
+                            <SelectTrigger className="h-9 text-sm text-black">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Ativo</SelectItem>
+                              <SelectItem value="inactive">Inativo</SelectItem>
+                              <SelectItem value="out_of_stock">Sem Estoque</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
+
+                      {/* Botões de Ação */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          type="button"
+                          onClick={saveVariation}
+                          className="flex-1 h-9 bg-[#001941] hover:bg-blue-900 text-white"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          {editingVariationIndex !== null ? 'Atualizar' : 'Adicionar'} Variação
+                        </Button>
+                        {editingVariationIndex !== null && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={resetVariationForm}
+                            className="h-9"
+                          >
+                            Cancelar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Lista de Variações Cadastradas */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-gray-900">
+                          Variações Cadastradas ({productVariations.length})
+                        </h4>
+                      </div>
+
+                      {productVariations.length === 0 ? (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                          <Layers className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">Nenhuma variação cadastrada</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Use "Copiar do Produto" para começar rapidamente
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                          {productVariations.map((variation, index) => (
+                            <div
+                              key={variation.id}
+                              className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                            >
+                              <div className="flex items-start gap-3">
+                                {/* Preview da Cor/Imagem */}
+                                <div className="flex-shrink-0">
+                                  {variation.image ? (
+                                    <img
+                                      src={variation.image}
+                                      alt={variation.name}
+                                      className="w-12 h-12 object-cover rounded-lg"
+                                    />
+                                  ) : (
+                                    <div
+                                      className="w-12 h-12 rounded-lg border-2 border-gray-200"
+                                      style={{ backgroundColor: variation.color.code }}
+                                    />
+                                  )}
+                                </div>
+
+                                {/* Informações */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h5 className="font-medium text-gray-900 text-sm truncate">
+                                      {variation.name}
+                                    </h5>
+                                    <Badge
+                                      className={`text-xs ${
+                                        variation.status === 'active'
+                                          ? 'bg-green-100 text-green-700'
+                                          : variation.status === 'out_of_stock'
+                                          ? 'bg-red-100 text-red-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}
+                                    >
+                                      {variation.status === 'active' ? 'Ativo' : variation.status === 'out_of_stock' ? 'Sem Estoque' : 'Inativo'}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
+                                    <span>SKU: {variation.sku}</span>
+                                    <span>Estoque: {variation.stock}</span>
+                                    <span className="flex items-center gap-1">
+                                      <span
+                                        className="w-3 h-3 rounded-full inline-block border"
+                                        style={{ backgroundColor: variation.color.code }}
+                                      />
+                                      {variation.color.name || 'Sem cor'}
+                                    </span>
+                                    <span>Arm: {variation.storage || '-'}</span>
+                                  </div>
+
+                                  <div className="flex items-center gap-4 mt-1">
+                                    <span className="text-sm font-bold text-green-600">
+                                      R$ {variation.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    {variation.supplierName && (
+                                      <span className="text-xs text-gray-400">
+                                        {variation.supplierName}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Ações */}
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => editVariation(index)}
+                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                    title="Editar"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteVariation(index)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Resumo */}
+                      {productVariations.length > 0 && (
+                        <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200 mt-4">
+                          <h5 className="font-semibold text-indigo-900 text-sm mb-2">Resumo</h5>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-indigo-700">Total variações:</span>
+                              <span className="font-bold text-indigo-900 ml-1">{productVariations.length}</span>
+                            </div>
+                            <div>
+                              <span className="text-indigo-700">Estoque total:</span>
+                              <span className="font-bold text-indigo-900 ml-1">
+                                {productVariations.reduce((sum, v) => sum + v.stock, 0)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-indigo-700">Preço min:</span>
+                              <span className="font-bold text-indigo-900 ml-1">
+                                R$ {Math.min(...productVariations.map(v => v.price)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-indigo-700">Preço max:</span>
+                              <span className="font-bold text-indigo-900 ml-1">
+                                R$ {Math.max(...productVariations.map(v => v.price)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-200 flex justify-end">
+                <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      resetVariationForm();
+                      setShowVariationsModal(false);
+                    }}
+                    className="h-9"
+                  >
+                    Fechar
+                  </Button>
                   <Button
                     type="button"
                     onClick={() => setShowVariationsModal(false)}
                     className="h-9 bg-[#001941] hover:bg-blue-900"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Concluir
+                    Concluir ({productVariations.length} variações)
                   </Button>
                 </div>
               </motion.div>
