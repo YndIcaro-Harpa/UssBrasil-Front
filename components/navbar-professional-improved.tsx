@@ -30,6 +30,7 @@ import {
   Users,
   FileText
 } from 'lucide-react'
+import Image from 'next/image'
 
 // Tipos para tipagem
 interface Category {
@@ -45,6 +46,7 @@ interface Brand {
   name: string
   slug: string
   count: number
+  logo?: string
 }
 
 interface FilterParams {
@@ -106,12 +108,11 @@ const ProfessionalNavbar = () => {
 
   // Marcas principais
   const brands: Brand[] = [
-    { id: '1', name: 'JBL', slug: 'jbl', count: 34 },
-    { id: '2', name: 'Xiaomi', slug: 'xiaomi', count: 67 },
-    { id: '3', name: 'Samsung', slug: 'samsung', count: 89 },
-    { id: '4', name: 'Apple', slug: 'apple', count: 45 },
-    { id: '5', name: 'DJI', slug: 'dji', count: 23 },
-    { id: '6', name: 'Sony', slug: 'sony', count: 41 }
+    { id: '1', name: 'Apple', slug: 'apple', count: 48, logo: '/icons/Apple.png' },
+    { id: '2', name: 'JBL', slug: 'jbl', count: 29, logo: '/icons/jbl-logo.png' },
+    { id: '3', name: 'Xiaomi', slug: 'xiaomi', count: 13, logo: '/icons/xiaomi-logo.png' },
+    { id: '4', name: 'DJI', slug: 'dji', count: 24, logo: '/icons/dji-logo.png' },
+    { id: '5', name: 'Geonav', slug: 'geonav', count: 51, logo: '/icons/geonav-logo.png' }
   ]
 
   // Links de suporte/atendimento
@@ -395,8 +396,20 @@ const ProfessionalNavbar = () => {
                               }}
                               className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left group"
                             >
-                              <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-bold text-sm group-hover:from-uss-primary/10 group-hover:to-uss-secondary/10 group-hover:text-uss-primary transition-colors">
-                                {brand.name.slice(0, 2).toUpperCase()}
+                              <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-bold text-sm group-hover:from-uss-primary/10 group-hover:to-uss-secondary/10 group-hover:text-uss-primary transition-colors overflow-hidden">
+                                {brand.logo ? (
+                                  <div className="relative w-8 h-8">
+                                    <Image
+                                      src={brand.logo}
+                                      alt={brand.name}
+                                      fill
+                                      className="object-contain filter grayscale group-hover:grayscale-0 transition-all"
+                                      sizes="32px"
+                                    />
+                                  </div>
+                                ) : (
+                                  brand.name.slice(0, 2).toUpperCase()
+                                )}
                               </div>
                               <div className="flex-1">
                                 <h4 className="font-medium text-gray-900 text-sm">{brand.name}</h4>
@@ -579,10 +592,23 @@ const ProfessionalNavbar = () => {
                             handleBrandClick(brand.slug)
                             setIsMenuOpen(false)
                           }}
-                          className="p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                          className="p-3 rounded-lg hover:bg-gray-50 transition-colors text-left flex items-center space-x-3"
                         >
-                          <div className="font-medium text-gray-900">{brand.name}</div>
-                          <div className="text-sm text-gray-500">{brand.count} produtos</div>
+                          {brand.logo && (
+                            <div className="w-8 h-8 relative flex-shrink-0">
+                              <Image
+                                src={brand.logo}
+                                alt={brand.name}
+                                fill
+                                className="object-contain"
+                                sizes="32px"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{brand.name}</div>
+                            <div className="text-sm text-gray-500">{brand.count} produtos</div>
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -634,3 +660,4 @@ const ProfessionalNavbar = () => {
 }
 
 export default ProfessionalNavbar
+

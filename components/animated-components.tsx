@@ -180,10 +180,11 @@ export const CounterAnimation = ({ value }: { value: number }) => (
 export const ProgressBar = ({ progress }: { progress: number }) => (
   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
     <motion.div
-      className="h-full bg-blue-600 rounded-full"
+      className="h-full bg-blue-400 rounded-full"
       initial={{ width: 0 }}
       animate={{ width: `${progress}%` }}
       transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
     />
   </div>
 )
+

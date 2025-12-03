@@ -12,7 +12,6 @@ import {
   Youtube, 
   Twitter,
   Shield,
-  Truck,
   CreditCard,
   Award,
   Heart,
@@ -45,29 +44,29 @@ const ModernFooter = () => {
         { name: 'Sobre Nós', href: '/sobre' },
         { name: 'Imprensa', href: '/imprensa' },
         { name: 'Trabalhe Conosco', href: '/trabalhe-conosco' },
-        { name: 'Termos de Uso', href: '/termos' },
-        { name: 'Privacidade', href: '/privacidade' },
+        { name: 'Termos de Uso', href: '/termos-de-uso' },
+        { name: 'Privacidade', href: '/politica-de-privacidade' },
       ]
     },
     {
       title: 'Produtos',
       links: [
-        { name: 'Apple', href: '/products?brand=apple' },
-        { name: 'JBL', href: '/products?brand=jbl' },
-        { name: 'DJI', href: '/products?brand=dji' },
-        { name: 'Xiaomi', href: '/products?brand=xiaomi' },
-        { name: 'Geonav', href: '/products?brand=geonav' },
+        { name: 'Apple', href: '/produtos?brand=apple' },
+        { name: 'JBL', href: '/produtos?brand=jbl' },
+        { name: 'DJI', href: '/produtos?brand=dji' },
+        { name: 'Xiaomi', href: '/produtos?brand=xiaomi' },
+        { name: 'Geonav', href: '/produtos?brand=geonav' },
       ]
     },
     {
       title: 'Atendimento',
       links: [
         { name: 'Central de Ajuda', href: '/central-ajuda' },
-        { name: 'FAQ', href: '/faq' },
+        { name: 'Perguntas Frequentes', href: '/faq' },
         { name: 'Como Comprar', href: '/como-comprar' },
-        { name: 'Política de Troca', href: '/politica-troca' },
+        { name: 'Trocas e Devoluções', href: '/trocas-devolucoes' },
         { name: 'Garantia', href: '/garantia' },
-        { name: 'Rastreamento', href: '/rastreamento' },
+        { name: 'Rastrear Pedido', href: '/rastreamento' },
       ]
     },
     {
@@ -75,31 +74,26 @@ const ModernFooter = () => {
       links: [
         { name: 'Entrar', href: '/auth/login' },
         { name: 'Criar Conta', href: '/auth/registrar' },
-        { name: 'Recuperar Acesso', href: '/auth/recuperar' },
-        { name: 'Favoritos', href: '/favoritos' },
-        { name: 'Área VIP', href: '/vip' },
+        { name: 'Recuperar Senha', href: '/auth/recuperar' },
+        { name: 'Meus Favoritos', href: '/favoritos' },
+        { name: 'Meus Pedidos', href: '/meus-pedidos' },
       ]
     }
   ]
 
   const benefits = [
     {
-      icon: <Truck className="h-8 w-8" />,
-      title: 'Frete Grátis',
-      description: 'Para todo o Brasil'
-    },
-    {
-      icon: <Shield className="h-8 w-8" />,
+      icon: <Shield className="h-8 w-8 text-white" />,
       title: 'Compra Segura',
       description: 'Proteção SSL'
     },
     {
-      icon: <CreditCard className="h-8 w-8" />,
+      icon: <CreditCard className="h-8 w-8 text-white" />,
       title: 'Parcelamento',
       description: 'Até 12x sem juros'
     },
     {
-      icon: <Award className="h-8 w-8" />,
+      icon: <Award className="h-8 w-8 text-white" />,
       title: 'Produtos Originais',
       description: 'Garantia oficial'
     }
@@ -110,80 +104,42 @@ const ModernFooter = () => {
       name: 'Instagram',
       icon: <Instagram className="h-5 w-5" />,
       href: 'https://instagram.com/ussbrasil',
-      color: 'hover:text-pink-500'
     },
     {
       name: 'Facebook',
       icon: <Facebook className="h-5 w-5" />,
       href: 'https://facebook.com/ussbrasil',
-      color: 'hover:text-blue-500'
     },
     {
       name: 'YouTube',
       icon: <Youtube className="h-5 w-5" />,
       href: 'https://youtube.com/ussbrasil',
-      color: 'hover:text-red-500'
     },
     {
       name: 'Twitter',
       icon: <Twitter className="h-5 w-5" />,
       href: 'https://twitter.com/ussbrasil',
-      color: 'hover:text-blue-400'
     }
   ]
 
   const paymentMethods = [
-    '/icons/visa.png',
-    '/icons/mastercard.png',
-    '/icons/pix.png',
-    '/icons/boleto.png',
-    '/icons/paypal.png'
+    { name: 'Visa', src: '/logos/Visa_Inc._logo.svg.webp' },
+    { name: 'Mastercard', src: '/logos/Mastercard_2019_logo.svg.png' },
+    { name: 'Pix', src: '/logos/logo-pix-icone-1024.png' },
   ]
-
-  const securitySeals = [
-    '/icons/ssl.png',
-    '/icons/google-safe.png',
-    '/icons/ebit.png'
-  ]
-
-  const [newsletterEmail, setNewsletterEmail] = useState('')
-  const [newsletterStatus, setNewsletterStatus] = useState<'idle'|'loading'|'success'|'error'>('idle')
-  const [newsletterMessage, setNewsletterMessage] = useState('')
-
-  const subscribe = async () => {
-    if(!newsletterEmail || newsletterStatus==='loading') return
-    setNewsletterStatus('loading')
-    setNewsletterMessage('')
-    try {
-      const res = await fetch('/api/newsletter', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: newsletterEmail }) })
-      if(res.ok){
-        setNewsletterStatus('success')
-        setNewsletterMessage('Inscrição realizada!')
-        setNewsletterEmail('')
-      } else {
-        setNewsletterStatus('error')
-        setNewsletterMessage('Falha ao inscrever')
-      }
-    } catch(e){
-      setNewsletterStatus('error')
-      setNewsletterMessage('Erro de conexão')
-    } finally {
-      setTimeout(()=>{ setNewsletterStatus('idle'); setNewsletterMessage('') }, 4000)
-    }
-  }
 
   return (
-    <footer className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] relative overflow-hidden">
+    <footer className="bg-gray-900 text-white relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-uss-accent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-uss-primary rounded-full blur-3xl" />
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl" />
       </div>
 
       {/* Benefits Section */}
-      <div className="relative z-10 border-b border-[var(--border-primary)]">
+      <div className="relative z-10 border-b border-gray-800">
         <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => (
               <motion.div
                 key={benefit.title}
@@ -193,59 +149,18 @@ const ModernFooter = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center group"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-uss-primary rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-400 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
                   {benefit.icon}
                 </div>
-                <h3 className="text-lg font-semibold mb-2 group-hover:text-uss-accent transition-colors text-[var(--text-primary)]">
+                <h3 className="text-lg font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
                   {benefit.title}
                 </h3>
-                <p className="text-[var(--text-secondary)]">
+                <p className="text-gray-400">
                   {benefit.description}
                 </p>
               </motion.div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Newsletter Section */}
-      <div className="relative z-10 border-b border-[var(--border-primary)]">
-        <div className="container mx-auto px-4 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto text-center"
-          >
-            <h2 className="text-3xl font-bold mb-4 text-[var(--text-primary)]">
-              Fique por Dentro das <span className="text-uss-accent">Novidades</span>
-            </h2>
-            <p className="text-xl text-[var(--text-secondary)] mb-8">
-              Receba ofertas exclusivas, lançamentos e dicas dos melhores produtos
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 max-w-md mx-auto">
-              <div className="relative flex-1 w-full">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-tertiary)] h-5 w-5" />
-                <input
-                  type="email"
-                  placeholder="Seu melhor e-mail"
-                  value={newsletterEmail}
-                  onChange={e=>setNewsletterEmail(e.target.value)}
-                  className="input-uss disabled:opacity-50"
-                  disabled={newsletterStatus==='loading'}
-                />
-              </div>
-              <button onClick={subscribe} disabled={newsletterStatus==='loading'} className="btn-uss-primary w-full sm:w-auto px-6 py-3 disabled:opacity-50">
-                {newsletterStatus==='loading' ? 'Enviando...' : 'Inscrever-se'}
-              </button>
-            </div>
-            
-            <p className="text-sm text-[var(--text-tertiary)] mt-4 min-h-[1.25rem]">
-              {newsletterMessage || 'Não enviamos spam. Seus dados estão seguros conosco.'}
-            </p>
-          </motion.div>
         </div>
       </div>
 
@@ -257,15 +172,15 @@ const ModernFooter = () => {
             <div className="lg:col-span-2 space-y-6">
               <Link href="/" className="inline-block">
                 <Image
-                  src="/Empresa/02.png"
+                  src="/Empresa/01.png"
                   alt="USS Brasil"
-                  width={120}
-                  height={120}
+                  width={140}
+                  height={50}
                   className="object-contain"
                 />
               </Link>
               
-              <p className="text-[var(--text-secondary)] leading-relaxed">
+              <p className="text-gray-400 leading-relaxed">
                 USS Brasil é a sua loja de tecnologia premium. Oferecemos os melhores produtos 
                 Apple, JBL, DJI, Xiaomi e Geonav com garantia oficial e entrega expressa.
               </p>
@@ -273,22 +188,23 @@ const ModernFooter = () => {
               {/* Contact Info */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-uss-accent" />
-                  <a href="tel:+5511999999999" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    (11) 99999-9999
+                  <Phone className="h-5 w-5 text-blue-400" />
+                  <a href="tel:+554834116672" className="text-gray-400 hover:text-white transition-colors">
+                    (48) 3411-6672
                   </a>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-uss-accent" />
-                  <a href="mailto:contato@ussbrasil.com.br" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    contato@ussbrasil.com.br
+                  <Mail className="h-5 w-5 text-blue-400" />
+                  <a href="mailto:Comercial@UssBrasil.com.br" className="text-gray-400 hover:text-white transition-colors">
+                    Comercial@UssBrasil.com.br
                   </a>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <MapPin className="h-5 w-5 text-uss-accent mt-0.5" />
-                  <span className="text-[var(--text-secondary)]">
-                    Av. Paulista, 1000 - Bela Vista<br />
-                    São Paulo, SP - CEP: 01310-100
+                  <MapPin className="h-5 w-5 text-blue-400 mt-0.5" />
+                  <span className="text-gray-400">
+                    Rua Dr. Padre Nereu Ramos - Centro<br />
+                    Shopping Della, Sala 09 Térreo<br />
+                    Criciúma/SC - CEP: 88810-140
                   </span>
                 </div>
               </div>
@@ -304,7 +220,7 @@ const ModernFooter = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                <h3 className="text-lg font-semibold text-white">
                   {section.title}
                 </h3>
                 <ul className="space-y-2">
@@ -312,7 +228,7 @@ const ModernFooter = () => {
                     <li key={link.name}>
                       <Link
                         href={link.href}
-                        className="text-[var(--text-secondary)] hover:text-uss-accent transition-colors text-sm"
+                        className="text-gray-400 hover:text-blue-400 transition-colors text-sm"
                       >
                         {link.name}
                       </Link>
@@ -326,58 +242,43 @@ const ModernFooter = () => {
       </div>
 
       {/* Payment Methods & Security */}
-      <div className="relative z-10 border-t border-[var(--border-primary)]">
+      <div className="relative z-10 border-t border-gray-800">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row items-center justify-between space-y-6 lg:space-y-0">
             {/* Payment Methods */}
             <div className="text-center lg:text-left">
-              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-3">
+              <h4 className="text-sm font-medium text-gray-400 mb-3">
                 Formas de Pagamento
               </h4>
               <div className="flex items-center justify-center lg:justify-start space-x-3">
-                {paymentMethods.map((method, index) => (
+                {paymentMethods.map((method) => (
                   <div
-                    key={index}
-                    className="w-10 h-6 bg-white rounded flex items-center justify-center"
+                    key={method.name}
+                    className="w-14 h-10 bg-white rounded flex items-center justify-center p-1"
+                    title={method.name}
                   >
                     <Image
-                      src={method}
-                      alt="Forma de pagamento"
-                      width={32}
-                      height={20}
+                      src={method.src}
+                      alt={method.name}
+                      width={40}
+                      height={28}
                       className="object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                      }}
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Security Seals */}
+            {/* Security Info */}
             <div className="text-center lg:text-right">
-              <h4 className="text-sm font-medium text-uss-gray-400 mb-3">
+              <h4 className="text-sm font-medium text-gray-400 mb-3">
                 Segurança e Certificações
               </h4>
               <div className="flex items-center justify-center lg:justify-end space-x-3">
-                {securitySeals.map((seal, index) => (
-                  <div
-                    key={index}
-                    className="w-12 h-8 bg-white rounded flex items-center justify-center"
-                  >
-                    <Image
-                      src={seal}
-                      alt="Certificação de segurança"
-                      width={40}
-                      height={28}
-                      className="object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                      }}
-                    />
-                  </div>
-                ))}
+                <div className="flex items-center space-x-2 bg-green-600 px-3 py-2 rounded">
+                  <Shield className="h-5 w-5 text-white" />
+                  <span className="text-white text-sm font-medium">SSL Seguro</span>
+                </div>
               </div>
             </div>
           </div>
@@ -385,30 +286,32 @@ const ModernFooter = () => {
       </div>
 
       {/* Bottom Footer */}
-      <div className="relative z-10 border-t border-uss-gray-700 bg-uss-gray-900/50">
+      <div className="relative z-10 border-t border-gray-800 bg-gray-950">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             {/* Copyright */}
             <div className="text-center md:text-left">
-              <p className="text-sm text-uss-gray-400">
+              <p className="text-sm text-gray-400">
                 © {currentYear} USS Brasil. Todos os direitos reservados.
               </p>
               <div className="flex items-center justify-center md:justify-start space-x-4 mt-2">
-                <Link href="/privacidade" className="text-xs text-uss-gray-500 hover:text-uss-secondary transition-colors">
+                <Link href="/politica-de-privacidade" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
                   Política de Privacidade
                 </Link>
-                <span className="text-[var(--border-primary)]">•</span>
-                <Link href="/termos" className="text-xs text-[var(--text-tertiary)] hover:text-uss-accent transition-colors">
+                <span className="text-gray-700">•</span>
+                <Link href="/termos-de-uso" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
                   Termos de Uso
                 </Link>
-                <span className="text-[var(--border-primary)]">•</span>
-                <Link href="/faq" className="text-xs text-[var(--text-tertiary)] hover:text-uss-accent transition-colors">FAQ</Link>
+                <span className="text-gray-700">•</span>
+                <Link href="/faq" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+                  FAQ
+                </Link>
               </div>
             </div>
 
             {/* Social Links */}
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-[var(--text-secondary)] hidden sm:block">
+              <span className="text-sm text-gray-400 hidden sm:block">
                 Siga-nos:
               </span>
               <div className="flex items-center space-x-3">
@@ -418,7 +321,7 @@ const ModernFooter = () => {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`p-2 bg-[var(--bg-primary)] rounded-full text-[var(--text-secondary)] ${social.color} transition-all duration-300 hover:scale-110 hover:text-uss-accent`}
+                    className="p-2 bg-gray-800 rounded-full text-gray-400 hover:text-white hover:bg-blue-400 transition-all duration-300 hover:scale-110"
                     aria-label={social.name}
                   >
                     {social.icon}
@@ -431,16 +334,7 @@ const ModernFooter = () => {
       </div>
 
       {/* Made with Love */}
-      <div className="relative z-10 bg-uss-primary">
-        <div className="container mx-auto px-4 py-3">
-          <p className="text-center text-sm text-white flex items-center justify-center space-x-1">
-            <span>Feito com</span>
-            <Heart className="h-4 w-4 text-uss-accent fill-current animate-pulse" />
-            <span>pela equipe USS Brasil</span>
-          </p>
-        </div>
-      </div>
-
+     
       {/* Scroll to Top Button */}
       {showScrollTop && (
         <motion.button
@@ -448,7 +342,7 @@ const ModernFooter = () => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0 }}
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 z-50 p-3 bg-uss-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 hover:bg-uss-primary-hover"
+          className="fixed bottom-8 right-8 z-50 p-3 bg-blue-400 text-black rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 hover:bg-blue-300"
         >
           <ArrowUp className="h-5 w-5" />
         </motion.button>

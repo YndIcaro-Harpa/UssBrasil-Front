@@ -67,15 +67,15 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-[#0C1A33]/95 backdrop-blur-xl border border-[#0E7466]/30 rounded-xl 
-                 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+        className="bg-white border border-gray-200 rounded-xl 
+                 w-[75vw] max-w-[75vw] max-h-[85vh] overflow-hidden shadow-xl flex flex-col"
       >
-        <div className="p-6 border-b border-[#0E7466]/20">
+        <div className="px-6 py-4 border-b bg-[#001941]">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">{title}</h2>
+            <h2 className="text-lg font-bold text-white">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 
+              className="p-2 rounded-lg text-blue-200 hover:text-white hover:bg-blue-800 
                        transition-colors"
             >
               <X className="w-5 h-5" />
@@ -83,7 +83,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
           </div>
         </div>
         
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           {children}
         </div>
       </motion.div>
@@ -106,16 +106,16 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
     rows?: number
   }) => (
     <div className="space-y-2">
-      <label className="block text-gray-300 text-sm font-medium">{label}</label>
+      <label className="block text-gray-700 text-sm font-medium">{label}</label>
       {rows ? (
         <textarea
           rows={rows}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                   text-white placeholder-gray-400 focus:outline-none focus:border-[#0E7466] 
-                   focus:ring-2 focus:ring-[#0E7466]/20 transition-all resize-none"
+          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
+                   text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                   focus:ring-2 focus:ring-blue-400/20 transition-all resize-none"
         />
       ) : (
         <input
@@ -123,9 +123,9 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                   text-white placeholder-gray-400 focus:outline-none focus:border-[#0E7466] 
-                   focus:ring-2 focus:ring-[#0E7466]/20 transition-all"
+          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
+                   text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                   focus:ring-2 focus:ring-blue-400/20 transition-all"
         />
       )}
     </div>
@@ -143,16 +143,16 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
     options: { value: string, label: string }[]
   }) => (
     <div className="space-y-2">
-      <label className="block text-gray-300 text-sm font-medium">{label}</label>
+      <label className="block text-gray-700 text-sm font-medium">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                 text-white focus:outline-none focus:border-[#0E7466] focus:ring-2 
-                 focus:ring-[#0E7466]/20 transition-all"
+        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
+                 text-gray-900 focus:outline-none focus:border-[#001941] focus:ring-2 
+                 focus:ring-blue-400/20 transition-all"
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="bg-[#0C1A33]">
+          <option key={option.value} value={option.value} className="bg-white">
             {option.label}
           </option>
         ))}
@@ -205,9 +205,9 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <label className="block text-gray-300 text-sm font-medium">Imagem do Produto</label>
-              <div className="border-2 border-dashed border-[#0E7466]/30 rounded-xl p-6 text-center
-                            hover:border-[#0E7466]/50 transition-colors">
+              <label className="block text-gray-700 text-sm font-medium">Imagem do Produto</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center
+                            hover:border-[#001941] transition-colors">
                 <input
                   type="file"
                   accept="image/*"
@@ -217,12 +217,12 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
                 />
                 <label htmlFor="product-image" className="cursor-pointer">
                   <div className="flex flex-col items-center space-y-2">
-                    <div className="p-3 rounded-lg bg-[#0E7466]/20">
-                      <Camera className="w-6 h-6 text-[#0E7466]" />
+                    <div className="p-3 rounded-lg bg-[#001941]/10">
+                      <Camera className="w-6 h-6 text-[#001941]" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">Clique para fazer upload</p>
-                      <p className="text-gray-400 text-sm">PNG, JPG até 10MB</p>
+                      <p className="text-gray-900 font-medium">Clique para fazer upload</p>
+                      <p className="text-gray-500 text-sm">PNG, JPG até 10MB</p>
                     </div>
                   </div>
                 </label>
@@ -237,15 +237,15 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 bg-white/10 text-white rounded-xl hover:bg-white/20 
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 
                          transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleSubmit('product')}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r 
-                         from-[#0E7466] to-[#0C6157] text-white rounded-xl hover:shadow-lg 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                         text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all"
               >
                 <Save className="w-4 h-4" />
@@ -300,15 +300,15 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 bg-white/10 text-white rounded-xl hover:bg-white/20 
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 
                          transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleSubmit('order')}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r 
-                         from-[#0E7466] to-[#0C6157] text-white rounded-xl hover:shadow-lg 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                         text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all"
               >
                 <ShoppingCart className="w-4 h-4" />
@@ -358,15 +358,15 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 bg-white/10 text-white rounded-xl hover:bg-white/20 
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 
                          transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleSubmit('customer')}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r 
-                         from-[#0E7466] to-[#0C6157] text-white rounded-xl hover:shadow-lg 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                         text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all"
               >
                 <User className="w-4 h-4" />
@@ -420,15 +420,15 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 bg-white/10 text-white rounded-xl hover:bg-white/20 
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 
                          transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleSubmit('report')}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r 
-                         from-[#0E7466] to-[#0C6157] text-white rounded-xl hover:shadow-lg 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                         text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all"
               >
                 <FileText className="w-4 h-4" />
@@ -441,3 +441,4 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
     </AnimatePresence>
   )
 }
+

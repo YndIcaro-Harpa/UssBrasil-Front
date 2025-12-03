@@ -57,11 +57,17 @@ export default function FavoritesModal() {
   })
 
   const handleAddToCart = (item: any) => {
-    addToCart(item)
+    addToCart({
+      ...item,
+      id: item.id,
+      image: item.images?.[0] || item.image || '/fallback-product.png',
+      price: item.discountPrice || item.price,
+      stock: item.stock
+    })
   }
 
-  const handleRemoveFromFavorites = (productId: string) => {
-  toggleFavorite(String(productId))
+  const handleRemoveFromFavorites = (productId: string | number) => {
+    toggleFavorite(String(productId))
   }
 
   const handleClearFavorites = () => {
@@ -132,7 +138,7 @@ export default function FavoritesModal() {
                     <select
                       value={filterBy}
                       onChange={(e) => setFilterBy(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-uss-primary"
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400"
                     >
                       <option value="all">Todos</option>
                       <option value="onSale">Em Oferta</option>
@@ -175,7 +181,7 @@ export default function FavoritesModal() {
                   <p className="text-gray-500 mb-6">
                     Salve produtos que você gosta e eles aparecerão aqui
                   </p>
-                  <Button onClick={closeFavorites} className="bg-uss-primary hover:bg-uss-primary/90">
+                  <Button onClick={closeFavorites} className="bg-blue-400 hover:bg-blue-500">
                     Explorar Produtos
                   </Button>
                 </div>
@@ -195,9 +201,9 @@ export default function FavoritesModal() {
                 <div className="p-6">
                   {viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {filteredFavorites.map((item: any) => (
+                      {filteredFavorites.map((item: any, index: number) => (
                         <motion.div
-                          key={item.id}
+                          key={`fav-grid-${item.id || index}`}
                           layout
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -225,7 +231,7 @@ export default function FavoritesModal() {
                             </button>
                           </div>
                           
-                          <h4 className="font-medium text-gray-900 line-clamp-2 mb-1 group-hover:text-uss-primary transition-colors">
+                          <h4 className="font-medium text-gray-900 line-clamp-2 mb-1 group-hover:text-blue-400 transition-colors">
                             {item.name}
                           </h4>
                           
@@ -233,7 +239,7 @@ export default function FavoritesModal() {
                           
                           <div className="flex items-center justify-between mb-3">
                             <div>
-                              <span className="text-lg font-bold text-uss-primary">
+                              <span className="text-lg font-bold text-blue-400">
                                 {formatPrice(item.discountPrice || item.price)}
                               </span>
                               {item.discountPrice && (
@@ -255,7 +261,7 @@ export default function FavoritesModal() {
                             <Button
                               size="sm"
                               onClick={() => handleAddToCart(item)}
-                              className="flex-1 bg-uss-primary hover:bg-uss-primary/90 h-8 text-xs"
+                              className="flex-1 bg-blue-400 hover:bg-blue-500 h-8 text-xs"
                             >
                               <ShoppingBag className="h-3 w-3 mr-1" />
                               Adicionar
@@ -275,9 +281,9 @@ export default function FavoritesModal() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {filteredFavorites.map((item: any) => (
+                      {filteredFavorites.map((item: any, index: number) => (
                         <motion.div
-                          key={item.id}
+                          key={`fav-list-${item.id || index}`}
                           layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -307,7 +313,7 @@ export default function FavoritesModal() {
                             
                             <div className="flex items-center justify-between">
                               <div>
-                                <span className="text-lg font-bold text-uss-primary">
+                                <span className="text-lg font-bold text-blue-400">
                                   {formatPrice(item.discountPrice || item.price)}
                                 </span>
                                 {item.discountPrice && (
@@ -321,7 +327,7 @@ export default function FavoritesModal() {
                                 <Button
                                   size="sm"
                                   onClick={() => handleAddToCart(item)}
-                                  className="bg-uss-primary hover:bg-uss-primary/90 h-8"
+                                  className="bg-blue-400 hover:bg-blue-500 h-8"
                                 >
                                   <ShoppingBag className="h-3 w-3 mr-1" />
                                   Carrinho
@@ -355,7 +361,7 @@ export default function FavoritesModal() {
             {/* Footer */}
             {favoriteProducts.length > 0 && (
               <div className="border-t border-gray-100 p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div className="text-sm text-gray-500">
                     {filteredFavorites.length} de {favoriteProducts.length} favoritos
                   </div>
@@ -377,12 +383,22 @@ export default function FavoritesModal() {
                     
                     <Button
                       onClick={closeFavorites}
-                      className="bg-uss-primary hover:bg-uss-primary/90"
+                      className="bg-blue-400 hover:bg-blue-500"
                     >
                       Continuar Comprando
                     </Button>
                   </div>
                 </div>
+                
+                <Link href="/favoritos" onClick={closeFavorites}>
+                  <Button
+                    variant="outline"
+                    className="w-full border-blue-400 text-blue-400 hover:bg-blue-50"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Lista Completa de Favoritos
+                  </Button>
+                </Link>
               </div>
             )}
           </motion.div>
@@ -391,3 +407,4 @@ export default function FavoritesModal() {
     </AnimatePresence>
   )
 }
+

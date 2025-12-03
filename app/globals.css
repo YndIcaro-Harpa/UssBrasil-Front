@@ -11,5 +11,82 @@
    CUSTOMIZAÇÕES ESPECÍFICAS DA APLICAÇÃO
    ========================================== */
 
-/* Aqui ficam apenas customizações específicas 
-   que não estão no design system global */
+/* Inputs com texto preto e shadow suave */
+input,
+textarea,
+select {
+  color: #000000 !important;
+  caret-color: #000000;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Remover bordas padrão problemáticas */
+* {
+  border-color: transparent;
+}
+
+/* Bordas específicas onde necessário */
+.border,
+.border-t,
+.border-b,
+.border-l,
+.border-r {
+  border-color: #e5e7eb;
+}
+
+/* ==========================================
+   ANIMAÇÕES OTIMIZADAS (CSS puro - mais leve)
+   ========================================== */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+/* Transições suaves para hover sem JavaScript */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}

@@ -108,12 +108,6 @@ const ProfessionalNavbar = () => {
       count: 67
     },
     {
-      id: '3',
-      name: 'Samsung',
-      logo: '/images/brands/samsung.png',
-      count: 89
-    },
-    {
       id: '4',
       name: 'DJI',
       logo: '/images/brands/dji.png',
@@ -540,3 +534,4 @@ const ProfessionalNavbar = () => {
 }
 
 export default ProfessionalNavbar
+

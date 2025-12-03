@@ -1,8 +1,8 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { LucideIcon } from 'lucide-react'
 
 interface NavigationItem {
@@ -10,7 +10,8 @@ interface NavigationItem {
   href: string
   icon: LucideIcon
   description?: string
-  badge?: string | number
+  badge?: string
+  badgeColor?: 'default' | 'warning' | 'success' | 'error'
 }
 
 interface AdminNavigationProps {
@@ -21,69 +22,72 @@ interface AdminNavigationProps {
 export default function AdminNavigation({ items, collapsed = false }: AdminNavigationProps) {
   const pathname = usePathname()
 
+  const isActive = (href: string) => {
+    if (href === '/admin') {
+      return pathname === '/admin'
+    }
+    return pathname.startsWith(href)
+  }
+
   return (
-    <nav className="flex-1 space-y-2 px-4">
+    <nav className="px-2 lg:px-3 space-y-1">
       {items.map((item) => {
-        const isActive = pathname === item.href
-        
+        const active = isActive(item.href)
+        const Icon = item.icon
+
         return (
           <Link
             key={item.name}
             href={item.href}
-            className={`
-              relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
-              ${isActive 
-                ? 'bg-[#0E7466]/20 text-[#0E7466] border border-[#0E7466]/30' 
-                : 'text-gray-300 hover:text-white hover:bg-white/10'
-              }
-              ${collapsed ? 'justify-center' : 'justify-start'}
-            `}
+            className="block"
           >
-            {/* Active indicator */}
-            {isActive && (
-              <motion.div
-                layoutId="admin-nav-indicator"
-                className="absolute left-0 top-0 bottom-0 w-1 bg-[#0E7466] rounded-r-full"
-                initial={false}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              />
-            )}
-
-            {/* Icon */}
-            <item.icon className={`w-5 h-5 ${collapsed ? '' : 'mr-3'} flex-shrink-0`} />
-            
-            {/* Text content */}
-            {!collapsed && (
-              <>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span>{item.name}</span>
-                    {item.badge && (
-                      <span className="ml-2 px-2 py-0.5 text-xs bg-[#0E7466]/20 text-[#0E7466] rounded-full">
-                        {item.badge}
-                      </span>
+            <motion.div
+              whileHover={{ x: 4 }}
+              whileTap={{ scale: 0.98 }}
+              className={`
+                flex items-center px-2 py-2 lg:px-3 lg:py-2.5 rounded-lg transition-all duration-200
+                ${active 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-blue-200 hover:bg-blue-800 hover:text-white'
+                }
+                ${collapsed ? 'justify-center' : ''}
+              `}
+            >
+              <Icon className={`w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0 ${active ? 'text-white' : 'text-blue-400'}`} />
+              
+              {!collapsed && (
+                <>
+                  <div className="ml-2 lg:ml-3 flex-1 min-w-0">
+                    <span className={`text-xs lg:text-sm font-medium ${active ? 'text-white' : ''} truncate block`}>
+                      {item.name}
+                    </span>
+                    {item.description && (
+                      <p className={`text-xs mt-0.5 ${active ? 'text-white/70' : 'text-blue-400'} hidden lg:block truncate`}>
+                        {item.description}
+                      </p>
                     )}
                   </div>
-                  {item.description && (
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {item.description}
-                    </p>
+                  
+                  {item.badge && (
+                    <span className={`
+                      ml-auto px-1.5 lg:px-2 py-0.5 text-xs font-medium rounded-full
+                      ${active 
+                        ? 'bg-white/20 text-white' 
+                        : item.badgeColor === 'warning'
+                          ? 'bg-amber-500 text-white'
+                          : item.badgeColor === 'success'
+                            ? 'bg-green-500 text-white'
+                            : item.badgeColor === 'error'
+                              ? 'bg-red-500 text-white'
+                              : 'bg-blue-500 text-white'
+                      }
+                    `}>
+                      {item.badge}
+                    </span>
                   )}
-                </div>
-              </>
-            )}
-
-            {/* Tooltip for collapsed state */}
-            {collapsed && (
-              <div className="absolute left-16 bg-[#0C1A33] text-white px-3 py-2 rounded-lg text-sm
-                            opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none
-                            border border-[#0E7466]/30 z-50">
-                <div className="font-medium">{item.name}</div>
-                {item.description && (
-                  <div className="text-xs text-gray-400 mt-1">{item.description}</div>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </motion.div>
           </Link>
         )
       })}

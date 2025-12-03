@@ -1,161 +1,212 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Image from 'next/image'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { useAdminAuth } from '@/hooks/useAdminAuth'
 import { 
-  Search, 
-  MoreHorizontal, 
   Eye, 
   Edit, 
   Trash2, 
   Plus,
   ArrowUp,
   ArrowDown,
-  Filter,
-  ChevronDown,
   Package,
   DollarSign,
-  BarChart,
   CheckCircle,
   AlertTriangle,
-  Star,
-  TrendingUp,
   Download,
-  Upload
+  Loader2,
+  RefreshCw,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import PageHeader from '@/components/admin/PageHeader'
 import StatCard from '@/components/admin/StatCard'
 import ProductImage from '@/components/admin/ProductImage'
+import { ProductModal } from '@/components/admin/ProductModal'
 import PremiumButton from '@/components/ui/PremiumButton'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { api, Product, Category } from '@/services/api'
+import { toast } from 'sonner'
+import { exportProducts } from '@/services/export'
 
-interface Product {
-  id: string
-  name: string
-  image: string
-  category: string
-  price: number
-  stock: number
-  sales: number
-  status: 'active' | 'inactive' | 'draft'
-  rating: number
-  reviews: number
-  sku: string
-  lastUpdate: string
-}
-
-type SortKey = 'name' | 'price' | 'stock' | 'sales' | 'rating'
+type SortKey = 'name' | 'price' | 'stock' | 'createdAt'
 type SortDirection = 'asc' | 'desc'
 
+// Skeleton components
+function StatsCardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 animate-pulse">
+      <div className="flex items-center justify-between mb-2">
+        <div className="h-4 w-24 bg-gray-200 rounded" />
+        <div className="h-8 w-8 bg-gray-200 rounded-lg" />
+      </div>
+      <div className="h-8 w-16 bg-gray-200 rounded mt-2" />
+    </div>
+  )
+}
+
+function ProductTableRowSkeleton() {
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="p-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-gray-200 rounded-xl animate-pulse" />
+          <div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+      </td>
+      <td className="p-4 hidden md:table-cell"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
+      <td className="p-4"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></td>
+      <td className="p-4 hidden sm:table-cell"><div className="h-4 w-12 bg-gray-200 rounded animate-pulse" /></td>
+      <td className="p-4 hidden lg:table-cell"><div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse" /></td>
+      <td className="p-4">
+        <div className="flex space-x-2">
+          <div className="h-8 w-8 bg-gray-200 rounded-lg animate-pulse" />
+          <div className="h-8 w-8 bg-gray-200 rounded-lg animate-pulse" />
+          <div className="h-8 w-8 bg-gray-200 rounded-lg animate-pulse" />
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function AdminProductsPage() {
-  const [products] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'iPhone 15 Pro Max 256GB Titânio Natural',
-      image: '/Produtos/Apple/Iphone 16 Pro.png',
-      category: 'Smartphones',
-      price: 8999.99,
-      stock: 45,
-      sales: 127,
-      status: 'active',
-      rating: 4.8,
-      reviews: 342,
-      sku: 'APL-IPH15PM-256-TN',
-      lastUpdate: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'MacBook Air M3 13" 512GB Cinza Espacial',
-      image: '/fallback-product.png',
-      category: 'Laptops',
-      price: 12999.99,
-      stock: 23,
-      sales: 89,
-      status: 'active',
-      rating: 4.9,
-      reviews: 256,
-      sku: 'APL-MBA-M3-512-CE',
-      lastUpdate: '2024-01-14'
-    },
-    {
-      id: '3',
-      name: 'Samsung Galaxy S24 Ultra 512GB Preto',
-      image: '/fallback-product.png',
-      category: 'Smartphones',
-      price: 6999.99,
-      stock: 67,
-      sales: 156,
-      status: 'active',
-      rating: 4.7,
-      reviews: 189,
-      sku: 'SAM-GS24U-512-PT',
-      lastUpdate: '2024-01-13'
-    },
-    {
-      id: '4',
-      name: 'AirPods Pro 3ª Geração USB-C',
-      image: '/fallback-product.png',
-      category: 'Áudio',
-      price: 2499.99,
-      stock: 128,
-      sales: 234,
-      status: 'active',
-      rating: 4.6,
-      reviews: 445,
-      sku: 'APL-APP3-USBC',
-      lastUpdate: '2024-01-12'
-    },
-    {
-      id: '5',
-      name: 'iPad Pro 12.9" M2 256GB Wi-Fi',
-      image: '/fallback-product.png',
-      category: 'Tablets',
-      price: 7999.99,
-      stock: 15,
-      sales: 67,
-      status: 'active',
-      rating: 4.8,
-      reviews: 178,
-      sku: 'APL-IPP129-M2-256',
-      lastUpdate: '2024-01-11'
-    },
-    {
-      id: '6',
-      name: 'Apple Watch Series 9 GPS 45mm',
-      image: '/fallback-product.png',
-      category: 'Wearables',
-      price: 3999.99,
-      stock: 0,
-      sales: 98,
-      status: 'inactive',
-      rating: 4.5,
-      reviews: 234,
-      sku: 'APL-AWS9-GPS-45',
-      lastUpdate: '2024-01-10'
-    }
-  ])
+  const { token, isLoading: authLoading } = useAdminAuth()
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [totalProducts, setTotalProducts] = useState(0)
   
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('sales')
+  const [sortKey, setSortKey] = useState<SortKey>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [page, setPage] = useState(1)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined)
+  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
 
-  const categories = ['all', 'Smartphones', 'Laptops', 'Tablets', 'Áudio', 'Wearables']
-  const statuses = ['all', 'active', 'inactive', 'draft']
+  const handleSaveProduct = async (productData: any) => {
+    try {
+      // Serialize complex data (variants) into specifications
+      const complexSpecs = {
+        _isComplexSpecs: true,
+        specifications: productData.specifications || {},
+        colors: productData.colors || [],
+        storage: productData.storage || []
+      }
 
+      const payload = {
+        ...productData,
+        specifications: JSON.stringify(complexSpecs),
+        isActive: productData.status === 'active',
+        // Ensure images are string if API expects string
+        images: typeof productData.images === 'object' && productData.images.gallery 
+          ? productData.images.gallery.join(',') 
+          : productData.images
+      }
+
+      // Remove fields that shouldn't be sent directly if they are not in API schema
+      delete payload.colors
+      delete payload.storage
+      delete payload.status // mapped to isActive
+
+      if (modalMode === 'create') {
+        await api.products.create(payload)
+        toast.success('Produto criado com sucesso!')
+      } else {
+        if (!selectedProduct?.id) return
+        await api.products.update(selectedProduct.id, payload)
+        toast.success('Produto atualizado com sucesso!')
+      }
+      fetchProducts()
+      setIsModalOpen(false)
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error)
+      toast.error('Erro ao salvar produto')
+    }
+  }
+
+  const openCreateModal = () => {
+    setSelectedProduct(undefined)
+    setModalMode('create')
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (product: Product) => {
+    setSelectedProduct(product)
+    setModalMode('edit')
+    setIsModalOpen(true)
+  }
+
+  // Fetch products
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        api.products.getAll({
+          page,
+          limit: 20,
+          categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
+          search: searchTerm || undefined
+        }),
+        api.categories.getAll()
+      ])
+
+      setProducts(productsResponse.data || [])
+      setTotalProducts(productsResponse.total || 0)
+      setCategories(categoriesResponse || [])
+    } catch (error: any) {
+      console.error('[Admin Products] Erro:', error)
+      toast.error('Erro ao carregar produtos')
+    } finally {
+      setLoading(false)
+    }
+  }, [page, selectedCategory, searchTerm])
+
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
+
+  // Handle delete
+  const handleDelete = async (productId: string, productName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${productName}"?`)) return
+
+    setDeleting(productId)
+    try {
+      await api.products.delete(productId, token || undefined)
+      toast.success('Produto excluído com sucesso!')
+      fetchProducts()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao excluir produto')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  // Sort and filter
   const filteredAndSortedProducts = useMemo(() => {
-    let filtered = products.filter(product => 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (selectedCategory === 'all' || product.category === selectedCategory) &&
-      (selectedStatus === 'all' || product.status === selectedStatus)
-    )
+    let filtered = products.filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = selectedStatus === 'all' || 
+        (selectedStatus === 'active' && product.isActive) ||
+        (selectedStatus === 'inactive' && !product.isActive)
+      return matchesSearch && matchesStatus
+    })
 
     return filtered.sort((a, b) => {
-      const aValue = a[sortKey]
-      const bValue = b[sortKey]
+      let aValue: any = a[sortKey]
+      let bValue: any = b[sortKey]
+      
+      if (sortKey === 'createdAt') {
+        aValue = new Date(a.createdAt).getTime()
+        bValue = new Date(b.createdAt).getTime()
+      }
       
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc' 
@@ -167,7 +218,7 @@ export default function AdminProductsPage() {
         ? (aValue as number) - (bValue as number)
         : (bValue as number) - (aValue as number)
     })
-  }, [products, searchTerm, sortKey, sortDirection, selectedCategory, selectedStatus])
+  }, [products, searchTerm, sortKey, sortDirection, selectedStatus])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -185,51 +236,169 @@ export default function AdminProductsPage() {
     }).format(value)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-      case 'inactive':
-        return 'bg-red-500/20 text-red-400 border-red-500/30'
-      case 'draft':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'Ativo'
-      case 'inactive':
-        return 'Inativo'
-      case 'draft':
-        return 'Rascunho'
-      default:
-        return status
-    }
+  const getStatusColor = (isActive: boolean) => {
+    return isActive
+      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+      : 'bg-red-50 text-red-600 border-red-200'
   }
 
   const getStockStatus = (stock: number) => {
-    if (stock === 0) return { color: 'text-red-400', text: 'Sem estoque' }
-    if (stock <= 10) return { color: 'text-amber-400', text: 'Estoque baixo' }
-    return { color: 'text-emerald-400', text: 'Em estoque' }
+    if (stock === 0) return { color: 'text-red-600', text: 'Sem estoque' }
+    if (stock <= 10) return { color: 'text-amber-600', text: 'Estoque baixo' }
+    return { color: 'text-emerald-600', text: 'Em estoque' }
   }
 
-  // Estatísticas
-  const totalProducts = products.length
-  const activeProducts = products.filter(p => p.status === 'active').length
+  const getProductImage = (product: Product) => {
+    if (!product.images) return '/fallback-product.png'
+    
+    try {
+      // Try parsing as JSON array
+      if (product.images.startsWith('[')) {
+        const images = JSON.parse(product.images)
+        return images[0] || '/fallback-product.png'
+      }
+      // Try as comma-separated string
+      if (product.images.includes(',')) {
+        return product.images.split(',')[0].trim() || '/fallback-product.png'
+      }
+      // Single URL string
+      return product.images || '/fallback-product.png'
+    } catch {
+      // If parsing fails, treat as single URL
+      return product.images || '/fallback-product.png'
+    }
+  }
+
+  // Exportar produtos para Excel
+  const handleExportExcel = () => {
+    if (products.length === 0) {
+      toast.error('Nenhum produto para exportar')
+      return
+    }
+    exportProducts(products, 'excel')
+    toast.success('Relatório Excel gerado com sucesso!')
+  }
+
+  // Exportar produtos para PDF
+  const handleExportPDF = () => {
+    if (products.length === 0) {
+      toast.error('Nenhum produto para exportar')
+      return
+    }
+    exportProducts(products, 'pdf')
+    toast.success('Relatório PDF gerado com sucesso!')
+  }
+
+  // Stats
+  const activeProducts = products.filter(p => p.isActive).length
   const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0)
   const lowStockProducts = products.filter(p => p.stock <= 10 && p.stock > 0).length
   const outOfStockProducts = products.filter(p => p.stock === 0).length
+
+  const transformedProduct = useMemo(() => {
+    if (!selectedProduct) return undefined;
+    
+    let specs: any = {};
+    let colors = [];
+    let storage = [];
+    
+    try {
+      if (selectedProduct.specifications) {
+        const parsed = JSON.parse(selectedProduct.specifications);
+        // Check if it has our special structure
+        if (parsed._isComplexSpecs) {
+          specs = parsed.specifications || {};
+          colors = parsed.colors || [];
+          storage = parsed.storage || [];
+        } else {
+          // Legacy or simple key-value
+          specs = parsed;
+        }
+      }
+    } catch (e) {
+      // If not JSON, maybe just treat as empty or try to parse if it's a string representation
+    }
+
+    // Handle images which might be comma separated string or JSON array string
+    let images = { main: '', gallery: [] as string[] };
+    if (selectedProduct.images) {
+        if (selectedProduct.images.startsWith('[')) {
+             try {
+                 const parsedImgs = JSON.parse(selectedProduct.images);
+                 images.main = parsedImgs[0] || '';
+                 images.gallery = parsedImgs;
+             } catch (e) {}
+        } else {
+            const split = selectedProduct.images.split(',');
+            images.main = split[0] || '';
+            images.gallery = split;
+        }
+    }
+
+    return {
+      ...selectedProduct,
+      specifications: specs,
+      colors: colors,
+      storage: storage,
+      status: selectedProduct.isActive ? 'active' : 'inactive',
+      images: images
+    } as any; // Cast to any to satisfy ProductModal's Product type
+  }, [selectedProduct]);
+
+  if (loading && products.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatsCardSkeleton key={i} />
+          ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-left"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></th>
+                  <th className="px-4 py-3 text-left hidden md:table-cell"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
+                  <th className="px-4 py-3 text-left"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></th>
+                  <th className="px-4 py-3 text-left hidden sm:table-cell"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></th>
+                  <th className="px-4 py-3 text-right"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse ml-auto" /></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ProductTableRowSkeleton key={i} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
         title="Produtos"
-        description="Gerencie seu catálogo de produtos"
+        description={`Gerencie seu catálogo de ${totalProducts} produtos`}
         breadcrumbs={[
           { label: 'Admin', href: '/admin' },
           { label: 'Produtos' }
@@ -242,31 +411,43 @@ export default function AdminProductsPage() {
             <PremiumButton
               variant="secondary"
               size="sm"
-              icon={<Download className="w-4 h-4" />}
+              icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+              onClick={fetchProducts}
               className="hidden sm:flex"
             >
-              Exportar
+              Atualizar
             </PremiumButton>
             
             <PremiumButton
               variant="secondary"
               size="sm"
-              icon={<Upload className="w-4 h-4" />}
+              icon={<FileSpreadsheet className="w-4 h-4" />}
+              onClick={handleExportExcel}
               className="hidden sm:flex"
             >
-              Importar
+              Excel
+            </PremiumButton>
+
+            <PremiumButton
+              variant="secondary"
+              size="sm"
+              icon={<FileText className="w-4 h-4" />}
+              onClick={handleExportPDF}
+              className="hidden sm:flex"
+            >
+              PDF
             </PremiumButton>
             
-            <Link href="/admin/products/new">
-              <PremiumButton
-                variant="primary"
-                size="md"
-                icon={<Plus className="w-5 h-5" />}
-                glowEffect={true}
-              >
-                Novo Produto
-              </PremiumButton>
-            </Link>
+            <PremiumButton
+              variant="primary"
+              size="md"
+              icon={<Plus className="w-5 h-5" />}
+              glowEffect={true}
+              onClick={openCreateModal}
+            >
+              <span className="hidden sm:inline">Novo Produto</span>
+              <span className="sm:hidden">Novo</span>
+            </PremiumButton>
           </>
         }
       />
@@ -284,7 +465,7 @@ export default function AdminProductsPage() {
           value={activeProducts}
           icon={<CheckCircle className="w-5 h-5" />}
           trend="up"
-          trendValue="+5.2%"
+          trendValue={totalProducts > 0 ? `${Math.round((activeProducts / totalProducts) * 100)}%` : '0%'}
         />
         
         <StatCard
@@ -297,8 +478,7 @@ export default function AdminProductsPage() {
           title="Estoque Baixo"
           value={lowStockProducts}
           icon={<AlertTriangle className="w-5 h-5" />}
-          trend="down"
-          trendValue="-2 produtos"
+          trend={lowStockProducts > 5 ? "down" : "neutral"}
         />
         
         <StatCard
@@ -313,19 +493,23 @@ export default function AdminProductsPage() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 lg:p-6"
+        className="bg-white border border-gray-100 rounded-2xl p-4 lg:p-6 shadow-sm"
       >
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
           {/* Category Filter */}
           <div className="min-w-0 lg:min-w-48">
+            <p className="text-sm font-semibold text-black mb-1.5">Categoria</p>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 lg:px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+              className="w-full px-3 lg:px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
             >
+              <option value="all">
+                Todas as categorias
+              </option>
               {categories.map(category => (
-                <option key={category} value={category} className="bg-[#0C1A33] text-white">
-                  {category === 'all' ? 'Todas as categorias' : category}
+                <option key={category.id} value={category.id}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -333,16 +517,15 @@ export default function AdminProductsPage() {
 
           {/* Status Filter */}
           <div className="min-w-0 lg:min-w-40">
+            <p className="text-sm font-semibold text-black mb-1.5">Status</p>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 lg:px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+              className="w-full px-3 lg:px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
             >
-              {statuses.map(status => (
-                <option key={status} value={status} className="bg-[#0C1A33] text-white">
-                  {status === 'all' ? 'Todos os status' : getStatusText(status)}
-                </option>
-              ))}
+              <option value="all">Todos os status</option>
+              <option value="active">Ativos</option>
+              <option value="inactive">Inativos</option>
             </select>
           </div>
         </div>
@@ -352,16 +535,16 @@ export default function AdminProductsPage() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden"
+        className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm"
       >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-white/5 border-b border-white/10">
+            <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm">Produto</th>
-                <th className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm hidden md:table-cell">Categoria</th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm">Produto</th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm hidden md:table-cell">Categoria</th>
                 <th 
-                  className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm cursor-pointer hover:text-white transition-colors"
+                  className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm cursor-pointer hover:text-gray-900 transition-colors"
                   onClick={() => handleSort('price')}
                 >
                   <div className="flex items-center space-x-1">
@@ -372,7 +555,7 @@ export default function AdminProductsPage() {
                   </div>
                 </th>
                 <th 
-                  className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm cursor-pointer hover:text-white transition-colors hidden sm:table-cell"
+                  className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm cursor-pointer hover:text-gray-900 transition-colors hidden sm:table-cell"
                   onClick={() => handleSort('stock')}
                 >
                   <div className="flex items-center space-x-1">
@@ -382,30 +565,8 @@ export default function AdminProductsPage() {
                     )}
                   </div>
                 </th>
-                <th 
-                  className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm cursor-pointer hover:text-white transition-colors hidden lg:table-cell"
-                  onClick={() => handleSort('sales')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Vendas</span>
-                    {sortKey === 'sales' && (
-                      sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4" /> : <ArrowDown className="w-3 h-3 lg:w-4 lg:h-4" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm cursor-pointer hover:text-white transition-colors hidden lg:table-cell"
-                  onClick={() => handleSort('rating')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Avaliação</span>
-                    {sortKey === 'rating' && (
-                      sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4" /> : <ArrowDown className="w-3 h-3 lg:w-4 lg:h-4" />
-                    )}
-                  </div>
-                </th>
-                <th className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm hidden md:table-cell">Status</th>
-                <th className="text-left p-2 lg:p-4 text-gray-300 font-medium text-xs lg:text-sm">Ações</th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm hidden md:table-cell">Status</th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -416,31 +577,35 @@ export default function AdminProductsPage() {
                     key={product.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="border-b border-white/5 hover:bg-white/5 transition-all"
+                    transition={{ delay: index * 0.03 }}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-all"
                   >
                     <td className="p-2 lg:p-4">
                       <div className="flex items-center space-x-2 lg:space-x-3">
                         <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-xl overflow-hidden">
                           <ProductImage
-                            src={product.image}
+                            src={getProductImage(product)}
                             alt={product.name}
                             size="sm"
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-white font-medium text-xs lg:text-sm truncate">{product.name}</h4>
-                          <p className="text-gray-400 text-xs hidden lg:block">SKU: {product.sku}</p>
-                          {/* Mostrar categoria em mobile quando oculta da coluna */}
-                          <p className="text-gray-400 text-xs md:hidden">{product.category}</p>
+                          <h4 className="text-gray-900 font-medium text-xs lg:text-sm truncate">{product.name}</h4>
+                          <p className="text-gray-500 text-xs hidden lg:block">SKU: {product.slug}</p>
+                          <p className="text-gray-500 text-xs md:hidden">{product.category?.name || 'Sem categoria'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="p-2 lg:p-4 hidden md:table-cell">
-                      <span className="text-gray-300 text-xs lg:text-sm">{product.category}</span>
+                      <span className="text-gray-600 text-xs lg:text-sm">{product.category?.name || 'Sem categoria'}</span>
                     </td>
                     <td className="p-2 lg:p-4">
-                      <span className="text-white font-bold text-xs lg:text-sm">{formatCurrency(product.price)}</span>
+                      <div>
+                        <span className="text-gray-900 font-bold text-xs lg:text-sm">{formatCurrency(product.price)}</span>
+                        {product.discountPrice && (
+                          <span className="text-emerald-600 text-xs block">{formatCurrency(product.discountPrice)}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-2 lg:p-4 hidden sm:table-cell">
                       <div className="flex items-center space-x-1 lg:space-x-2">
@@ -452,34 +617,34 @@ export default function AdminProductsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="p-2 lg:p-4 hidden lg:table-cell">
-                      <div className="flex items-center space-x-1">
-                        <TrendingUp className="w-3 h-3 lg:w-4 lg:h-4 text-emerald-400" />
-                        <span className="text-white font-medium text-sm">{product.sales}</span>
-                      </div>
-                    </td>
-                    <td className="p-2 lg:p-4 hidden lg:table-cell">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-400 fill-current" />
-                        <span className="text-white font-medium text-sm">{product.rating}</span>
-                        <span className="text-gray-400 text-xs">({product.reviews})</span>
-                      </div>
-                    </td>
                     <td className="p-2 lg:p-4 hidden md:table-cell">
-                      <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(product.status)}`}>
-                        {getStatusText(product.status)}
+                      <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(product.isActive)}`}>
+                        {product.isActive ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
                     <td className="p-2 lg:p-4">
                       <div className="flex items-center space-x-1 lg:space-x-2">
-                        <button className="p-1 lg:p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                          <Eye className="w-3 h-3 lg:w-4 lg:h-4" />
-                        </button>
-                        <button className="p-1 lg:p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                        <Link href={`/produto/${product.slug}`}>
+                          <button className="p-1 lg:p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all">
+                            <Eye className="w-3 h-3 lg:w-4 lg:h-4" />
+                          </button>
+                        </Link>
+                        <button 
+                          onClick={() => openEditModal(product)}
+                          className="p-1 lg:p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+                        >
                           <Edit className="w-3 h-3 lg:w-4 lg:h-4" />
                         </button>
-                        <button className="p-1 lg:p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
-                          <Trash2 className="w-3 h-3 lg:w-4 lg:h-4" />
+                        <button 
+                          onClick={() => handleDelete(product.id, product.name)}
+                          disabled={deleting === product.id}
+                          className="p-1 lg:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                        >
+                          {deleting === product.id ? (
+                            <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3 lg:w-4 lg:h-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -492,12 +657,23 @@ export default function AdminProductsPage() {
           {filteredAndSortedProducts.length === 0 && (
             <div className="p-6 lg:p-12 text-center">
               <Package className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-3 lg:mb-4" />
-              <h3 className="text-lg lg:text-xl font-bold text-white mb-2">Nenhum produto encontrado</h3>
-              <p className="text-gray-400 text-sm lg:text-base">Tente ajustar os filtros ou adicione novos produtos</p>
+              <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-2">Nenhum produto encontrado</h3>
+              <p className="text-gray-500 text-sm lg:text-base">
+                {searchTerm ? 'Tente ajustar os filtros de busca' : 'Adicione novos produtos ao catálogo'}
+              </p>
             </div>
           )}
         </div>
       </motion.div>
+
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={transformedProduct}
+        onSave={handleSaveProduct}
+        mode={modalMode}
+      />
     </div>
   )
 }
+

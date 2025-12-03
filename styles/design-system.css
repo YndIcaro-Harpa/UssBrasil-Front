@@ -231,7 +231,7 @@
    ========================================== */
 
 * {
-  border-color: var(--border-primary);
+  border-color: transparent;
   box-sizing: border-box;
 }
 
@@ -241,7 +241,7 @@ html {
 }
 
 body {
-  background-color: var(--bg-primary);
+  background-color: #ffffff;
   color: var(--text-primary);
   font-family: var(--font-primary);
   line-height: var(--leading-normal);

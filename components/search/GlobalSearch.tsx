@@ -202,3 +202,4 @@ export function GlobalSearch() {
     </div>
   )
 }
+

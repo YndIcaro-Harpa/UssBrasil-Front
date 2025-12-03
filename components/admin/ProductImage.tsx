@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { Package } from 'lucide-react'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 interface ProductImageProps {
   src?: string
@@ -71,12 +71,12 @@ export default function ProductImage({
                     bg-white/10 border border-white/20`}>
       {imageLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#0E7466] 
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#001941] 
                         border-t-transparent"></div>
         </div>
       )}
       
-      <Image
+      <OptimizedImage
         src={placeholderSrc}
         alt={alt}
         fill
@@ -93,3 +93,4 @@ export default function ProductImage({
     </div>
   )
 }
+

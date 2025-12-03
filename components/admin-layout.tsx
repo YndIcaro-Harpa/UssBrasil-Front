@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,41 +21,56 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-const sidebarItems = [
+interface SidebarCounts {
+  orders: number
+  pendingOrders: number
+  products: number
+  customers: number
+}
+
+const getSidebarItems = (counts: SidebarCounts) => [
   { 
     name: 'Dashboard', 
     href: '/admin', 
     icon: LayoutDashboard,
+    count: null
   },
   { 
     name: 'Pedidos', 
     href: '/admin/orders', 
     icon: ShoppingCart,
+    count: counts.pendingOrders > 0 ? counts.pendingOrders : null,
+    countLabel: 'pendentes'
   },
   { 
     name: 'Produtos', 
     href: '/admin/products', 
     icon: Package,
+    count: counts.products > 0 ? counts.products : null
   },
   { 
     name: 'Clientes', 
     href: '/admin/customers', 
     icon: Users,
+    count: counts.customers > 0 ? counts.customers : null
   },
   { 
     name: 'Design', 
     href: '/admin/design', 
     icon: FileText,
+    count: null
   },
   { 
     name: 'Analytics', 
     href: '/admin/analytics', 
     icon: BarChart3,
+    count: null
   },
   { 
     name: 'Configurações', 
     href: '/admin/settings', 
     icon: Settings,
+    count: null
   }
 ]
 
@@ -63,8 +78,61 @@ interface AdminLayoutProps {
   children: React.ReactNode
 }
 
+const useSidebarCounts = () => {
+  const [counts, setCounts] = useState<SidebarCounts>({
+    orders: 0,
+    pendingOrders: 0,
+    products: 0,
+    customers: 0
+  })
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+        
+        // Fetch contagem paralela
+        const [ordersRes, productsRes, customersRes] = await Promise.allSettled([
+          fetch(`${API_URL}/orders`).then(r => r.json()),
+          fetch(`${API_URL}/products`).then(r => r.json()),
+          fetch(`${API_URL}/users`).then(r => r.json())
+        ])
+
+        const orders = ordersRes.status === 'fulfilled' ? ordersRes.value : []
+        const products = productsRes.status === 'fulfilled' ? productsRes.value : []
+        const customers = customersRes.status === 'fulfilled' ? customersRes.value : []
+
+        // Contar pedidos pendentes (status: PENDING, PROCESSING, CONFIRMED)
+        const pendingStatuses = ['PENDING', 'PROCESSING', 'CONFIRMED']
+        const pendingOrders = Array.isArray(orders) 
+          ? orders.filter((o: any) => pendingStatuses.includes(o.status)).length 
+          : 0
+
+        setCounts({
+          orders: Array.isArray(orders) ? orders.length : 0,
+          pendingOrders,
+          products: Array.isArray(products) ? products.length : (products?.total || 0),
+          customers: Array.isArray(customers) ? customers.length : (customers?.total || 0)
+        })
+      } catch (error) {
+        console.error('Erro ao buscar contadores:', error)
+      }
+    }
+
+    fetchCounts()
+    
+    // Atualizar a cada 60 segundos
+    const interval = setInterval(fetchCounts, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return counts
+}
+
 const Sidebar = ({ isCollapsed, setCollapsed }: { isCollapsed: boolean, setCollapsed: (isCollapsed: boolean) => void }) => {
   const pathname = usePathname()
+  const counts = useSidebarCounts()
+  const sidebarItems = getSidebarItems(counts)
 
   return (
     <motion.div
@@ -92,20 +160,31 @@ const Sidebar = ({ isCollapsed, setCollapsed }: { isCollapsed: boolean, setColla
                 <Link href={item.href}>
                   <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
                       pathname === item.href
                         ? 'bg-gradient-to-r from-[#00CED1] to-[#20B2AA] text-white shadow-md'
                         : 'hover:bg-white/50 text-slate-700'
                     }`}
                   >
-                    <item.icon className={`h-6 w-6 ${!isCollapsed && 'mr-4'}`} />
-                    {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                    <div className="flex items-center">
+                      <item.icon className={`h-6 w-6 ${!isCollapsed && 'mr-4'}`} />
+                      {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                    </div>
+                    {!isCollapsed && item.count !== null && (
+                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                        pathname === item.href
+                          ? 'bg-white/20 text-white'
+                          : 'bg-[#00CED1]/10 text-[#00CED1]'
+                      }`}>
+                        {item.count}
+                      </span>
+                    )}
                   </motion.div>
                 </Link>
               </TooltipTrigger>
               {isCollapsed && (
                 <TooltipContent side="right" className="bg-white/80 backdrop-blur-xl border-gray-300/50 rounded-xl shadow-lg">
-                  <p>{item.name}</p>
+                  <p>{item.name}{item.count !== null ? ` (${item.count})` : ''}</p>
                 </TooltipContent>
               )}
             </Tooltip>
@@ -132,6 +211,9 @@ const Sidebar = ({ isCollapsed, setCollapsed }: { isCollapsed: boolean, setColla
 
 const MobileSidebar = ({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void }) => {
   const pathname = usePathname()
+  const counts = useSidebarCounts()
+  const sidebarItems = getSidebarItems(counts)
+  
   return (
     <AnimatePresence>
       {sidebarOpen && (
@@ -167,14 +249,25 @@ const MobileSidebar = ({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean, 
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`flex items-center p-4 rounded-lg cursor-pointer transition-all ${
+                    className={`flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all ${
                       pathname === item.href
                         ? 'bg-gradient-to-r from-[#20b2aa] to-[#1a9999] text-white shadow-lg'
                         : 'hover:bg-gray-50 text-slate-700 hover:shadow-md'
                     }`}
                   >
-                    <item.icon className="h-6 w-6 mr-4" />
-                    <span className="font-semibold">{item.name}</span>
+                    <div className="flex items-center">
+                      <item.icon className="h-6 w-6 mr-4" />
+                      <span className="font-semibold">{item.name}</span>
+                    </div>
+                    {item.count !== null && (
+                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                        pathname === item.href
+                          ? 'bg-white/20 text-white'
+                          : 'bg-[#00CED1]/10 text-[#00CED1]'
+                      }`}>
+                        {item.count}
+                      </span>
+                    )}
                   </motion.div>
                 </Link>
               ))}
@@ -253,3 +346,4 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   )
 }
+

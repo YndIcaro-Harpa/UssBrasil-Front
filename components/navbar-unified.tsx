@@ -125,7 +125,7 @@ const brands: Brand[] = [
     isNew: false,
     isTrending: false,
     bgColor: 'bg-blue-50',
-    textColor: 'text-blue-900'
+    textColor: 'text-blue-400'
   }
 ]
 
@@ -329,7 +329,7 @@ export default function NavbarEnhancedContent() {
                         {brands.map((brand) => (
                           <motion.div key={brand.id} {...fadeInUp}>
                             <Link
-                              href={`/marca/${brand.slug}`}
+                              href={`/produtos?brand=${brand.slug}`}
                               className={cn(
                                 "flex items-center gap-4 p-3 rounded-lg transition-all duration-200",
                                 "hover:bg-tertiary hover:scale-[1.02]",
@@ -625,3 +625,4 @@ export default function NavbarEnhancedContent() {
     </motion.nav>
   )
 }
+

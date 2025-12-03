@@ -55,23 +55,23 @@ export default function StatCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl p-3 lg:p-6 
-                  hover:bg-[#0C1A33]/95 hover:border-[#0E7466]/50 transition-all duration-300 
-                  shadow-lg hover:shadow-xl ${className}`}
+      className={`bg-white border border-gray-100 rounded-xl p-3 lg:p-6 
+                  hover:border-blue-400/50 transition-all duration-300 
+                  shadow-sm hover:shadow-md ${className}`}
     >
       <div className="flex items-center justify-between mb-2 lg:mb-4">
-        <div className="text-gray-400 text-xs lg:text-sm font-medium uppercase tracking-wider">
+        <div className="text-gray-500 text-xs lg:text-sm font-medium uppercase tracking-wider">
           {title}
         </div>
         {icon && (
-          <div className="p-1.5 lg:p-2 bg-[#0E7466]/20 rounded-lg text-[#0E7466]">
+          <div className="p-1.5 lg:p-2 bg-blue-50 rounded-lg text-blue-400">
             {icon}
           </div>
         )}
       </div>
 
       <div className="space-y-1 lg:space-y-2">
-        <div className="text-xl lg:text-3xl font-bold text-white">
+        <div className="text-xl lg:text-3xl font-bold text-gray-900">
           {typeof value === 'number' ? value.toLocaleString() : value}
         </div>
 
@@ -90,7 +90,7 @@ export default function StatCard({
         )}
 
         {description && (
-          <p className="text-gray-400 text-xs lg:text-sm mt-1 lg:mt-2">
+          <p className="text-gray-500 text-xs lg:text-sm mt-1 lg:mt-2">
             {description}
           </p>
         )}
@@ -98,3 +98,4 @@ export default function StatCard({
     </motion.div>
   )
 }
+

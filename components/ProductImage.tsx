@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { Package } from 'lucide-react'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
+
+// Imagem padrão de fallback da USS Brasil
+const DEFAULT_FALLBACK_IMAGE = '/Empresa/07.png'
 
 interface ProductImageProps {
   src?: string
@@ -48,7 +51,8 @@ export default function ProductImage({
       return '/images/products/macbook-placeholder.svg'
     }
     
-    return '/images/products/accessory-placeholder.svg'
+    // Fallback padrão USS Brasil para produtos sem placeholder específico
+    return DEFAULT_FALLBACK_IMAGE
   }
 
   // Determinar a source final
@@ -65,7 +69,13 @@ export default function ProductImage({
   if (!encodedSrc) {
     return (
       <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-        <Package className="w-8 h-8 text-gray-400" />
+        <OptimizedImage 
+          src={DEFAULT_FALLBACK_IMAGE} 
+          alt="Produto USS Brasil" 
+          width={120} 
+          height={120} 
+          className="object-contain opacity-50"
+        />
       </div>
     )
   }
@@ -90,10 +100,17 @@ export default function ProductImage({
     <div className="relative w-full h-full">
       {imageLoading && !imageError && (
         <div className={`absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center ${className}`}>
-          <Package className="w-8 h-8 text-gray-300" />
+          <OptimizedImage 
+            src={DEFAULT_FALLBACK_IMAGE} 
+            alt="Carregando..." 
+            width={60} 
+            height={60} 
+            className="object-contain opacity-30"
+          />
         </div>
       )}
-      <Image {...imageProps} />
+      <OptimizedImage {...imageProps} />
     </div>
   )
 }
+

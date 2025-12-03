@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="200" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="200" fill="#f8fafc"/>
+  
+  <!-- Border -->
+  <rect x="1" y="1" width="398" height="198" stroke="#e2e8f0" stroke-width="2" fill="none"/>
+  
+  <!-- Brand Icon - Shield/Badge -->
+  <g transform="translate(160, 40)">
+    <!-- Shield Shape -->
+    <path d="M40 0L80 15V55C80 80 60 105 40 120C20 105 0 80 0 55V15L40 0Z" 
+          fill="#034a6e" opacity="0.1" stroke="#034a6e" stroke-width="2"/>
+    
+    <!-- Star in center -->
+    <path d="M40 30L44.5 42H57L47 50L51 62L40 54L29 62L33 50L23 42H35.5L40 30Z" 
+          fill="#54c4cf" stroke="#034a6e" stroke-width="1"/>
+  </g>
+  
+  <!-- USS Brasil Branding -->
+  <text x="200" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#034a6e" font-weight="bold">Marca Parceira</text>
+</svg>

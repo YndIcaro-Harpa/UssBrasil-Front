@@ -74,11 +74,11 @@
      RESET E BASE STYLES
      ========================================== */
   * {
-    border-color: var(--border-primary);
+    border-color: transparent;
   }
 
   body {
-    background-color: var(--bg-primary);
+    background-color: #ffffff;
     color: var(--text-primary);
     font-family: ui-sans-serif, system-ui, sans-serif;
     line-height: 1.6;
@@ -102,6 +102,33 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: var(--uss-primary);
+  }
+
+  /* ==========================================
+     INPUTS GLOBAIS - TEXTO PRETO COM SHADOW
+     ========================================== */
+  input,
+  textarea,
+  select {
+    color: #000000 !important;
+    caret-color: #000000;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    background-color: #ffffff;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af !important;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    color: #000000 !important;
+    outline: none;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(59, 130, 246, 0.3);
+    border-color: #3b82f6;
   }
 
   /* ==========================================

@@ -5,9 +5,9 @@ import { Separator } from '@/components/ui/separator'
 
 export const TopBar = () => {
   const left = [
-    { icon: Phone, text: '(11) 99999-9999' },
-    { icon: Mail, text: 'contato@ussbrasil.com' },
-    { icon: Clock, text: 'Seg-Sex: 8h-18h | Sáb: 8h-14h' }
+    { icon: Phone, text: '(48) 3411-6672' },
+    { icon: Mail, text: 'Comercial@UssBrasil.com.br' },
+    { icon: Clock, text: 'Seg-Sex: 9h-19h | Sáb: 9h-18h' }
   ]
   const right = [
     { icon: Truck, text: 'Frete Grátis acima de R$ 299', color: 'text-green-300' },
@@ -69,3 +69,4 @@ export const TopBar = () => {
     </motion.div>
   )
 }
+

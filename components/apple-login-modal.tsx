@@ -448,3 +448,4 @@ export default function AppleLoginModal({ isOpen, onClose }: LoginModalProps) {
     </AnimatePresence>
   )
 }
+

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useModal } from '@/contexts/ModalContext'
+import { toast } from 'sonner'
 import ProductImage from '@/components/ProductImage'
 
 export interface Product {
@@ -37,8 +39,22 @@ const formatPrice = (price: number) =>
 
 export function ProductCard({ product, className = '' }: ProductCardProps) {
   const { addToCart, getItemQuantity, updateQuantity } = useCart()
-  const { toggleFavorite, favorites } = useAuth()
+  const { user, toggleFavorite, favorites } = useAuth()
+  const { openModal } = useModal()
   const isFavorite = (productId: string) => favorites.includes(productId)
+
+  const handleToggleFavorite = () => {
+    if (!user) {
+      toast.error('Faça login para adicionar aos favoritos')
+      openModal('auth')
+      return
+    }
+    const wasFavorite = favorites.includes(String(product.id))
+    toggleFavorite(String(product.id))
+    toast.success(wasFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos', {
+      icon: wasFavorite ? '💔' : '❤️'
+    })
+  }
 
   if (!product || typeof product.id !== 'number') {
     return (
@@ -78,7 +94,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             size="icon"
             variant="ghost"
             className="rounded-full h-10 w-10 bg-white/80 backdrop-blur-md hover:bg-white shadow"
-            onClick={() => toggleFavorite(String(product.id))}
+            onClick={handleToggleFavorite}
             aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           >
             <Heart className={`h-6 w-6 transition-all ${favorite ? 'text-red-500 fill-current' : 'text-gray-400'}`} />
@@ -86,7 +102,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
         </div>
         <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
           {product.isNew && (
-            <Badge className="bg-blue-600 text-white border-none shadow">Novo</Badge>
+            <Badge className="bg-blue-400 text-white border-none shadow">Novo</Badge>
           )}
           {discountPercentage > 0 && (
             <Badge className="bg-red-600 text-white border-none shadow">
@@ -108,7 +124,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
         <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex-grow mb-2">
           <Link
             href={`/produtos/${product.category?.toLowerCase().replace(/\s+/g, '-') || 'geral'}/${product.id}`}
-            className="hover:text-blue-600 transition-colors"
+            className="hover:text-blue-400 transition-colors"
           >
             {product.name}
           </Link>
@@ -153,7 +169,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
             </Button>
           ) : quantityInCart === 0 ? (
             <Button
-              className="w-full font-medium text-base py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition"
+              className="w-full font-medium text-base py-2.5 rounded-xl bg-blue-400 hover:bg-blue-500 transition"
               onClick={() => addToCart(product)}
             >
               <ShoppingCart className="mr-2 h-5 w-5" /> Adicionar ao carrinho
@@ -187,3 +203,4 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
     </motion.div>
   )
 }
+

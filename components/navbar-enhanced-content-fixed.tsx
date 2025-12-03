@@ -112,18 +112,6 @@ const NavbarEnhanced: React.FC<NavbarEnhancedProps> = ({
             featured_products: []
         },
         {
-            id: '3',
-            name: 'Samsung',
-            slug: 'samsung',
-            logo: '/brands/samsung.png',
-            description: 'Smartphones e Eletrônicos',
-            isNew: false,
-            isTrending: false,
-            image: '/brands/samsung.png',
-            categories: ['Smartphones', 'Tablets', 'Eletrônicos'],
-            featured_products: []
-        },
-        {
             id: '4',
             name: 'Apple',
             slug: 'apple',
@@ -161,19 +149,6 @@ const NavbarEnhanced: React.FC<NavbarEnhancedProps> = ({
             rating: 4.8,
             reviewCount: 124,
             isNew: true,
-            isBestSeller: true
-        },
-        {
-            id: '2',
-            name: 'Samsung Galaxy S24 Ultra',
-            price: 6999.00,
-            discountPrice: 6299.00,
-            image: '/products/galaxy-s24.jpg',
-            brand: 'Samsung',
-            category: 'Smartphones',
-            rating: 4.7,
-            reviewCount: 98,
-            isNew: false,
             isBestSeller: true
         },
         {
@@ -216,7 +191,7 @@ const NavbarEnhanced: React.FC<NavbarEnhancedProps> = ({
     }
 
     const handleBrandClick = (slug: string) => {
-        router.push(`/marca/${slug}`)
+        router.push(`/produtos?brand=${slug}`)
         setIsMobileMenuOpen(false)
     }
 
@@ -746,3 +721,4 @@ const NavbarEnhanced: React.FC<NavbarEnhancedProps> = ({
 }
 
 export default NavbarEnhanced
+

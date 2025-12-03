@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { 
@@ -45,92 +45,22 @@ type SortKey = 'name' | 'price' | 'stock' | 'sales' | 'rating'
 type SortDirection = 'asc' | 'desc'
 
 export default function AdminProductsPage() {
-  const [products] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'iPhone 15 Pro Max 256GB Titânio Natural',
-      image: '/Produtos/Apple/Iphone 16 Pro.png',
-      category: 'Smartphones',
-      price: 8999.99,
-      stock: 45,
-      sales: 127,
-      status: 'active',
-      rating: 4.8,
-      reviews: 342,
-      sku: 'APL-IPH15PM-256-TN',
-      lastUpdate: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'MacBook Air M3 13" 512GB Cinza Espacial',
-      image: '/fallback-product.png',
-      category: 'Laptops',
-      price: 12999.99,
-      stock: 23,
-      sales: 89,
-      status: 'active',
-      rating: 4.9,
-      reviews: 256,
-      sku: 'APL-MBA-M3-512-CE',
-      lastUpdate: '2024-01-14'
-    },
-    {
-      id: '3',
-      name: 'Samsung Galaxy S24 Ultra 512GB Preto',
-      image: '/fallback-product.png',
-      category: 'Smartphones',
-      price: 6999.99,
-      stock: 67,
-      sales: 156,
-      status: 'active',
-      rating: 4.7,
-      reviews: 189,
-      sku: 'SAM-GS24U-512-PT',
-      lastUpdate: '2024-01-13'
-    },
-    {
-      id: '4',
-      name: 'AirPods Pro 3ª Geração USB-C',
-      image: '/fallback-product.png',
-      category: 'Áudio',
-      price: 2499.99,
-      stock: 128,
-      sales: 234,
-      status: 'active',
-      rating: 4.6,
-      reviews: 445,
-      sku: 'APL-APP3-USBC',
-      lastUpdate: '2024-01-12'
-    },
-    {
-      id: '5',
-      name: 'iPad Pro 12.9" M2 256GB Wi-Fi',
-      image: '/fallback-product.png',
-      category: 'Tablets',
-      price: 7999.99,
-      stock: 15,
-      sales: 67,
-      status: 'active',
-      rating: 4.8,
-      reviews: 178,
-      sku: 'APL-IPP129-M2-256',
-      lastUpdate: '2024-01-11'
-    },
-    {
-      id: '6',
-      name: 'Apple Watch Series 9 GPS 45mm',
-      image: '/fallback-product.png',
-      category: 'Wearables',
-      price: 3999.99,
-      stock: 0,
-      sales: 98,
-      status: 'inactive',
-      rating: 4.5,
-      reviews: 234,
-      sku: 'APL-AWS9-GPS-45',
-      lastUpdate: '2024-01-10'
+  const [products, setProducts] = useState<Product[]>([])
+
+  // Fetch products from the backend API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products')
+        if (!response.ok) throw new Error('Erro ao buscar produtos')
+        const data = await response.json()
+        setProducts(data)
+      } catch (error) {
+        console.error(error)
+      }
     }
-  ])
+    fetchProducts()
+  }, [])
   
   const [searchTerm, setSearchTerm] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('sales')
@@ -255,7 +185,7 @@ export default function AdminProductsPage() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-2 bg-gradient-to-r from-[#0E7466] to-[#0C6157] text-white px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all"
+              className="flex items-center space-x-2 bg-gradient-to-r from-[#001941] to-[#001941] text-white px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Produto</span>
@@ -339,7 +269,7 @@ export default function AdminProductsPage() {
                 placeholder="Pesquisar produtos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#001941] transition-all"
               />
             </div>
           </div>
@@ -349,7 +279,7 @@ export default function AdminProductsPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#001941] transition-all"
             >
               {categories.map(category => (
                 <option key={category} value={category} className="bg-[#0C1A33] text-white">
@@ -364,7 +294,7 @@ export default function AdminProductsPage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#001941] transition-all"
             >
               {statuses.map(status => (
                 <option key={status} value={status} className="bg-[#0C1A33] text-white">
@@ -532,3 +462,5 @@ export default function AdminProductsPage() {
     </div>
   )
 }
+
+

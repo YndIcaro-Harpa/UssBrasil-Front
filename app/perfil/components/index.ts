@@ -1,0 +1,6 @@
+export { default as ProfileInfo } from './ProfileInfo'
+export { default as ProfileOrders } from './ProfileOrders'
+export { default as ProfileAddresses } from './ProfileAddresses'
+export { default as ProfileFavorites } from './ProfileFavorites'
+export { default as ProfileSecurity } from './ProfileSecurity'
+export { default as ProfileNotifications } from './ProfileNotifications'

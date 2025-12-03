@@ -31,7 +31,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  trailingSlash: true,
+  // trailingSlash desabilitado - causa problemas com NextAuth API routes
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
   distDir: '.next',
   generateBuildId: async () => {
     return `build-${Date.now()}`

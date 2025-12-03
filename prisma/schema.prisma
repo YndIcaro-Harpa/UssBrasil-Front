@@ -279,7 +279,6 @@ enum Brand {
   GEONAV
   JBL
   XIAOMI
-  SAMSUNG
   GOOGLE
   MICROSOFT
   SONY

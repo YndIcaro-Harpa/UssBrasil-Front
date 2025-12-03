@@ -1,115 +1,224 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  ShoppingCart, Heart, Star, Minus, Plus, ArrowLeft, Share2, Shield,
-  Truck, RotateCcw, CreditCard, CheckCircle, ChevronLeft, ChevronRight,
-  Tag, Info, Package, Zap, Award, Clock, Eye, ThumbsUp
+import { 
+  Heart, ShoppingCart, Star, Share2, Truck, Shield, CheckCircle, 
+  ChevronLeft, ChevronRight, Package, CreditCard, Tag, Eye,
+  Award, RotateCcw, Minus, Plus, MessageCircle
 } from 'lucide-react'
-
-import apiClient, { Product, formatPrice } from '@/lib/api-client'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
+import apiClient, { formatPrice } from '@/lib/api-client'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useModal } from '@/contexts/ModalContext'
 import { toast } from 'sonner'
 
-// Componente do Product Hero com Gallery
-function ProductHero({ product }: { product: Product }) {
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const images = product.images || ['/fallback-product.png']
+// Types
+interface ColorVariation {
+  name: string
+  hexCode?: string
+  images: string[]
+}
 
-  const nextImage = () => {
-    setSelectedImageIndex((prev) => (prev + 1) % images.length)
+interface Product {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  price: number
+  discountPrice?: number
+  stock: number
+  images?: string[] | string
+  colors?: string | ColorVariation[]
+  sizes?: string | string[]
+  storage?: string | string[]
+  specifications?: string | Record<string, string>
+  category?: { id: number; name: string }
+  brand?: { id: number; name: string }
+  featured?: boolean
+  isPreOrder?: boolean
+  sku?: string
+}
+
+// Animations
+const fadeInUp = {
+  initial: { opacity: 0, y: 60 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as any }
+}
+
+const staggerContainer = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+// Components
+function ProductGallery({ 
+  images, 
+  name, 
+  colorVariations,
+  selectedColor,
+  onSelectColor 
+}: { 
+  images: string[]
+  name: string
+  colorVariations?: ColorVariation[]
+  selectedColor?: string | null
+  onSelectColor?: (color: string) => void
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [isZoomed, setIsZoomed] = useState(false)
+
+  // Determinar quais imagens mostrar baseado na cor selecionada
+  const getDisplayImages = () => {
+    if (selectedColor && colorVariations && colorVariations.length > 0) {
+      const colorVar = colorVariations.find(c => c.name === selectedColor)
+      if (colorVar && colorVar.images.length > 0) {
+        return colorVar.images
+      }
+    }
+    return images.length > 0 ? images : ['/fallback-product.png']
   }
 
-  const prevImage = () => {
-    setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length)
-  }
+  const displayImages = getDisplayImages()
+
+  // Reset index quando mudar de cor
+  useEffect(() => {
+    setSelectedIndex(0)
+  }, [selectedColor])
+
+  const nextImage = () => setSelectedIndex((prev) => (prev + 1) % displayImages.length)
+  const prevImage = () => setSelectedIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length)
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-      {/* Gallery */}
-      <div className="space-y-4">
-        {/* Main Image */}
-        <div className="relative aspect-square bg-gray-50 rounded-xl overflow-hidden">
-          <Image
-            src={images[selectedImageIndex]}
-            alt={product.name}
-            fill
-            className="object-contain p-8"
-          />
-          
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </>
-          )}
+    <motion.div {...fadeInUp} className="sticky top-24 space-y-4">
+      {/* Main Image */}
+      <div 
+        className="relative aspect-square max-w-xl mx-auto bg-white rounded-2xl overflow-hidden group cursor-zoom-in shadow-lg"
+        onClick={() => setIsZoomed(!isZoomed)}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedIndex}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+            className="relative w-full h-full"
+          >
+            <Image
+              src={displayImages[selectedIndex]}
+              alt={`${name} - Imagem ${selectedIndex + 1}`}
+              fill
+              className="object-contain p-6"
+              priority
+              quality={95}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
+            />
+          </motion.div>
+        </AnimatePresence>
 
-          {/* Image Counter */}
-          {images.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-              {selectedImageIndex + 1} / {images.length}
-            </div>
-          )}
-        </div>
+        {/* Navigation Arrows */}
+        {displayImages.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); prevImage() }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            >
+              <ChevronLeft className="h-6 w-6 text-gray-900" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); nextImage() }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            >
+              <ChevronRight className="h-6 w-6 text-gray-900" />
+            </button>
+          </>
+        )}
 
-        {/* Thumbnail Gallery */}
-        {images.length > 1 && (
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedImageIndex(index)}
-                className={`flex-shrink-0 relative aspect-square w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                  index === selectedImageIndex 
-                    ? 'border-blue-600 ring-2 ring-blue-600/20' 
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <Image
-                  src={image}
-                  alt={`${product.name} - Imagem ${index + 1}`}
-                  fill
-                  className="object-contain p-2"
-                />
-              </button>
-            ))}
+        {/* Counter */}
+        {displayImages.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
+            {selectedIndex + 1} / {displayImages.length}
           </div>
         )}
       </div>
 
-      {/* Product Info */}
-      <ProductInfo product={product} />
-    </div>
+      {/* Thumbnails */}
+      {displayImages.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide justify-center">
+          {displayImages.map((image, idx) => (
+            <motion.button
+              key={idx}
+              onClick={() => setSelectedIndex(idx)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden transition-all duration-300 ${
+                idx === selectedIndex 
+                  ? 'ring-2 ring-blue-400/10 shadow-lg shadow-blue-400/20' 
+                  : ''
+              }`}
+            >
+              <Image
+                src={image}
+                alt={`Thumbnail ${idx + 1}`}
+                fill
+                className="object-contain p-2"
+                quality={90}
+              />
+            </motion.button>
+          ))}
+        </div>
+      )}
+    </motion.div>
   )
 }
 
-// Componente de Informações do Produto
-function ProductInfo({ product }: { product: Product }) {
+function ProductInfo({ 
+  product, 
+  colorVariations,
+  selectedColor,
+  onSelectColor 
+}: { 
+  product: Product; 
+  colorVariations?: ColorVariation[];
+  selectedColor?: string | null;
+  onSelectColor?: (color: string) => void;
+}) {
   const [quantity, setQuantity] = useState(1)
-  const [isHovered, setIsHovered] = useState(false)
+  const [selectedSize, setSelectedSize] = useState<string | undefined>()
+  const [selectedStorage, setSelectedStorage] = useState<string | undefined>()
   const { addToCart } = useCart()
   const { favorites, toggleFavorite, user } = useAuth()
   const { openAuthModal } = useModal()
-  const router = useRouter()
+  
+  // Processar tamanhos
+  const sizes: string[] = (() => {
+    if (!product.sizes) return []
+    if (typeof product.sizes === 'string') {
+      try { return JSON.parse(product.sizes) } catch { return [] }
+    }
+    return product.sizes
+  })()
+
+  // Processar armazenamento
+  const storageOptions: string[] = (() => {
+    if (!product.storage) return []
+    if (typeof product.storage === 'string') {
+      try { return JSON.parse(product.storage) } catch { return [] }
+    }
+    return product.storage
+  })()
   
   const isFavorite = favorites.includes(product.id)
   const discountPercentage = product.discountPrice 
@@ -118,14 +227,23 @@ function ProductInfo({ product }: { product: Product }) {
 
   const handleAddToCart = () => {
     addToCart({
-      id: Number(product.id),
+      id: product.id,
       name: product.name,
-      price: product.discountPrice || product.price,
+      price: product.price,
+      discountPrice: product.discountPrice,
       image: product.images?.[0] || '/fallback-product.png',
       category: product.category?.name || 'Geral',
-      quantity
+      brand: product.brand?.name || '',
+      slug: product.slug,
+      stock: product.stock || 10,
+      quantity,
+      selectedColor: selectedColor || undefined,
+      selectedSize,
+      selectedStorage
     })
-    toast.success(`${quantity}x ${product.name} adicionado ao carrinho!`)
+    toast.success(`${quantity}x ${product.name} adicionado ao carrinho!`, {
+      icon: '🛒'
+    })
   }
 
   const handleToggleFavorite = () => {
@@ -134,126 +252,154 @@ function ProductInfo({ product }: { product: Product }) {
       return
     }
     toggleFavorite(product.id)
-    toast.success(isFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
+    toast.success(isFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos', {
+      icon: isFavorite ? '💔' : '❤️'
+    })
   }
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (navigator.share) {
-      navigator.share({
+      await navigator.share({
         title: product.name,
         text: product.description,
         url: window.location.href
       })
     } else {
-      navigator.clipboard.writeText(window.location.href)
-      toast.success('Link copiado para a área de transferência!')
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('Link copiado!', { icon: '📋' })
     }
   }
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Button
-        variant="outline"
-        onClick={() => router.back()}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Voltar
-      </Button>
+    <motion.div 
+      variants={staggerContainer}
+      initial="initial"
+      animate="animate"
+      className="space-y-8"
+    >
+      {/* Breadcrumb */}
+      <motion.div variants={fadeInUp} className="flex items-center gap-2 text-sm">
+        <Link href="/" className="text-gray-500 hover:text-blue-400 transition-colors">
+          Home
+        </Link>
+        <ChevronRight className="h-4 w-4 text-gray-400" />
+        <Link href="/produtos" className="text-gray-500 hover:text-blue-400 transition-colors">
+          Produtos
+        </Link>
+        {product.category && (
+          <>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="text-gray-900 font-medium">{product.category.name}</span>
+          </>
+        )}
+      </motion.div>
 
-      {/* Brand & Category */}
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className="text-blue-600 border-blue-200">
-          {product.brand?.name || 'Marca'}
-        </Badge>
-        <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-          {product.category?.name || 'Categoria'}
-        </Badge>
+      {/* Badges */}
+      <motion.div variants={fadeInUp} className="flex flex-wrap gap-2">
+        {product.brand && (
+          <Badge variant="outline" className="px-4 py-1.5 text-sm border-blue-200 text-blue-700">
+            {product.brand.name}
+          </Badge>
+        )}
         {product.featured && (
-          <Badge className="bg-blue-600 text-white">
-            <Tag className="h-3 w-3 mr-1" />
+          <Badge className="px-4 py-1.5 text-sm bg-blue-400 text-white border-0">
+            <Star className="h-3 w-3 mr-1 fill-current" />
             Destaque
           </Badge>
         )}
-      </div>
+        {product.stock > 0 && product.stock < 10 && (
+          <Badge className="px-4 py-1.5 text-sm bg-amber-100 text-amber-900 border-amber-200">
+            Últimas {product.stock} unidades
+          </Badge>
+        )}
+      </motion.div>
 
-      {/* Product Name */}
-      <div>
-        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+      {/* Title */}
+      <motion.div variants={fadeInUp}>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
           {product.name}
         </h1>
-        <p className="text-gray-600 text-lg">
-          {product.description || 'Produto de alta qualidade com tecnologia avançada'}
-        </p>
-      </div>
+        {product.description && (
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed">
+            {product.description}
+          </p>
+        )}
+      </motion.div>
 
       {/* Rating */}
-      <div className="flex items-center gap-4">
+      <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3 sm:gap-6 pb-4 sm:pb-6 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
+          <div className="flex gap-0.5">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+              <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 fill-amber-400 text-amber-400" />
             ))}
           </div>
-          <span className="font-medium text-gray-900">4.8</span>
-          <span className="text-gray-600">(324 avaliações)</span>
+          <span className="text-sm sm:text-base font-semibold text-gray-900">4.8</span>
         </div>
-        <Button variant="ghost" size="sm" className="text-blue-600">
-          <Eye className="h-4 w-4 mr-1" />
-          Ver avaliações
-        </Button>
-      </div>
+        <Separator orientation="vertical" className="h-5 sm:h-6 hidden sm:block" />
+        <button className="text-sm sm:text-base text-gray-600 hover:text-blue-400 transition-colors flex items-center gap-2">
+          <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span>324 avaliações</span>
+        </button>
+      </motion.div>
 
       {/* Price */}
-      <div className="bg-gray-50 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      <motion.div variants={fadeInUp} className="bg-gray-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
+        <div className="space-y-3 sm:space-y-4">
           {product.discountPrice ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-blue-600">
+            <>
+              <div className="flex flex-wrap items-baseline gap-2 sm:gap-4">
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-400">
                   {formatPrice(product.discountPrice)}
                 </span>
-                <Badge className="bg-red-500 text-white">
+                <Badge className="bg-red-500 text-white text-xs sm:text-sm lg:text-base px-2 sm:px-3 py-1">
                   -{discountPercentage}% OFF
                 </Badge>
               </div>
-              <span className="text-lg line-through text-gray-500">
-                De {formatPrice(product.price)}
-              </span>
-            </div>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className="text-base sm:text-lg lg:text-xl line-through text-gray-500">
+                  {formatPrice(product.price)}
+                </span>
+                <span className="text-sm sm:text-base text-green-600 font-semibold">
+                  Economize {formatPrice(product.price - product.discountPrice)}
+                </span>
+              </div>
+            </>
           ) : (
-            <span className="text-3xl font-bold text-blue-600">
+            <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-400">
               {formatPrice(product.price)}
             </span>
           )}
-        </div>
 
-        <div className="flex items-center gap-3 text-sm text-gray-600">
-          <div className="flex items-center gap-1">
-            <CreditCard className="h-4 w-4" />
-            <span>Em até 12x sem juros</span>
-          </div>
-          <Separator orientation="vertical" className="h-4" />
-          <div className="flex items-center gap-1">
-            <Tag className="h-4 w-4" />
-            <span>5% de desconto no PIX</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200">
+            <div className="flex items-center gap-2 text-gray-700">
+              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
+              <span className="text-xs sm:text-sm lg:text-base font-medium">Em até 12x sem juros</span>
+            </div>
+            <Separator orientation="vertical" className="h-5 hidden sm:block" />
+            <div className="flex items-center gap-2 text-gray-700">
+              <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              <span className="text-xs sm:text-sm lg:text-base font-medium">5% OFF no PIX</span>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Stock Info */}
-      <div className={`flex items-center gap-3 p-4 rounded-lg ${
-        product.stock > 0 
-          ? product.stock < 10 
-            ? 'bg-amber-50 border border-amber-200' 
-            : 'bg-green-50 border border-green-200'
-          : 'bg-red-50 border border-red-200'
-      }`}>
+      {/* Stock */}
+      <motion.div 
+        variants={fadeInUp}
+        className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl ${
+          product.stock > 0 
+            ? product.stock < 10 
+              ? 'bg-amber-50 border border-amber-200' 
+              : 'bg-green-50 border border-green-200'
+            : 'bg-red-50 border border-red-200'
+        }`}
+      >
         {product.stock > 0 ? (
           <>
-            <CheckCircle className={`h-5 w-5 ${product.stock < 10 ? 'text-amber-600' : 'text-green-600'}`} />
-            <span className={`font-medium ${product.stock < 10 ? 'text-amber-800' : 'text-green-800'}`}>
+            <CheckCircle className={`h-5 w-5 sm:h-6 sm:w-6 ${product.stock < 10 ? 'text-amber-600' : 'text-green-600'}`} />
+            <span className={`text-sm sm:text-base font-semibold ${product.stock < 10 ? 'text-amber-900' : 'text-green-900'}`}>
               {product.stock < 10 
                 ? `Apenas ${product.stock} unidades disponíveis` 
                 : 'Disponível em estoque'
@@ -262,414 +408,377 @@ function ProductInfo({ product }: { product: Product }) {
           </>
         ) : (
           <>
-            <Package className="h-5 w-5 text-red-600" />
-            <span className="font-medium text-red-800">Produto esgotado</span>
+            <Package className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+            <span className="text-sm sm:text-base font-semibold text-red-900">Produto esgotado</span>
           </>
         )}
-      </div>
+      </motion.div>
+
+      {/* Variações de Cor */}
+      {colorVariations && colorVariations.length > 0 && (
+        <motion.div variants={fadeInUp} className="space-y-3">
+          <label className="font-semibold text-gray-900 text-base sm:text-lg">Cor:</label>
+          <div className="flex flex-wrap gap-3">
+            {colorVariations.map((colorVar) => (
+              <button
+                key={colorVar.name}
+                onClick={() => onSelectColor?.(colorVar.name)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
+                  selectedColor === colorVar.name
+                    ? 'border-blue-400 bg-blue-50 shadow-md'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div 
+                  className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: colorVar.hexCode || '#ccc' }}
+                />
+                <span className={`text-sm font-medium ${
+                  selectedColor === colorVar.name ? 'text-blue-700' : 'text-gray-700'
+                }`}>
+                  {colorVar.name}
+                </span>
+                {colorVar.images.length > 0 && (
+                  <span className="text-xs text-gray-400">
+                    ({colorVar.images.length})
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Tamanhos */}
+      {sizes.length > 0 && (
+        <motion.div variants={fadeInUp} className="space-y-3">
+          <label className="font-semibold text-gray-900 text-base sm:text-lg">Tamanho:</label>
+          <div className="flex flex-wrap gap-2">
+            {sizes.map((size) => (
+              <button
+                key={size}
+                onClick={() => setSelectedSize(size)}
+                className={`px-4 py-2.5 rounded-xl border-2 font-medium transition-all ${
+                  selectedSize === size
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Armazenamento */}
+      {storageOptions.length > 0 && (
+        <motion.div variants={fadeInUp} className="space-y-3">
+          <label className="font-semibold text-gray-900 text-base sm:text-lg">Armazenamento:</label>
+          <div className="flex flex-wrap gap-2">
+            {storageOptions.map((storage) => (
+              <button
+                key={storage}
+                onClick={() => setSelectedStorage(storage)}
+                className={`px-4 py-2.5 rounded-xl border-2 font-medium transition-all ${
+                  selectedStorage === storage
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {storage}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Quantity & Actions */}
-      <div className="space-y-4">
-        {/* Quantity Selector */}
+      <motion.div variants={fadeInUp} className="space-y-4 sm:space-y-5">
         {product.stock > 0 && (
-          <div className="flex items-center gap-4">
-            <label className="font-medium text-gray-900">Quantidade:</label>
-            <div className="flex items-center border border-gray-300 rounded-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
+            <label className="font-semibold text-gray-900 text-base sm:text-lg">Quantidade:</label>
+            <div className="flex text-black items-center bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl overflow-hidden">
               <Button
                 variant="ghost"
-                size="sm"
+                size="lg"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
-                className="h-10 w-10 p-0"
+                className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 hover:bg-gray-50"
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
-              <span className="w-16 text-center font-medium">{quantity}</span>
+              <span className="w-14 sm:w-16 lg:w-20 text-center font-bold text-lg sm:text-xl">{quantity}</span>
               <Button
                 variant="ghost"
-                size="sm"
+                size="lg"
                 onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                 disabled={quantity >= product.stock}
-                className="h-10 w-10 p-0"
+                className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 hover:bg-gray-50"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </div>
-            <span className="text-sm text-gray-600">
-              {product.stock} disponível
+            <span className="text-sm sm:text-base text-gray-600">
+              {product.stock} disponíveis
             </span>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <Button 
-            onClick={handleAddToCart}
-            disabled={product.stock === 0}
-            className="flex-1 bg-blue-900 hover:bg-blue-800 text-white font-semibold h-14 text-lg"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <motion.div
-              className="flex items-center justify-center gap-3"
-              animate={{ scale: isHovered ? 1.05 : 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        <div className="flex gap-2 sm:gap-3 lg:gap-4">
+          {product.isPreOrder ? (
+            <Button 
+              asChild
+              size="lg"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold h-12 sm:h-14 lg:h-16 text-sm sm:text-base lg:text-lg rounded-xl sm:rounded-2xl shadow-lg transition-all duration-300"
             >
-              <ShoppingCart className="h-5 w-5" />
-              {product.stock === 0 ? 'Produto Esgotado' : 'Adicionar ao Carrinho'}
-            </motion.div>
-          </Button>
+              <a
+                href={`https://wa.me/5548991832760?text=${encodeURIComponent(
+                  `🛒 *USS Brasil Tecnologia*\n\nOlá! Vim do site e gostaria de saber mais sobre:\n\n📱 *${product.name}*\n💰 Preço visto: ${formatPrice(product.discountPrice || product.price)}\n\nEsse modelo está disponível?`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mr-2 sm:mr-3" />
+                <span className="hidden sm:inline">Falar no WhatsApp</span>
+                <span className="sm:hidden">WhatsApp</span>
+              </a>
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+              size="lg"
+              className="flex-1 bg-blue-400 hover:bg-blue-500 text-white font-bold h-12 sm:h-14 lg:h-16 text-sm sm:text-base lg:text-lg rounded-xl sm:rounded-2xl shadow-lg transition-all duration-300"
+            >
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mr-2 sm:mr-3" />
+              <span className="hidden sm:inline">{product.stock === 0 ? 'Produto Esgotado' : 'Adicionar ao Carrinho'}</span>
+              <span className="sm:hidden">{product.stock === 0 ? 'Esgotado' : 'Adicionar'}</span>
+            </Button>
+          )}
 
           <Button
             variant="outline"
+            size="lg"
             onClick={handleToggleFavorite}
-            className="h-14 w-14 border-gray-300 hover:border-red-300 hover:bg-red-50"
+            className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 border-2 rounded-xl sm:rounded-2xl hover:border-red-300 hover:bg-red-50 transition-all duration-300"
           >
-            <Heart className={`h-5 w-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+            <Heart className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
           </Button>
 
           <Button
             variant="outline"
+            size="lg"
             onClick={handleShare}
-            className="h-14 w-14 border-gray-300 hover:border-blue-300 hover:bg-blue-50"
+            className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 border-2 rounded-xl sm:rounded-2xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
           >
-            <Share2 className="h-5 w-5 text-gray-500" />
+            <Share2 className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-gray-500" />
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Benefits */}
-      <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Truck className="h-5 w-5 text-blue-600" />
+      <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 pt-4 sm:pt-6 lg:pt-8 border-t border-gray-200">
+        {[
+          { icon: Truck, title: 'Entrega Rápida', desc: 'Em até 2 dias úteis', color: 'blue' },
+          { icon: Shield, title: 'Garantia', desc: '12 meses', color: 'green' },
+          { icon: RotateCcw, title: 'Troca Grátis', desc: '7 dias', color: 'purple' },
+          { icon: Award, title: 'Qualidade Premium', desc: 'Certificado', color: 'amber' }
+        ].map((benefit, idx) => (
+          <div key={idx} className="flex items-start gap-2 sm:gap-3 lg:gap-4 p-2 sm:p-3 lg:p-4 rounded-xl sm:rounded-2xl hover:bg-gray-50 transition-colors">
+            <div className={`bg-${benefit.color}-100 p-2 sm:p-2.5 lg:p-3 rounded-lg sm:rounded-xl`}>
+              <benefit.icon className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-${benefit.color}-600`} />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900">{benefit.title}</div>
+              <div className="text-xs sm:text-sm text-gray-600">{benefit.desc}</div>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-gray-900">Entrega Rápida</div>
-            <div className="text-sm text-gray-600">Em até 2 dias úteis</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="bg-green-100 p-2 rounded-lg">
-            <Shield className="h-5 w-5 text-green-600" />
-          </div>
-          <div>
-            <div className="font-medium text-gray-900">Garantia</div>
-            <div className="text-sm text-gray-600">12 meses de garantia</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <RotateCcw className="h-5 w-5 text-purple-600" />
-          </div>
-          <div>
-            <div className="font-medium text-gray-900">Troca Grátis</div>
-            <div className="text-sm text-gray-600">7 dias para trocar</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="bg-amber-100 p-2 rounded-lg">
-            <Award className="h-5 w-5 text-amber-600" />
-          </div>
-          <div>
-            <div className="font-medium text-gray-900">Qualidade Premium</div>
-            <div className="text-sm text-gray-600">Produto certificado</div>
-          </div>
-        </div>
-      </div>
-    </div>
+        ))}
+      </motion.div>
+    </motion.div>
   )
 }
 
-// Componente de Especificações
-function ProductSpecs({ product }: { product: Product }) {
-  return (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-gray-900">Especificações Técnicas</h3>
-      
-      <div className="grid gap-6">
-        <div className="bg-gray-50 rounded-xl p-6">
-          <h4 className="font-semibold text-gray-900 mb-4">Informações Básicas</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex justify-between py-2 border-b border-gray-200">
-              <span className="text-gray-600">Marca:</span>
-              <span className="font-medium text-gray-900">{product.brand?.name || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-gray-200">
-              <span className="text-gray-600">Categoria:</span>
-              <span className="font-medium text-gray-900">{product.category?.name || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-gray-200">
-              <span className="text-gray-600">SKU:</span>
-              <span className="font-medium text-gray-900">{product.sku || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-gray-200">
-              <span className="text-gray-600">Peso:</span>
-              <span className="font-medium text-gray-900">1.2kg</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-xl p-6">
-          <h4 className="font-semibold text-gray-900 mb-4">Características</h4>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <Zap className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="font-medium text-gray-900">Alta Performance</div>
-                <div className="text-sm text-gray-600">
-                  Tecnologia avançada para máximo desempenho
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="font-medium text-gray-900">Durabilidade</div>
-                <div className="text-sm text-gray-600">
-                  Construção robusta e materiais de qualidade
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Award className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="font-medium text-gray-900">Certificação</div>
-                <div className="text-sm text-gray-600">
-                  Produto certificado pelos órgãos competentes
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Página Principal do Produto
-export default function ProductPage() {
+export default function ProdutoPage() {
+  const params = useParams<{ slug: string }>()
+  const slug = params.slug
   const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
-  const params = useParams()
-  const slug = params.slug as string
+  const [loading, setLoading] = useState(true)
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadProduct = async () => {
+    const fetchProduct = async () => {
       try {
         setLoading(true)
-        
-        // Buscar produto por slug
-        const productsResponse = await apiClient.getProducts({ limit: 1, search: slug })
-        const foundProduct = productsResponse?.find(p => p.slug === slug)
-        
-        if (foundProduct) {
-          setProduct(foundProduct)
-          
-          // Buscar produtos relacionados da mesma categoria
-          if (foundProduct.category?.id) {
-            const relatedResponse = await apiClient.getProducts({
-              categoryId: foundProduct.category.id,
-              limit: 6
-            })
-            setRelatedProducts(relatedResponse?.filter(p => p.id !== foundProduct.id).slice(0, 4) || [])
-          }
+        const data = await apiClient.getProductBySlug(slug)
+        setProduct(data)
+
+        // Definir cor inicial se houver variações
+        if (data?.colors) {
+          try {
+            const colors = typeof data.colors === 'string' ? JSON.parse(data.colors) : data.colors
+            if (Array.isArray(colors) && colors.length > 0) {
+              setSelectedColor(colors[0].name)
+            }
+          } catch {}
+        }
+
+        if (data?.category?.id) {
+          const related = await apiClient.getProducts({
+            categoryId: data.category.id,
+            limit: 4
+          })
+          setRelatedProducts(related.filter((p: Product) => p.id !== data.id))
         }
       } catch (error) {
-        console.error('Erro ao carregar produto:', error)
+        console.error('Erro ao buscar produto:', error)
         toast.error('Erro ao carregar produto')
       } finally {
         setLoading(false)
       }
     }
 
-    if (slug) {
-      loadProduct()
-    }
+    if (slug) fetchProduct()
   }, [slug])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-900"></div>
-          <p className="mt-4 text-gray-600">Carregando produto...</p>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center pt-20">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="h-16 w-16 border-4 border-blue-400 border-t-transparent rounded-full"
+        />
       </div>
     )
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center pt-20">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Produto não encontrado</h1>
-          <p className="text-gray-600 mb-6">
-            O produto que você procura não existe ou foi removido.
-          </p>
-          <Button 
-            onClick={() => window.location.href = '/produtos'}
-            className="bg-blue-900 hover:bg-blue-800"
-          >
-            Ver Todos os Produtos
-          </Button>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Produto não encontrado</h1>
+          <Link href="/produtos">
+            <Button size="lg" className="rounded-full bg-blue-400 hover:bg-blue-500">Ver Produtos</Button>
+          </Link>
         </div>
       </div>
     )
   }
 
+  // Processar imagens corretamente
+  const processImages = () => {
+    if (!product.images) return ['/fallback-product.png']
+    
+    if (typeof product.images === 'string') {
+      try {
+        const parsed = JSON.parse(product.images)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      } catch {
+        const imageArray = product.images.split(',').map(img => img.trim()).filter(Boolean)
+        return imageArray.length > 0 ? imageArray : ['/fallback-product.png']
+      }
+    }
+    
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      return product.images
+    }
+    
+    return ['/fallback-product.png']
+  }
+
+  // Processar variações de cor
+  const processColorVariations = (): ColorVariation[] => {
+    if (!product.colors) return []
+    
+    if (typeof product.colors === 'string') {
+      try {
+        const parsed = JSON.parse(product.colors)
+        if (Array.isArray(parsed)) return parsed
+      } catch {
+        return []
+      }
+    }
+    
+    if (Array.isArray(product.colors)) {
+      return product.colors
+    }
+    
+    return []
+  }
+
+  const images = processImages()
+  const colorVariations = processColorVariations()
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      <div className="container mx-auto px-6 py-8">
-        {/* Product Hero */}
-        <ProductHero product={product} />
-
-        {/* Product Details Tabs */}
-        <div className="mt-16">
-          <Tabs defaultValue="description" className="space-y-8">
-            <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto">
-              <TabsTrigger value="description">Descrição</TabsTrigger>
-              <TabsTrigger value="specs">Especificações</TabsTrigger>
-              <TabsTrigger value="reviews">Avaliações</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="description" className="space-y-6">
-              <div className="bg-white rounded-xl border border-gray-200 p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Sobre o Produto</h3>
-                <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-600 text-lg leading-relaxed">
-                    {product.description || `
-                      Este produto representa o que há de mais avançado em tecnologia e qualidade. 
-                      Desenvolvido com os melhores materiais e seguindo rigorosos padrões de qualidade, 
-                      oferece uma experiência excepcional para nossos clientes.
-                    `}
-                  </p>
-                  <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Principais Benefícios</h4>
-                      <ul className="space-y-2">
-                        <li className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          <span className="text-gray-700">Alta durabilidade e resistência</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          <span className="text-gray-700">Design moderno e elegante</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          <span className="text-gray-700">Tecnologia de ponta</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          <span className="text-gray-700">Garantia estendida</span>
-                        </li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Na Caixa</h4>
-                      <ul className="space-y-2">
-                        <li className="flex items-center gap-3">
-                          <Package className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                          <span className="text-gray-700">1x {product.name}</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <Package className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                          <span className="text-gray-700">Manual de instruções</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <Package className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                          <span className="text-gray-700">Certificado de garantia</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <Package className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                          <span className="text-gray-700">Acessórios inclusos</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="specs">
-              <div className="bg-white rounded-xl border border-gray-200 p-8">
-                <ProductSpecs product={product} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="reviews">
-              <div className="bg-white rounded-xl border border-gray-200 p-8">
-                <div className="text-center py-16">
-                  <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                    <Star className="h-12 w-12 text-gray-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Seja o primeiro a avaliar
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Compartilhe sua experiência com este produto
-                  </p>
-                  <Button className="bg-blue-900 hover:bg-blue-800">
-                    <ThumbsUp className="h-4 w-4 mr-2" />
-                    Escrever Avaliação
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-8 lg:py-12 pt-24 sm:pt-28">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 xl:gap-12 mb-8 sm:mb-12 lg:mb-16 xl:mb-24">
+          <ProductGallery 
+            images={images} 
+            name={product.name}
+            colorVariations={colorVariations}
+            selectedColor={selectedColor}
+            onSelectColor={setSelectedColor}
+          />
+          <ProductInfo 
+            product={product} 
+            colorVariations={colorVariations}
+            selectedColor={selectedColor}
+            onSelectColor={setSelectedColor}
+          />
         </div>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-16">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Produtos Relacionados
-              </h2>
-              <p className="text-gray-600 text-lg">
-                Outros produtos que você pode gostar
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct) => (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="pt-8 sm:pt-12 lg:pt-16 border-t border-gray-200"
+          >
+            <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 lg:mb-8 xl:mb-12 text-center">
+              Você também pode gostar
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {relatedProducts.map((relatedProduct, idx) => (
                 <motion.div
                   key={relatedProduct.id}
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
-                  onClick={() => window.location.href = `/produto/${relatedProduct.slug}`}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
                 >
-                  <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                    <Image
-                      src={relatedProduct.images?.[0] || '/fallback-product.png'}
-                      alt={relatedProduct.name}
-                      fill
-                      className="object-contain p-4 group-hover:scale-110 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {relatedProduct.name}
-                    </h4>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-blue-600">
-                        {formatPrice(relatedProduct.discountPrice || relatedProduct.price)}
-                      </span>
-                      <Button size="sm" variant="outline">
-                        Ver
-                      </Button>
+                  <Link href={`/produto/${relatedProduct.slug}`}>
+                    <div className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-500">
+                      <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                        <Image
+                          src={typeof relatedProduct.images === 'string' 
+                            ? relatedProduct.images.split(',')[0]?.trim() || '/fallback-product.png'
+                            : relatedProduct.images?.[0] || '/fallback-product.png'}
+                          alt={relatedProduct.name}
+                          fill
+                          className="object-contain p-4 group-hover:scale-110 transition-transform duration-700"
+                          quality={90}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                        />
+                      </div>
+                      <div className="p-4 sm:p-5">
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2 mb-2 sm:mb-3">
+                          {relatedProduct.name}
+                        </h3>
+                        <div className="text-lg sm:text-xl font-bold text-blue-400">
+                          {formatPrice(relatedProduct.discountPrice || relatedProduct.price)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

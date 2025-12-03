@@ -18,7 +18,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   if (isAdminRoute) {
     // Admin routes: no navbar, no footer, no modals
     return (
-      <main className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
+      <main className="min-h-screen bg-white transition-colors duration-300">
         <div className="relative">
           {children}
         </div>
@@ -30,7 +30,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   return (
     <>
       <NavbarEnhanced />
-      <main className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
+      <main className="min-h-screen bg-white transition-colors duration-300">
         <div className="relative">
           {children}
         </div>
@@ -40,3 +40,4 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
     </>
   )
 }
+

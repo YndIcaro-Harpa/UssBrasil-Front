@@ -1,0 +1,55 @@
+<svg width="400" height="800" viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="800" fill="#f8fafc"/>
+  
+  <!-- iPhone Body -->
+  <rect x="80" y="40" width="240" height="520" rx="40" fill="#1a1a1a" stroke="#333" stroke-width="2"/>
+  
+  <!-- Screen -->
+  <rect x="92" y="52" width="216" height="496" rx="32" fill="#034a6e"/>
+  
+  <!-- Dynamic Island -->
+  <rect x="155" y="64" width="90" height="28" rx="14" fill="#1a1a1a"/>
+  
+  <!-- Camera Lens in Dynamic Island -->
+  <circle cx="215" cy="78" r="6" fill="#2d2d2d"/>
+  <circle cx="215" cy="78" r="4" fill="#1a1a1a"/>
+  
+  <!-- Screen Content - USS Brasil -->
+  <text x="200" y="280" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" fill="white">iPhone 17</text>
+  <text x="200" y="320" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#54c4cf">USS Brasil Tecnologia</text>
+  
+  <!-- A18 Chip Icon -->
+  <rect x="165" y="360" width="70" height="30" rx="6" fill="#54c4cf" opacity="0.3"/>
+  <text x="200" y="381" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#54c4cf">A18</text>
+  
+  <!-- Camera Module on Back -->
+  <rect x="94" y="54" width="80" height="80" rx="20" fill="#2d2d2d"/>
+  
+  <!-- Main Camera -->
+  <circle cx="120" cy="80" r="18" fill="#1a1a1a" stroke="#444" stroke-width="2"/>
+  <circle cx="120" cy="80" r="12" fill="#034a6e"/>
+  <circle cx="120" cy="80" r="6" fill="#1a1a1a"/>
+  
+  <!-- Ultra Wide Camera -->
+  <circle cx="154" cy="80" r="14" fill="#1a1a1a" stroke="#444" stroke-width="2"/>
+  <circle cx="154" cy="80" r="9" fill="#034a6e"/>
+  <circle cx="154" cy="80" r="4" fill="#1a1a1a"/>
+  
+  <!-- Flash -->
+  <circle cx="137" cy="116" r="8" fill="#FFF8DC"/>
+  
+  <!-- Side Buttons -->
+  <rect x="76" y="150" width="4" height="35" rx="2" fill="#333"/>
+  <rect x="76" y="200" width="4" height="60" rx="2" fill="#333"/>
+  <rect x="320" y="180" width="4" height="50" rx="2" fill="#333"/>
+  
+  <!-- Specs Text -->
+  <text x="200" y="600" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#666">Display 6.1" Super Retina XDR</text>
+  <text x="200" y="630" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#666">Câmera 48MP + 12MP</text>
+  <text x="200" y="660" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#666">Bateria de até 22 horas</text>
+  
+  <!-- Price Tag -->
+  <rect x="120" y="700" width="160" height="50" rx="25" fill="#034a6e"/>
+  <text x="200" y="732" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold" fill="white">R$ 4.999,99</text>
+</svg>

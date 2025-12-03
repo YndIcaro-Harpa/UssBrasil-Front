@@ -139,3 +139,4 @@ export const CategorySEO = ({ category, products = [] }: CategorySEOProps) => {
 }
 
 export default CategorySEO
+

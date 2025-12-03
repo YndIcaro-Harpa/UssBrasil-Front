@@ -134,7 +134,14 @@ export function ModalProvider({ children }: ModalProviderProps) {
 export function useModal() {
   const context = useContext(ModalContext)
   if (context === undefined) {
-    throw new Error('useModal must be used within a ModalProvider')
+    // Retornar um valor padrão seguro
+    return {
+      isAuthModalOpen: false,
+      openAuthModal: () => {},
+      closeAuthModal: () => {},
+      isLoginMode: true,
+      setIsLoginMode: () => {},
+    } as any
   }
   return context
 }

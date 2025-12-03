@@ -1,549 +1,483 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { ShoppingCart, Heart, Grid, List, Search, Filter, Package } from 'lucide-react'
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Search, Grid3X3, List, Star, ShoppingCart, Filter, Heart, Eye, X, ChevronDown, Tag
-} from 'lucide-react'
-
-import apiClient, { Product, Category, Brand, formatPrice } from '@/lib/api-client'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useModal } from '@/contexts/ModalContext'
 import { toast } from 'sonner'
+import apiClient, { Product, Brand } from '@/lib/api-client'
 
-// Componente de Card de Produto com Slug Correto
-function ProductCard({ product }: { product: Product }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const { addToCart } = useCart()
-  const { favorites, toggleFavorite, user } = useAuth()
-  const { openAuthModal } = useModal()
-  
-  const isFavorite = favorites.includes(product.id)
-  const discountPercentage = product.discountPrice 
-    ? Math.round((1 - product.discountPrice / product.price) * 100)
-    : 0
-
-  const handleViewProduct = () => {
-    // Usar slug do produto para navegação correta
-    window.location.href = `/produto/${product.slug}`
-  }
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    addToCart({
-      id: Number(product.id),
-      name: product.name,
-      price: product.discountPrice || product.price,
-      image: product.images?.[0] || '/fallback-product.png',
-      category: product.category?.name || 'Geral'
-    })
-    toast.success(`${product.name} adicionado ao carrinho!`)
-  }
-
-  const handleToggleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!user) {
-      openAuthModal()
-      return
-    }
-    toggleFavorite(product.id)
-    toast.success(isFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={handleViewProduct}
-    >
-      <div className="relative aspect-square bg-gray-50 overflow-hidden">
-        <Image
-          src={product.images?.[0] || '/fallback-product.png'}
-          alt={product.name}
-          fill
-          className="object-contain p-4 group-hover:scale-110 transition-transform duration-500"
-        />
-        
-        {/* Badges */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-          {product.featured && (
-            <Badge className="bg-blue-600 text-white">
-              <Tag className="h-3 w-3 mr-1" />
-              Destaque
-            </Badge>
-          )}
-          {discountPercentage > 0 && (
-            <Badge className="bg-red-500 text-white">
-              -{discountPercentage}%
-            </Badge>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className={`absolute top-4 right-4 flex flex-col gap-2 transition-all duration-300 ${
-          isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
-        }`}>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleToggleFavorite}
-            className="h-10 w-10 p-0 rounded-full bg-white/95 hover:bg-white"
-          >
-            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
-          </Button>
-          
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-10 w-10 p-0 rounded-full bg-white/95 hover:bg-white"
-          >
-            <Eye className="h-4 w-4 text-gray-500" />
-          </Button>
-        </div>
-
-        {/* Stock Warning */}
-        {product.stock < 10 && product.stock > 0 && (
-          <div className="absolute bottom-4 left-4">
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-              Últimas {product.stock} unidades
-            </Badge>
-          </div>
-        )}
-      </div>
-
-      <div className="p-6">
-        {/* Brand & Category */}
-        <div className="flex items-center gap-2 mb-3">
-          <Badge variant="outline" className="text-xs text-blue-600 border-blue-200">
-            {product.brand?.name || 'Marca'}
-          </Badge>
-          <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
-            {product.category?.name || 'Categoria'}
-          </Badge>
-        </div>
-
-        {/* Product Name */}
-        <h3 className="font-bold text-lg line-clamp-2 mb-3 group-hover:text-blue-600 transition-colors text-gray-900">
-          {product.name}
-        </h3>
-
-        {/* Rating */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-            ))}
-          </div>
-          <span className="text-sm text-gray-600">4.5 (127)</span>
-        </div>
-
-        {/* Price */}
-        <div className="flex items-center justify-between mb-4">
-          {product.discountPrice ? (
-            <div className="flex flex-col">
-              <span className="text-sm line-through text-gray-500">
-                {formatPrice(product.price)}
-              </span>
-              <span className="text-xl font-bold text-blue-600">
-                {formatPrice(product.discountPrice)}
-              </span>
-            </div>
-          ) : (
-            <span className="text-xl font-bold text-blue-600">
-              {formatPrice(product.price)}
-            </span>
-          )}
-        </div>
-
-        {/* Action Button */}
-        <Button 
-          onClick={handleAddToCart}
-          className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold transition-colors"
-          disabled={product.stock === 0}
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          {product.stock === 0 ? 'Esgotado' : 'Adicionar ao Carrinho'}
-        </Button>
-      </div>
-    </motion.div>
-  )
-}
-
-// Página Principal de Produtos
-export default function ProdutosPage() {
+function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  
-  // Filtros
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [selectedBrand, setSelectedBrand] = useState<string>('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
   const [sortBy, setSortBy] = useState('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [showOnlyFeatured, setShowOnlyFeatured] = useState(false)
-  const [showOnlyInStock, setShowOnlyInStock] = useState(true)
+  const { addToCart } = useCart()
+  const { user, favorites, toggleFavorite } = useAuth()
+  const { openModal } = useModal()
   
-  const searchParams = useSearchParams()
+  const whatsappNumber = '5548991832760'
 
-  // Carregar dados do backend
+  // Carregar marcas primeiro
   useEffect(() => {
-    const loadData = async () => {
+    const loadBrands = async () => {
+      try {
+        const brandsRes = await apiClient.getBrands()
+        setBrands(brandsRes)
+      } catch (error) {
+        console.error('Erro ao carregar marcas:', error)
+      }
+    }
+    loadBrands()
+  }, [])
+
+  // Capturar parâmetros da URL e processar depois que marcas carregarem
+  useEffect(() => {
+    if (brands.length === 0) return
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const searchParam = urlParams.get('search')
+    const brandSlugParam = urlParams.get('brand')
+    
+    if (searchParam) {
+      setSearchQuery(searchParam)
+    }
+    
+    // Se tem slug de marca, buscar o ID da marca
+    if (brandSlugParam) {
+      const brand = brands.find(b => b.slug === brandSlugParam)
+      if (brand) {
+        setSelectedBrand(brand.id)
+      }
+    }
+  }, [brands])
+
+  // Carregar produtos quando filtros mudarem
+  useEffect(() => {
+    const loadProducts = async () => {
       try {
         setLoading(true)
+        let queryParams: any = { limit: 100 }
         
-        // Buscar produtos
-        const productsResponse = await apiClient.getProducts({
-          limit: 50,
-          search: searchParams.get('search') || undefined,
-          categoryId: searchParams.get('category') || undefined,
-          brandId: searchParams.get('brand') || undefined
-        })
-        setProducts(productsResponse || [])
-        
-        // Buscar categorias
-        const categoriesResponse = await apiClient.getCategories()
-        setCategories(categoriesResponse || [])
-        
-        // Buscar marcas
-        const brandsResponse = await apiClient.getBrands()
-        setBrands(brandsResponse || [])
-        
-        // Aplicar filtros da URL
-        if (searchParams.get('search')) {
-          setSearchTerm(searchParams.get('search')!)
+        // Adicionar search e brand aos parâmetros da API
+        if (searchQuery) {
+          queryParams.search = searchQuery
         }
-        if (searchParams.get('category')) {
-          setSelectedCategory(searchParams.get('category')!)
+        if (selectedBrand) {
+          queryParams.brandId = selectedBrand
         }
-        if (searchParams.get('brand')) {
-          setSelectedBrand(searchParams.get('brand')!)
-        }
-        
+
+        const productsRes = await apiClient.getProducts(queryParams)
+        setProducts(productsRes)
+        setFilteredProducts(productsRes)
       } catch (error) {
-        console.error('Erro ao carregar dados:', error)
+        console.error('Erro ao carregar produtos:', error)
         toast.error('Erro ao carregar produtos')
       } finally {
         setLoading(false)
       }
     }
 
-    loadData()
-  }, [searchParams])
+    loadProducts()
+  }, [searchQuery, selectedBrand])
 
-  // Filtrar e ordenar produtos
-  const processedProducts = useMemo(() => {
-    let filtered = products.filter(product => {
-      const matchesSearch = !searchTerm || 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.brand?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category?.name.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesCategory = !selectedCategory || product.category?.id === selectedCategory
-      const matchesBrand = !selectedBrand || product.brand?.id === selectedBrand
-      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1]
-      const matchesFeatured = !showOnlyFeatured || product.featured
-      const matchesStock = !showOnlyInStock || product.stock > 0
-
-      return matchesSearch && matchesCategory && matchesBrand && matchesPrice && matchesFeatured && matchesStock
-    })
-
-    // Ordenar
-    filtered.sort((a, b) => {
-      let comparison = 0
-      
-      switch (sortBy) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name)
-          break
-        case 'price':
-          const priceA = a.discountPrice || a.price
-          const priceB = b.discountPrice || b.price
-          comparison = priceA - priceB
-          break
-        case 'featured':
-          comparison = Number(b.featured) - Number(a.featured)
-          break
-        default:
-          comparison = 0
-      }
-
-      return sortOrder === 'desc' ? -comparison : comparison
-    })
-
-    return filtered
-  }, [products, searchTerm, selectedCategory, selectedBrand, priceRange, sortBy, sortOrder, showOnlyFeatured, showOnlyInStock])
-
+  // Aplicar ordenação localmente
   useEffect(() => {
-    setFilteredProducts(processedProducts)
-  }, [processedProducts])
+    let sorted = [...filteredProducts]
 
-  const clearFilters = () => {
-    setSearchTerm('')
-    setSelectedCategory('')
-    setSelectedBrand('')
-    setPriceRange([0, 10000])
-    setShowOnlyFeatured(false)
-    setShowOnlyInStock(true)
-    setSortBy('name')
-    setSortOrder('asc')
+    if (sortBy === 'price-asc') {
+      sorted.sort((a, b) => a.price - b.price)
+    } else if (sortBy === 'price-desc') {
+      sorted.sort((a, b) => b.price - a.price)
+    } else {
+      sorted.sort((a, b) => a.name.localeCompare(b.name))
+    }
+
+    setFilteredProducts(sorted)
+  }, [sortBy])
+
+  const getWhatsAppLink = (product: Product) => {
+    const message = `🛒 *USS Brasil Tecnologia*\n\nOlá! Tenho interesse neste produto:\n\n📱 *${product.name}*\n🏷️ Marca: ${product.brand?.name || 'N/A'}\n💰 Preço: R$ ${product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\nEstá disponível?`
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+  }
+
+  const handleAddToCart = (product: Product) => {
+    const images = product.images && product.images.length > 0 ? product.images : []
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0] || '/fallback-product.png',
+      category: product.category?.name || 'Geral',
+      stock: product.stock
+    })
+    const whatsappLink = getWhatsAppLink(product)
+    toast.success(`${product.name} adicionado ao carrinho!`, {
+      description: 'Finalize a compra pelo WhatsApp',
+      action: {
+        label: 'WhatsApp',
+        onClick: () => window.open(whatsappLink, '_blank')
+      }
+    })
+  }
+
+  const handleToggleFavorite = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Validar se usuário está logado
+    if (!user) {
+      toast.error('Faça login para adicionar aos favoritos', {
+        description: 'É necessário estar logado para salvar produtos favoritos'
+      })
+      openModal('auth')
+      return
+    }
+    
+    const isFav = favorites.includes(product.id)
+    toggleFavorite(product.id)
+    toast.success(isFav ? 'Removido dos favoritos' : 'Adicionado aos favoritos!', {
+      icon: isFav ? '💔' : '❤️'
+    })
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center pt-20">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-900"></div>
-          <p className="mt-4 text-gray-600">Carregando produtos...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Carregando produtos...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Todos os Produtos
-          </h1>
-          <p className="text-gray-600">
-            Encontre os melhores produtos em tecnologia premium
-          </p>
-        </div>
+    <div className="min-h-screen bg-white">
+     
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar de Filtros */}
-          <div className="lg:w-80 space-y-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={clearFilters}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  Limpar
-                </Button>
+      <div className="container mx-auto px-4 sm:px-6 py-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          <motion.aside
+            className="w-full lg:w-72 xl:w-80 flex-shrink-0 space-y-6"
+          >
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Search className="h-5 w-5 text-blue-600" />
+                <h3 className="font-bold text-lg text-gray-900">Buscar</h3>
               </div>
-
-              {/* Busca */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Buscar
-                  </label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Nome, marca ou categoria..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
-                </div>
-
-                {/* Categoria */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoria
-                  </label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as categorias" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todas as categorias</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Marca */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Marca
-                  </label>
-                  <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as marcas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todas as marcas</SelectItem>
-                      {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Faixa de Preço */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Faixa de Preço: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
-                  </label>
-                  <Slider
-                    value={priceRange}
-                    onValueChange={(value) => setPriceRange(value as [number, number])}
-                    max={10000}
-                    min={0}
-                    step={50}
-                    className="mt-2"
-                  />
-                </div>
-
-                {/* Filtros Booleanos */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="featured"
-                      checked={showOnlyFeatured}
-                      onCheckedChange={setShowOnlyFeatured}
-                    />
-                    <label htmlFor="featured" className="text-sm text-gray-700">
-                      Apenas produtos em destaque
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="instock"
-                      checked={showOnlyInStock}
-                      onCheckedChange={setShowOnlyInStock}
-                    />
-                    <label htmlFor="instock" className="text-sm text-gray-700">
-                      Apenas em estoque
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Área Principal */}
-          <div className="flex-1">
-            {/* Barra de Controles */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">
-                    {filteredProducts.length} produto(s) encontrado(s)
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  {/* Ordenação */}
-                  <div className="flex items-center gap-2">
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="name">Nome</SelectItem>
-                        <SelectItem value="price">Preço</SelectItem>
-                        <SelectItem value="featured">Destaque</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    >
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </Button>
-                  </div>
-
-                  {/* View Mode */}
-                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      className="px-3"
-                    >
-                      <Grid3X3 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      className="px-3"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <Input
+                type="text"
+                placeholder="Nome do produto..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+              />
             </div>
 
-            {/* Grid de Produtos */}
-            <AnimatePresence>
-              {filteredProducts.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="bg-white rounded-xl border border-gray-200 p-12">
-                    <div className="text-gray-400 mb-4">
-                      <Search className="h-16 w-16 mx-auto" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      Nenhum produto encontrado
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Tente ajustar os filtros ou buscar por outros termos
-                    </p>
-                    <Button onClick={clearFilters} className="bg-blue-900 hover:bg-blue-800">
-                      Limpar Filtros
-                    </Button>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  layout
-                  className={`grid gap-6 ${
-                    viewMode === 'grid' 
-                      ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-                      : 'grid-cols-1'
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h3 className="font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
+                <Filter className="h-5 w-5 text-blue-400" />
+                Marcas
+              </h3>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                <button
+                  onClick={() => setSelectedBrand(null)}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                    selectedBrand === null
+                      ? 'bg-blue-400 text-white'
+                      : 'hover:bg-gray-100 text-gray-700 border border-gray-200'
                   }`}
                 >
-                  {filteredProducts.map((product, index) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  Todas as Marcas
+                </button>
+                {brands.map(brand => (
+                  <button
+                    key={brand.id}
+                    onClick={() => setSelectedBrand(brand.id)}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                      selectedBrand === brand.id
+                        ? 'bg-blue-400 text-white'
+                        : 'hover:bg-gray-100 text-gray-700 border border-gray-200'
+                    }`}
+                  >
+                    {brand.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.aside>
+
+          <div className="flex-1 min-w-0">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <Filter className="h-5 w-5 text-blue-400" />
+                <span className="text-gray-700 font-medium">Ordenar por:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2.5 border-gray-200 border rounded-lg text-gray-700 bg-white focus:border-blue-400 focus:ring-blue-400 transition-all font-medium"
+                >
+                  <option value="name">Nome (A-Z)</option>
+                  <option value="price-asc">Menor Preço</option>
+                  <option value="price-desc">Maior Preço</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg border border-gray-200 p-1.5">
+                <button
+                  onClick={() => setView('grid')}
+                  className={`p-2.5 rounded-lg transition-all duration-200 ${
+                    view === 'grid'
+                      ? 'bg-blue-400 text-white'
+                      : 'text-gray-600 hover:text-blue-400 hover:bg-white'
+                  }`}
+                >
+                  <Grid className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setView('list')}
+                  className={`p-2.5 rounded-lg transition-all duration-200 ${
+                    view === 'list'
+                      ? 'bg-blue-400 text-white'
+                      : 'text-gray-600 hover:text-blue-400 hover:bg-white'
+                  }`}
+                >
+                  <List className="h-5 w-5" />
+                </button>
+              </div>
+            </motion.div>
+
+            {filteredProducts.length > 0 ? (
+              <motion.div
+                variants={{
+                  animate: {
+                    transition: {
+                      staggerChildren: 0.1
+                    }
+                  }
+                }}
+                initial="initial"
+                animate="animate"
+                className={view === 'grid'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'
+                  : 'space-y-4'
+                }
+              >
+                {filteredProducts.map(product => {
+                  const images = product.images || []
+                  const imageUrl = (images[0] || '/fallback-product.png').trim()
+                  const isFavorite = favorites.includes(product.id)
+                  const whatsappLink = getWhatsAppLink(product)
+                  const displayPrice = product.discountPrice || product.price
+
+                  if (view === 'list') {
+                    return (
+                      <motion.div
+                        key={product.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 flex gap-6"
+                      >
+                        <Link href={`/produto/${product.slug}`} className="flex-shrink-0">
+                          <div className="w-36 h-36 relative overflow-hidden bg-gray-50 rounded-lg">
+                            <Image
+                              src={imageUrl}
+                              alt={product.name}
+                              fill
+                              className="object-contain p-4"
+                              onError={(e) => {
+                                const img = e.target as HTMLImageElement
+                                img.src = '/fallback-product.png'
+                              }}
+                            />
+                          </div>
+                        </Link>
+
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className="text-xs font-semibold bg-blue-100 text-blue-700 border-0">
+                                {product.brand?.name || 'Marca'}
+                              </Badge>
+                            </div>
+                            <Link href={`/produto/${product.slug}`}>
+                              <h3 className="font-bold text-lg mb-2 hover:text-blue-400 transition-colors text-gray-900">
+                                {product.name}
+                              </h3>
+                            </Link>
+                            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                              {product.description}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              {product.discountPrice ? (
+                                <div>
+                                  <div className="text-xs text-gray-400 line-through">
+                                    R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </div>
+                                  <div className="text-2xl font-black text-gray-900">
+                                    R$ {product.discountPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-2xl font-black text-gray-900">
+                                  R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                ou 12x de R$ {(displayPrice / 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => handleToggleFavorite(product, e)}
+                                className="w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:scale-110 hover:bg-white transition-all"
+                              >
+                                <Heart className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                              </button>
+                              <Button
+                                onClick={() => handleAddToCart(product)}
+                                className="bg-blue-400 hover:bg-blue-500 text-white px-6 rounded-full font-semibold"
+                                disabled={product.stock <= 0}
+                              >
+                                <ShoppingCart className="h-4 w-4 mr-2" />
+                                {product.stock <= 0 ? 'Indisponível' : 'Adicionar'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  }
+
+                  return (
+                    <Link key={product.id} href={`/produto/${product.slug}`} className="block h-full">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -8, scale: 1.02 }}
+                        transition={{ duration: 0.3 }}
+                        className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col h-full border border-gray-100"
+                      >
+                        <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                          <Image
+                            src={imageUrl}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="object-contain p-6 group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement
+                              img.src = '/fallback-product.png'
+                            }}
+                          />
+                          
+                          <div className="absolute top-3 left-3 flex flex-col gap-2">
+                            {product.discountPrice && (
+                              <div className="px-3 py-1 bg-blue-400 text-white text-xs font-bold rounded-full shadow-lg">
+                                -{Math.round((1 - product.discountPrice / product.price) * 100)}%
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={(e) => handleToggleFavorite(product, e)}
+                            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center hover:scale-110 hover:bg-white transition-all duration-200 z-10"
+                          >
+                            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                          </button>
+                        </div>
+
+                        <div className="p-4 flex flex-col flex-1">
+                          <div className="mb-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-blue-400">
+                              {product.brand?.name || 'Premium'}
+                            </span>
+                          </div>
+
+                          <h3 className="font-bold text-base mb-3 text-gray-900 line-clamp-2 group-hover:text-blue-400 transition-colors leading-tight">
+                            {product.name}
+                          </h3>
+
+                          <div className="mt-auto space-y-3">
+                            <div>
+                              {product.discountPrice ? (
+                                <div className="space-y-0.5">
+                                  <div className="text-xs text-gray-400 line-through">
+                                    R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </div>
+                                  <div className="text-2xl font-black text-gray-900">
+                                    R$ {product.discountPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-2xl font-black text-gray-900">
+                                  R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                ou 12x de R$ {(displayPrice / 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleAddToCart(product)
+                              }}
+                              className="w-full bg-blue-400 hover:bg-blue-500 active:bg-blue-600 text-white py-3 rounded-full font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+                              disabled={product.stock <= 0}
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                              {product.stock <= 0 ? 'Indisponível' : 'Adicionar'}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  )
+                })}
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-20"
+        >
+          <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-xl text-gray-500 font-medium">
+            Nenhum produto encontrado
+          </p>
+          <p className="text-gray-400 mt-2">
+            Tente ajustar seus filtros ou buscar por outro termo
+          </p>
+        </motion.div>
+      )}
           </div>
         </div>
       </div>
     </div>
   )
 }
+
+export default ProdutosPage
+

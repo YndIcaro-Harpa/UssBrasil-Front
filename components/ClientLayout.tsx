@@ -12,7 +12,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <>
       {!isAdminRoute && <NavbarEnhanced />}
-      <main className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
+      <main className="min-h-screen bg-white transition-colors duration-300">
         <div className="relative">
           {children}
         </div>
@@ -22,3 +22,4 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     </>
   )
 }
+

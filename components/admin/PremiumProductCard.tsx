@@ -98,8 +98,7 @@ const PremiumProductCard = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ y: -4 }}
-      className="group relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden hover:border-white/30 transition-all duration-500"
-      style={{ boxShadow: 'var(--uss-shadow-lg)' }}
+      className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition-all duration-500 shadow-sm"
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
@@ -133,7 +132,7 @@ const PremiumProductCard = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10" />
         
         {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-800/50">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <Package className="w-8 h-8 text-gray-400 animate-pulse" />
           </div>
         )}
@@ -194,10 +193,10 @@ const PremiumProductCard = ({
       <div className="p-4 sm:p-5 lg:p-6">
         {/* Product Name & Category */}
         <div className="mb-3">
-          <h3 className="text-white font-semibold text-sm sm:text-base lg:text-lg mb-1 line-clamp-2 leading-tight">
+          <h3 className="text-gray-900 font-semibold text-sm sm:text-base lg:text-lg mb-1 line-clamp-2 leading-tight">
             {product.name}
           </h3>
-          <p className="text-gray-400 text-xs sm:text-sm">
+          <p className="text-gray-500 text-xs sm:text-sm">
             {product.category}
           </p>
         </div>
@@ -206,7 +205,7 @@ const PremiumProductCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex flex-col">
             <div className="flex items-center space-x-2">
-              <span className="text-white font-bold text-lg sm:text-xl">
+              <span className="text-gray-900 font-bold text-lg sm:text-xl">
                 {formatPrice(product.price)}
               </span>
               {getTrendIcon()}
@@ -219,7 +218,7 @@ const PremiumProductCard = ({
           </div>
           
           <div className="text-right">
-            <p className="text-gray-400 text-xs mb-1">Estoque</p>
+            <p className="text-gray-500 text-xs mb-1">Estoque</p>
             <p className={`text-sm font-medium ${
               product.stock > 10 ? 'text-emerald-400' :
               product.stock > 0 ? 'text-amber-400' : 'text-red-400'
@@ -231,7 +230,7 @@ const PremiumProductCard = ({
 
         {/* Rating & Sales */}
         {(product.rating || product.sales) && (
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-4">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
             {product.rating && (
               <div className="flex items-center space-x-1">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -278,3 +277,4 @@ const PremiumProductCard = ({
 }
 
 export default PremiumProductCard
+

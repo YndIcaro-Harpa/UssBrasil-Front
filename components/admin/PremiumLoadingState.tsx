@@ -65,7 +65,7 @@ const PremiumLoadingState = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-white text-xl font-semibold mt-6 mb-2"
+            className="text-gray-900 text-xl font-semibold mt-6 mb-2"
           >
             Carregando Sistema
           </motion.h3>
@@ -74,7 +74,7 @@ const PremiumLoadingState = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-gray-400 text-sm max-w-md"
+            className="text-gray-500 text-sm max-w-md"
           >
             {message}
           </motion.p>
@@ -113,14 +113,14 @@ const PremiumLoadingState = ({
         {/* Table Header Skeleton */}
         <motion.div
           variants={itemVariants}
-          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl h-12 flex items-center px-6"
+          className="bg-gray-100 border border-gray-200 rounded-xl h-12 flex items-center px-6"
         >
           <div className="flex space-x-4 w-full">
-            <div className="h-3 bg-white/20 rounded w-1/4 animate-pulse" />
-            <div className="h-3 bg-white/20 rounded w-1/6 animate-pulse" />
-            <div className="h-3 bg-white/20 rounded w-1/6 animate-pulse" />
-            <div className="h-3 bg-white/20 rounded w-1/4 animate-pulse" />
-            <div className="h-3 bg-white/20 rounded w-1/6 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-1/6 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-1/6 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-1/6 animate-pulse" />
           </div>
         </motion.div>
 
@@ -135,17 +135,17 @@ const PremiumLoadingState = ({
             <motion.div
               key={index}
               variants={itemVariants}
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl h-16 flex items-center px-6"
+              className="bg-white border border-gray-200 rounded-xl h-16 flex items-center px-6"
             >
               <div className="flex items-center space-x-4 w-full">
-                <div className="w-10 h-10 bg-white/20 rounded-lg animate-pulse" />
+                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-white/20 rounded w-3/4 animate-pulse" />
-                  <div className="h-2 bg-white/10 rounded w-1/2 animate-pulse" />
+                  <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse" />
+                  <div className="h-2 bg-gray-100 rounded w-1/2 animate-pulse" />
                 </div>
                 <div className="flex space-x-3">
-                  <div className="w-16 h-6 bg-white/20 rounded animate-pulse" />
-                  <div className="w-8 h-8 bg-white/20 rounded-lg animate-pulse" />
+                  <div className="w-16 h-6 bg-gray-200 rounded animate-pulse" />
+                  <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse" />
                 </div>
               </div>
             </motion.div>
@@ -167,13 +167,13 @@ const PremiumLoadingState = ({
         <motion.div
           key={index}
           variants={itemVariants}
-          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
+          className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
           style={{ height: '420px' }}
         >
           {/* Image Skeleton */}
-          <div className="h-48 sm:h-56 lg:h-64 bg-white/10 relative overflow-hidden">
+          <div className="h-48 sm:h-56 lg:h-64 bg-gray-100 relative overflow-hidden">
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200 to-transparent"
               animate={{
                 x: ['-100%', '100%']
               }}
@@ -189,32 +189,32 @@ const PremiumLoadingState = ({
           <div className="p-4 sm:p-5 lg:p-6 space-y-4">
             {/* Title & Category */}
             <div className="space-y-2">
-              <div className="h-4 bg-white/20 rounded w-3/4 animate-pulse" />
-              <div className="h-3 bg-white/10 rounded w-1/2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+              <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse" />
             </div>
 
             {/* Price & Stock */}
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <div className="h-5 bg-white/20 rounded w-20 animate-pulse" />
-                <div className="h-3 bg-white/10 rounded w-16 animate-pulse" />
+                <div className="h-5 bg-gray-200 rounded w-20 animate-pulse" />
+                <div className="h-3 bg-gray-100 rounded w-16 animate-pulse" />
               </div>
               <div className="text-right space-y-1">
-                <div className="h-3 bg-white/10 rounded w-12 animate-pulse" />
-                <div className="h-4 bg-white/20 rounded w-8 animate-pulse" />
+                <div className="h-3 bg-gray-100 rounded w-12 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded w-8 animate-pulse" />
               </div>
             </div>
 
             {/* Stats */}
             <div className="flex justify-between">
-              <div className="h-3 bg-white/10 rounded w-16 animate-pulse" />
-              <div className="h-3 bg-white/10 rounded w-20 animate-pulse" />
+              <div className="h-3 bg-gray-100 rounded w-16 animate-pulse" />
+              <div className="h-3 bg-gray-100 rounded w-20 animate-pulse" />
             </div>
 
             {/* Buttons */}
             <div className="flex space-x-2 pt-2">
-              <div className="flex-1 h-8 bg-white/10 rounded-lg animate-pulse" />
-              <div className="flex-1 h-8 bg-white/20 rounded-lg animate-pulse" />
+              <div className="flex-1 h-8 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="flex-1 h-8 bg-gray-200 rounded-lg animate-pulse" />
             </div>
           </div>
         </motion.div>
@@ -224,3 +224,4 @@ const PremiumLoadingState = ({
 }
 
 export default PremiumLoadingState
+

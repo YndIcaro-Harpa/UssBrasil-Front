@@ -30,3 +30,4 @@ const BrandSidebar: React.FC<BrandSidebarProps> = ({ onBrandFilter, selectedBran
 };
 
 export default BrandSidebar;
+

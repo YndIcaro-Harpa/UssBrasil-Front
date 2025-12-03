@@ -16,10 +16,14 @@ export interface Order {
   items: Array<{
     id: string;
     productId: string;
-    name: string;
-    image: string;
+    name?: string;
+    productName?: string;
+    image?: string;
     quantity: number;
     price: number;
+    product?: {
+      name: string;
+    };
   }>;
   total: number;
   shippingAddress: {

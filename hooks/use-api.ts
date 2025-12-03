@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 
-const API_BASE_URL = 'http://localhost:3001'
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001' || 'https://7s37q8qr-3001.brs.devtunnels.ms/'
 
 export function useAPI<T>(endpoint: string) {
   const [data, setData] = useState<T[]>([])

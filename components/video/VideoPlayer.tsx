@@ -218,3 +218,4 @@ export function VideoPlayer({
     </motion.div>
   )
 }
+

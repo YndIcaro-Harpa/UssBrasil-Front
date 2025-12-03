@@ -69,22 +69,6 @@ export const premiumCategories: Category[] = [
             isExclusive: true
           },
           {
-            id: 'galaxy-s24-ultra',
-            name: 'Samsung Galaxy S24 Ultra',
-            description: 'Smartphone topo de linha com S Pen e câmera 200MP',
-            price: 7999,
-            originalPrice: 8999,
-            image: '/fallback-product.png',
-            category: 'tech-innovation',
-            subcategory: 'smartphones',
-            brand: 'Samsung',
-            flag: '🇰🇷',
-            features: ['Snapdragon 8 Gen 3', 'S Pen', 'Camera 200MP', '5G'],
-            rating: 4.8,
-            reviews: 2100,
-            stock: 20
-          },
-          {
             id: 'xiaomi-14-ultra',
             name: 'Xiaomi 14 Ultra',
             description: 'Edição Global com Leica Camera System',
@@ -124,22 +108,6 @@ export const premiumCategories: Category[] = [
             reviews: 1876,
             stock: 32,
             badge: 'Original Apple'
-          },
-          {
-            id: 'galaxy-watch-6',
-            name: 'Samsung Galaxy Watch 6',
-            description: 'Monitoramento avançado de saúde e bateria de longa duração',
-            price: 1899,
-            originalPrice: 2199,
-            image: '/fallback-product.png',
-            category: 'tech-innovation',
-            subcategory: 'smartwatches',
-            brand: 'Samsung',
-            flag: '🇰🇷',
-            features: ['Monitoramento ECG', 'GPS', 'Bateria 40h', 'Resistente à água'],
-            rating: 4.6,
-            reviews: 900,
-            stock: 24
           }
         ]
       },
@@ -165,22 +133,6 @@ export const premiumCategories: Category[] = [
             stock: 15,
             badge: 'M4 Chip',
             isNew: true
-          },
-          {
-            id: 'galaxy-tab-s9',
-            name: 'Samsung Galaxy Tab S9',
-            description: 'Tablet premium com tela AMOLED e S Pen inclusa',
-            price: 4999,
-            originalPrice: 5999,
-            image: '/fallback-product.pngApple/Ipad.png',
-            category: 'tech-innovation',
-            subcategory: 'tablets-gadgets',
-            brand: 'Samsung',
-            flag: '🇰🇷',
-            features: ['Tela AMOLED', 'S Pen', 'Snapdragon 8 Gen 2', 'Quad speakers'],
-            rating: 4.7,
-            reviews: 800,
-            stock: 12
           }
         ]
       }

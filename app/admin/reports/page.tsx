@@ -154,7 +154,7 @@ export default function ReportsPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => openModal('create')}
-            className="flex items-center space-x-2 bg-gradient-to-r from-[#00CED1] to-[#40E0D0] 
+            className="flex items-center space-x-2 bg-[#001941] hover:bg-[#023a58] 
                      text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
           >
             <Plus className="w-5 h-5" />
@@ -207,14 +207,14 @@ export default function ReportsPage() {
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl p-6"
+          className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#001941]/30 rounded-xl p-6"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-bold text-white">Relatórios Gerados</h3>
               <p className="text-gray-400">Últimos 7 meses</p>
             </div>
-            <BarChart3 className="w-6 h-6 text-[#0E7466]" />
+            <BarChart3 className="w-6 h-6 text-[#001941]" />
           </div>
           
           <div className="h-80">
@@ -223,7 +223,7 @@ export default function ReportsPage() {
               type="bar"
               dataKey="generated"
               xAxisKey="month"
-              color="#0E7466"
+              color="#034a6e"
               height={320}
             />
           </div>
@@ -233,14 +233,14 @@ export default function ReportsPage() {
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl p-6"
+          className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#001941]/30 rounded-xl p-6"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-bold text-white">Distribuição por Tipo</h3>
               <p className="text-gray-400">Tipos de relatórios</p>
             </div>
-            <PieChart className="w-6 h-6 text-[#0E7466]" />
+            <PieChart className="w-6 h-6 text-[#001941]" />
           </div>
           
           <div className="h-64">
@@ -271,19 +271,19 @@ export default function ReportsPage() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl p-6"
+        className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#001941]/30 rounded-xl p-6"
       >
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
-            <label className="block text-gray-300 text-sm font-medium mb-2">
+            <p className="text-sm font-semibold text-white mb-1.5">
               Período
-            </label>
+            </p>
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                       text-white focus:outline-none focus:border-[#0E7466] focus:ring-2 
-                       focus:ring-[#0E7466]/20 transition-all"
+                       text-white focus:outline-none focus:border-[#001941] focus:ring-2 
+                       focus:ring-[#001941]/20 transition-all"
             >
               <option value="week" className="bg-[#0C1A33]">Última semana</option>
               <option value="month" className="bg-[#0C1A33]">Último mês</option>
@@ -293,15 +293,15 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex-1">
-            <label className="block text-gray-300 text-sm font-medium mb-2">
+            <p className="text-sm font-semibold text-white mb-1.5">
               Tipo de Relatório
-            </label>
+            </p>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                       text-white focus:outline-none focus:border-[#0E7466] focus:ring-2 
-                       focus:ring-[#0E7466]/20 transition-all"
+                       text-white focus:outline-none focus:border-[#001941] focus:ring-2 
+                       focus:ring-[#001941]/20 transition-all"
             >
               <option value="all" className="bg-[#0C1A33]">Todos os tipos</option>
               <option value="sales" className="bg-[#0C1A33]">Vendas</option>
@@ -329,14 +329,14 @@ export default function ReportsPage() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl overflow-hidden"
+        className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#001941]/30 rounded-xl overflow-hidden"
       >
-        <div className="p-6 border-b border-[#0E7466]/20">
+        <div className="p-6 border-b border-[#001941]/20">
           <h3 className="text-xl font-bold text-white">Relatórios Recentes</h3>
           <p className="text-gray-400">Gerados nos últimos 30 dias</p>
         </div>
 
-        <div className="divide-y divide-[#0E7466]/10">
+        <div className="divide-y divide-[#001941]/10">
           {reports.map((report, index) => {
             const colors = reportTypeColors[report.type]
             
@@ -423,7 +423,7 @@ export default function ReportsPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-[#0C1A33]/95 backdrop-blur-xl border border-[#0E7466]/30 rounded-xl 
+            className="bg-[#0C1A33]/95 backdrop-blur-xl border border-[#001941]/30 rounded-xl 
                      max-w-2xl w-full max-h-[80vh] overflow-y-auto"
           >
             {modal.type === 'create' && (
@@ -437,8 +437,8 @@ export default function ReportsPage() {
                     <input
                       type="text"
                       className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                               text-white placeholder-gray-400 focus:outline-none focus:border-[#0E7466] 
-                               focus:ring-2 focus:ring-[#0E7466]/20 transition-all"
+                               text-white placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                               focus:ring-2 focus:ring-[#001941]/20 transition-all"
                       placeholder="Digite o título do relatório"
                     />
                   </div>
@@ -448,8 +448,8 @@ export default function ReportsPage() {
                       Tipo de Relatório
                     </label>
                     <select className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                                     text-white focus:outline-none focus:border-[#0E7466] focus:ring-2 
-                                     focus:ring-[#0E7466]/20 transition-all">
+                                     text-white focus:outline-none focus:border-[#001941] focus:ring-2 
+                                     focus:ring-[#001941]/20 transition-all">
                       <option value="sales" className="bg-[#0C1A33]">Vendas</option>
                       <option value="inventory" className="bg-[#0C1A33]">Estoque</option>
                       <option value="customers" className="bg-[#0C1A33]">Clientes</option>
@@ -465,8 +465,8 @@ export default function ReportsPage() {
                       <input
                         type="date"
                         className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                                 text-white focus:outline-none focus:border-[#0E7466] focus:ring-2 
-                                 focus:ring-[#0E7466]/20 transition-all"
+                                 text-white focus:outline-none focus:border-[#001941] focus:ring-2 
+                                 focus:ring-[#001941]/20 transition-all"
                       />
                     </div>
                     <div>
@@ -476,8 +476,8 @@ export default function ReportsPage() {
                       <input
                         type="date"
                         className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                                 text-white focus:outline-none focus:border-[#0E7466] focus:ring-2 
-                                 focus:ring-[#0E7466]/20 transition-all"
+                                 text-white focus:outline-none focus:border-[#001941] focus:ring-2 
+                                 focus:ring-[#001941]/20 transition-all"
                       />
                     </div>
                   </div>
@@ -490,7 +490,7 @@ export default function ReportsPage() {
                     >
                       Cancelar
                     </button>
-                    <button className="px-6 py-2.5 bg-gradient-to-r from-[#00CED1] to-[#40E0D0] 
+                    <button className="px-6 py-2.5 bg-[#001941] hover:bg-[#023a58] 
                                      text-white rounded-xl hover:shadow-lg transition-all">
                       Gerar Relatório
                     </button>
@@ -537,7 +537,7 @@ export default function ReportsPage() {
                     >
                       Fechar
                     </button>
-                    <button className="px-6 py-2.5 bg-gradient-to-r from-[#00CED1] to-[#40E0D0] 
+                    <button className="px-6 py-2.5 bg-[#001941] hover:bg-[#023a58] 
                                      text-white rounded-xl hover:shadow-lg transition-all">
                       Download
                     </button>
@@ -561,8 +561,8 @@ export default function ReportsPage() {
                     <input
                       type="email"
                       className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                               text-white placeholder-gray-400 focus:outline-none focus:border-[#0E7466] 
-                               focus:ring-2 focus:ring-[#0E7466]/20 transition-all"
+                               text-white placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                               focus:ring-2 focus:ring-[#001941]/20 transition-all"
                       placeholder="Digite o email do destinatário"
                     />
                   </div>
@@ -574,8 +574,8 @@ export default function ReportsPage() {
                     <textarea
                       rows={3}
                       className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl 
-                               text-white placeholder-gray-400 focus:outline-none focus:border-[#0E7466] 
-                               focus:ring-2 focus:ring-[#0E7466]/20 transition-all resize-none"
+                               text-white placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                               focus:ring-2 focus:ring-[#001941]/20 transition-all resize-none"
                       placeholder="Adicione uma mensagem personalizada..."
                     />
                   </div>
@@ -588,7 +588,7 @@ export default function ReportsPage() {
                     >
                       Cancelar
                     </button>
-                    <button className="px-6 py-2.5 bg-gradient-to-r from-[#00CED1] to-[#40E0D0] 
+                    <button className="px-6 py-2.5 bg-[#001941] hover:bg-[#023a58] 
                                      text-white rounded-xl hover:shadow-lg transition-all">
                       Enviar
                     </button>
@@ -602,3 +602,5 @@ export default function ReportsPage() {
     </div>
   )
 }
+
+

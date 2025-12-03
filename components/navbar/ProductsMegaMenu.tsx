@@ -144,3 +144,4 @@ export const ProductsMegaMenu = ({ brands }: { brands: Brand[] }) => {
     </div>
   )
 }
+

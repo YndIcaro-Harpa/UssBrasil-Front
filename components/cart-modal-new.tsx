@@ -141,9 +141,9 @@ export const CartModal = ({ isOpen, onClose }: CartModalProps) => {
                 </div>
               ) : (
                 <div className="p-6 space-y-4">
-                  {cartItems.map((item) => (
+                  {cartItems.map((item, index) => (
                     <motion.div
-                      key={item.id}
+                      key={`cart-new-${item.id || index}`}
                       layout
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -298,3 +298,4 @@ export const CartModal = ({ isOpen, onClose }: CartModalProps) => {
 }
 
 export default CartModal
+

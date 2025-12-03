@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { X, Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import Image from 'next/image'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -102,129 +103,165 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {mode === 'login' ? 'Entrar' : 'Criar Conta'}
-                </h2>
+            <div className="p-6 pb-8 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12">
+                    <Image
+                      src="/logo.png"
+                      alt="USS Brasil"
+                      fill
+                      className="object-contain"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement
+                        img.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {mode === 'login' ? 'Bem-vindo!' : 'Criar Conta'}
+                    </h2>
+                    <p className="text-sm text-gray-500">USS Brasil</p>
+                  </div>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                 >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-gray-600">
                 {mode === 'login' 
-                  ? 'Acesse sua conta para continuar' 
+                  ? 'Acesse sua conta para continuar comprando' 
                   : 'Preencha os dados para criar sua conta'}
               </p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {mode === 'register' && (
-                <div>
-                  <Label htmlFor="name">Nome completo</Label>
-                  <div className="relative mt-1">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      id="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="pl-10"
-                      placeholder="João Silva"
-                      required
-                    />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={mode}
+                  initial={{ opacity: 0, x: mode === 'login' ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: mode === 'login' ? 20 : -20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="space-y-4"
+                >
+                  {mode === 'register' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Label htmlFor="name" className="text-gray-700 font-medium">Nome completo</Label>
+                      <div className="relative mt-1">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="name"
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="pl-10 border-gray-300 focus:border-blue-400 focus:ring-blue-400"
+                          placeholder="João Silva"
+                          required
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="pl-10 border-gray-300 focus:border-blue-400 focus:ring-blue-400"
+                        placeholder="joao@email.com"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
 
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="pl-10"
-                    placeholder="joao@email.com"
-                    required
-                  />
-                </div>
-              </div>
+                  <div>
+                    <Label htmlFor="password" className="text-gray-700 font-medium">Senha</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="pl-10 pr-10 border-gray-300 focus:border-blue-400 focus:ring-blue-400"
+                        placeholder="••••••••"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
 
-              <div>
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative mt-1">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="pl-10 pr-10"
-                    placeholder="••••••••"
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  {mode === 'register' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">Confirmar senha</Label>
+                      <div className="relative mt-1">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="confirmPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                          className="pl-10 border-gray-300 focus:border-blue-400 focus:ring-blue-400"
+                          placeholder="••••••••"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white font-semibold py-6 rounded-lg shadow-md hover:shadow-lg transition-all"
+                    disabled={loading}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
+                    {loading ? 'Carregando...' : mode === 'login' ? 'Entrar' : 'Criar Conta'}
+                  </Button>
 
-              {mode === 'register' && (
-                <div>
-                  <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      id="confirmPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      className="pl-10"
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                    />
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-gray-500 font-medium">Ou continue com</span>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              <Button
-                type="submit"
-                className="w-full bg-uss-primary hover:bg-uss-secondary text-white"
-                disabled={loading}
-              >
-                {loading ? 'Carregando...' : mode === 'login' ? 'Entrar' : 'Criar Conta'}
-              </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Ou continue com</span>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleGoogleSignIn}
-              >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-2 border-gray-300 hover:border-blue-400 hover:bg-gray-50 text-gray-700 font-semibold py-6 rounded-lg transition-all"
+                    onClick={handleGoogleSignIn}
+                  >
                 <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
@@ -243,18 +280,20 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continuar com Google
-              </Button>
+                    Continuar com Google
+                  </Button>
+                </motion.div>
+              </AnimatePresence>
             </form>
 
             {/* Footer */}
-            <div className="p-6 border-t border-gray-200 text-center">
-              <p className="text-sm text-gray-600">
+            <div className="p-6 border-t border-gray-200 text-center bg-gray-50">
+              <p className="text-sm text-gray-700">
                 {mode === 'login' ? 'Não tem uma conta? ' : 'Já tem uma conta? '}
                 <button
                   type="button"
                   onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                  className="text-uss-primary hover:text-uss-secondary font-medium"
+                  className="text-blue-400 hover:text-blue-500 font-bold transition-colors"
                 >
                   {mode === 'login' ? 'Criar conta' : 'Fazer login'}
                 </button>
@@ -266,3 +305,4 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
     </AnimatePresence>
   )
 }
+

@@ -1,119 +1,265 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { useAdminAuth } from '@/hooks/useAdminAuth'
 import { 
-  Search, 
-  MoreHorizontal, 
   Eye, 
   Edit, 
   Trash2, 
   Plus,
   ArrowUp,
   ArrowDown,
-  Filter,
-  ChevronDown,
   Package,
   Tag,
   Grid,
   Download,
-  Upload,
-  FolderOpen
+  FolderOpen,
+  Loader2,
+  RefreshCw,
+  X,
+  Save,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import PageHeader from '@/components/admin/PageHeader'
 import StatCard from '@/components/admin/StatCard'
-import { AdminCategory, categoryStorage } from '@/lib/admin-storage'
+import PremiumButton from '@/components/ui/PremiumButton'
+import { TableSkeleton, StatsCardSkeleton } from '@/components/ui/SkeletonLoaders'
+import { FadeInUp, AnimatedCard, StaggeredContainer } from '@/components/admin/PageTransition'
+import { api, Category, Brand } from '@/services/api'
+import { toast } from 'sonner'
+import { exportCategories } from '@/services/export'
+
+type SortKey = 'name' | 'products' | 'createdAt'
+type SortDirection = 'asc' | 'desc'
 
 export default function CategoriesPage() {
+  const { token, isLoading: authLoading } = useAdminAuth()
+  const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState<'name' | 'products' | 'created'>('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
-  const [categories, setCategories] = useState<AdminCategory[]>(() => categoryStorage.getAll())
+  
+  // Modal states
+  const [showModal, setShowModal] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    icon: '',
+    color: '#034a6e',
+    isActive: true,
+    sortOrder: 0,
+    brandId: ''
+  })
 
-  // Funções de formatação
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
+  // Fetch categories
+  const fetchCategories = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [categoriesResponse, brandsResponse] = await Promise.all([
+        api.categories.getAll(),
+        api.brands.getAll()
+      ])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-      case 'inactive':
-        return 'bg-red-500/20 text-red-400 border-red-500/30'
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+      setCategories(categoriesResponse || [])
+      setBrands(brandsResponse || [])
+    } catch (error: any) {
+      console.error('[Admin Categories] Erro:', error)
+      toast.error('Erro ao carregar categorias')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  // Handle delete
+  const handleDelete = async (categoryId: string, categoryName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`)) return
+
+    setDeleting(categoryId)
+    try {
+      await api.categories.delete(categoryId, token || undefined)
+      toast.success('Categoria excluída com sucesso!')
+      fetchCategories()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao excluir categoria')
+    } finally {
+      setDeleting(null)
     }
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'Ativa'
-      case 'inactive':
-        return 'Inativa'
-      default:
-        return status
+  // Handle save (create/update)
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Nome é obrigatório')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const slug = formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      
+      const data = {
+        ...formData,
+        slug,
+        brandId: formData.brandId || undefined
+      }
+
+      if (editingCategory) {
+        await api.categories.update(editingCategory.id, data, token || undefined)
+        toast.success('Categoria atualizada com sucesso!')
+      } else {
+        await api.categories.create(data, token || undefined)
+        toast.success('Categoria criada com sucesso!')
+      }
+
+      setShowModal(false)
+      setEditingCategory(null)
+      resetForm()
+      fetchCategories()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao salvar categoria')
+    } finally {
+      setSaving(false)
     }
   }
 
-  // Filtros e ordenação
+  // Handle edit
+  const handleEdit = (category: Category) => {
+    setEditingCategory(category)
+    setFormData({
+      name: category.name,
+      slug: category.slug,
+      description: category.description || '',
+      icon: category.icon || '',
+      color: category.color || '#034a6e',
+      isActive: category.isActive,
+      sortOrder: category.sortOrder,
+      brandId: category.brandId || ''
+    })
+    setShowModal(true)
+  }
+
+  // Handle new
+  const handleNew = () => {
+    setEditingCategory(null)
+    resetForm()
+    setShowModal(true)
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      slug: '',
+      description: '',
+      icon: '',
+      color: '#034a6e',
+      isActive: true,
+      sortOrder: 0,
+      brandId: ''
+    })
+  }
+
+  // Sort and filter
   const filteredAndSortedCategories = useMemo(() => {
     let filtered = categories.filter(category => {
       const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          category.description.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = statusFilter === 'all' || category.status === statusFilter
+                          (category.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'active' && category.isActive) ||
+        (statusFilter === 'inactive' && !category.isActive)
       return matchesSearch && matchesStatus
     })
 
     return filtered.sort((a, b) => {
-      let aValue: any, bValue: any
+      let aValue: any
+      let bValue: any
       
-      switch (sortBy) {
+      switch (sortKey) {
         case 'name':
           aValue = a.name.toLowerCase()
           bValue = b.name.toLowerCase()
           break
         case 'products':
-          aValue = a.productCount
-          bValue = b.productCount
-          break
-        case 'created':
-          aValue = new Date(a.createdAt)
-          bValue = new Date(b.createdAt)
+          aValue = a._count?.products || 0
+          bValue = b._count?.products || 0
           break
         default:
-          return 0
+          aValue = a.sortOrder
+          bValue = b.sortOrder
       }
 
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1
-      return 0
+      if (typeof aValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue) 
+          : bValue.localeCompare(aValue)
+      }
+      
+      return sortDirection === 'asc' 
+        ? aValue - bValue 
+        : bValue - aValue
     })
-  }, [categories, searchTerm, sortBy, sortOrder, statusFilter])
+  }, [categories, searchTerm, sortKey, sortDirection, statusFilter])
 
-  // Estatísticas
-  const totalCategories = categories.length
-  const activeCategories = categories.filter(c => c.status === 'active').length
-  const totalProducts = categories.reduce((sum, c) => sum + c.productCount, 0)
-  const emptyCategories = categories.filter(c => c.productCount === 0).length
-
-  const handleSort = (field: typeof sortBy) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
-      setSortBy(field)
-      setSortOrder('asc')
+      setSortKey(key)
+      setSortDirection('asc')
     }
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-      categoryStorage.delete(id)
-      setCategories(categoryStorage.getAll())
-    }
+  const getStatusColor = (isActive: boolean) => {
+    return isActive
+      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+      : 'bg-red-50 text-red-600 border-red-200'
+  }
+
+  // Stats
+  const totalCategories = categories.length
+  const activeCategories = categories.filter(c => c.isActive).length
+  const totalProducts = categories.reduce((sum, c) => sum + (c._count?.products || 0), 0)
+
+  if (loading && categories.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-56 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <StatsCardSkeleton key={i} />
+          ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <TableSkeleton rows={6} columns={5} />
+      </div>
+    )
   }
 
   return (
@@ -121,265 +267,380 @@ export default function CategoriesPage() {
       {/* Header */}
       <PageHeader
         title="Categorias"
-        description="Organize seus produtos em categorias"
+        description={`Gerencie ${totalCategories} categorias`}
         breadcrumbs={[
           { label: 'Admin', href: '/admin' },
           { label: 'Categorias' }
         ]}
         showSearch={true}
         onSearch={setSearchTerm}
-        searchPlaceholder="Pesquisar categorias..."
+        searchPlaceholder="Buscar categorias..."
         actions={
           <>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-1 lg:space-x-2 bg-white/10 backdrop-blur-xl border border-white/20 text-white px-2 lg:px-4 py-2 rounded-xl hover:bg-white/20 transition-all text-sm lg:text-base"
+            <PremiumButton
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+              onClick={fetchCategories}
             >
-              <Download className="w-3 h-3 lg:w-4 lg:h-4" />
-              <span className="hidden sm:inline">Exportar</span>
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-1 lg:space-x-2 bg-white/10 backdrop-blur-xl border border-white/20 text-white px-2 lg:px-4 py-2 rounded-xl hover:bg-white/20 transition-all text-sm lg:text-base"
+              Atualizar
+            </PremiumButton>
+
+            <PremiumButton
+              variant="secondary"
+              size="sm"
+              icon={<FileSpreadsheet className="w-4 h-4" />}
+              onClick={() => {
+                if (categories.length === 0) {
+                  toast.error('Nenhuma categoria para exportar')
+                  return
+                }
+                exportCategories(categories, 'excel')
+                toast.success('Relatório Excel gerado!')
+              }}
             >
-              <Upload className="w-3 h-3 lg:w-4 lg:h-4" />
-              <span className="hidden sm:inline">Importar</span>
-            </motion.button>
+              Excel
+            </PremiumButton>
+
+            <PremiumButton
+              variant="secondary"
+              size="sm"
+              icon={<FileText className="w-4 h-4" />}
+              onClick={() => {
+                if (categories.length === 0) {
+                  toast.error('Nenhuma categoria para exportar')
+                  return
+                }
+                exportCategories(categories, 'pdf')
+                toast.success('Relatório PDF gerado!')
+              }}
+            >
+              PDF
+            </PremiumButton>
             
-            <Link href="/admin/categories/new">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center space-x-1 lg:space-x-2 relative overflow-hidden px-3 lg:px-6 py-2 lg:py-2.5 rounded-xl font-medium text-white text-sm lg:text-base transition-all duration-300"
-                style={{ 
-                  background: 'var(--uss-gradient-premium)',
-                  backgroundSize: '200% 200%',
-                  boxShadow: 'var(--uss-shadow-lg)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundPosition = 'right center'
-                  e.currentTarget.style.boxShadow = 'var(--uss-shadow-xl)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundPosition = 'left center'
-                  e.currentTarget.style.boxShadow = 'var(--uss-shadow-lg)'
-                }}
-              >
-                <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-                <span>Nova</span>
-              </motion.button>
-            </Link>
+            <PremiumButton
+              variant="primary"
+              size="md"
+              icon={<Plus className="w-5 h-5" />}
+              onClick={handleNew}
+              glowEffect={true}
+            >
+              Nova Categoria
+            </PremiumButton>
           </>
         }
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <StatCard
           title="Total de Categorias"
-          value={totalCategories.toString()}
-          icon={<Tag className="w-4 h-4 lg:w-5 lg:h-5" />}
-          trend="up"
-          trendValue="+12%"
+          value={totalCategories}
+          icon={<Grid className="w-5 h-5" />}
         />
+        
         <StatCard
           title="Categorias Ativas"
-          value={activeCategories.toString()}
-          icon={<Grid className="w-4 h-4 lg:w-5 lg:h-5" />}
+          value={activeCategories}
+          icon={<Tag className="w-5 h-5" />}
           trend="up"
-          trendValue="+5%"
+          trendValue={totalCategories > 0 ? `${Math.round((activeCategories / totalCategories) * 100)}%` : '0%'}
         />
+        
         <StatCard
           title="Total de Produtos"
-          value={totalProducts.toString()}
-          icon={<Package className="w-4 h-4 lg:w-5 lg:h-5" />}
-          trend="up"
-          trendValue="+8%"
+          value={totalProducts}
+          icon={<Package className="w-5 h-5" />}
         />
+        
         <StatCard
-          title="Categorias Vazias"
-          value={emptyCategories.toString()}
-          icon={<FolderOpen className="w-4 h-4 lg:w-5 lg:h-5" />}
-          trend="down"
-          trendValue="-2%"
+          title="Marcas"
+          value={brands.length}
+          icon={<FolderOpen className="w-5 h-5" />}
         />
       </div>
 
       {/* Filters */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-6"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-white border border-gray-100 rounded-2xl p-4 lg:p-6 shadow-sm"
       >
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-wrap gap-2 lg:gap-4">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all duration-300"
+        <div className="flex flex-wrap gap-3">
+          {['all', 'active', 'inactive'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status as any)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                statusFilter === status
+                  ? 'bg-blue-400 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
             >
-              <option value="all">Todos os status</option>
-              <option value="active">Ativas</option>
-              <option value="inactive">Inativas</option>
-            </select>
-          </div>
-          
-          <div className="text-sm text-gray-400">
-            {filteredAndSortedCategories.length} de {totalCategories} categorias
-          </div>
+              {status === 'all' ? 'Todas' : status === 'active' ? 'Ativas' : 'Inativas'}
+            </button>
+          ))}
         </div>
       </motion.div>
 
       {/* Categories Table */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        className="relative overflow-hidden rounded-2xl"
-        style={{
-          background: 'rgba(248, 250, 252, 0.05)',
-          backdropFilter: 'blur(16px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm"
       >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-white/5 border-b border-white/10">
+            <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-4 lg:px-6 py-3 lg:py-4 text-left">
-                  <button
-                    onClick={() => handleSort('name')}
-                    className="flex items-center space-x-1 text-gray-300 hover:text-white transition-colors text-sm lg:text-base font-medium"
-                  >
-                    <span>Nome</span>
-                    {sortBy === 'name' && (
-                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                <th 
+                  className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm cursor-pointer hover:text-gray-900"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Categoria</span>
+                    {sortKey === 'name' && (
+                      sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
                     )}
-                  </button>
+                  </div>
                 </th>
-                <th className="px-4 lg:px-6 py-3 lg:py-4 text-left">
-                  <span className="text-gray-300 text-sm lg:text-base font-medium">Descrição</span>
-                </th>
-                <th className="px-4 lg:px-6 py-3 lg:py-4 text-left">
-                  <button
-                    onClick={() => handleSort('products')}
-                    className="flex items-center space-x-1 text-gray-300 hover:text-white transition-colors text-sm lg:text-base font-medium"
-                  >
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm hidden md:table-cell">Slug</th>
+                <th 
+                  className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm cursor-pointer hover:text-gray-900 hidden sm:table-cell"
+                  onClick={() => handleSort('products')}
+                >
+                  <div className="flex items-center space-x-1">
                     <span>Produtos</span>
-                    {sortBy === 'products' && (
-                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    {sortKey === 'products' && (
+                      sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
                     )}
-                  </button>
+                  </div>
                 </th>
-                <th className="px-4 lg:px-6 py-3 lg:py-4 text-left">
-                  <span className="text-gray-300 text-sm lg:text-base font-medium">Status</span>
-                </th>
-                <th className="px-4 lg:px-6 py-3 lg:py-4 text-left">
-                  <button
-                    onClick={() => handleSort('created')}
-                    className="flex items-center space-x-1 text-gray-300 hover:text-white transition-colors text-sm lg:text-base font-medium"
-                  >
-                    <span>Criado em</span>
-                    {sortBy === 'created' && (
-                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 lg:px-6 py-3 lg:py-4 text-right">
-                  <span className="text-gray-300 text-sm lg:text-base font-medium">Ações</span>
-                </th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm hidden lg:table-cell">Marca</th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm">Status</th>
+                <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
-              {filteredAndSortedCategories.map((category, index) => {
-                return (
-                  <motion.tr
-                    key={category.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ 
-                      delay: index * 0.05,
-                      duration: 0.4,
-                      ease: [0.4, 0, 0.2, 1]
-                    }}
-                    whileHover={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      scale: 1.01,
-                      transition: { duration: 0.2 }
-                    }}
-                    className="transition-all duration-300 cursor-pointer"
-                  >
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center transition-all duration-300"
-                          style={{ background: 'var(--uss-gradient-premium)' }}
-                        >
-                          <Tag className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-white text-sm lg:text-base">{category.name}</h3>
-                          <p className="text-xs lg:text-sm text-gray-400">{category.slug}</p>
-                        </div>
+            <tbody>
+              {filteredAndSortedCategories.map((category, index) => (
+                <motion.tr
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-all"
+                >
+                  <td className="p-2 lg:p-4">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                        style={{ backgroundColor: category.color || '#034a6e' }}
+                      >
+                        {category.icon || '📦'}
                       </div>
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <p className="text-sm lg:text-base text-gray-300 max-w-xs truncate">
-                        {category.description}
-                      </p>
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center space-x-2">
-                        <Package className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm lg:text-base text-white font-medium">
-                          {category.productCount}
-                        </span>
+                      <div>
+                        <h4 className="text-gray-900 font-medium text-sm">{category.name}</h4>
+                        {category.description && (
+                          <p className="text-gray-500 text-xs truncate max-w-48">{category.description}</p>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${getStatusColor(category.status)}`}>
-                        {getStatusText(category.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <span className="text-sm lg:text-base text-gray-300">
-                        {formatDate(category.createdAt)}
-                      </span>
-                    </td>
-                    <td className="px-4 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center justify-end space-x-1 lg:space-x-2">
-                        <button className="p-1 lg:p-2 text-gray-400 hover:text-white transition-colors">
-                          <Eye className="w-3 h-3 lg:w-4 lg:h-4" />
-                        </button>
-                        <button className="p-1 lg:p-2 text-gray-400 hover:text-white transition-colors">
-                          <Edit className="w-3 h-3 lg:w-4 lg:h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(category.id)}
-                          className="p-1 lg:p-2 text-gray-400 hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3 lg:w-4 lg:h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                )
-              })}
+                    </div>
+                  </td>
+                  <td className="p-2 lg:p-4 hidden md:table-cell">
+                    <span className="text-gray-500 text-sm font-mono">{category.slug}</span>
+                  </td>
+                  <td className="p-2 lg:p-4 hidden sm:table-cell">
+                    <span className="text-gray-900 font-medium">{category._count?.products || 0}</span>
+                  </td>
+                  <td className="p-2 lg:p-4 hidden lg:table-cell">
+                    <span className="text-gray-600 text-sm">{category.brand?.name || '-'}</span>
+                  </td>
+                  <td className="p-2 lg:p-4">
+                    <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(category.isActive)}`}>
+                      {category.isActive ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </td>
+                  <td className="p-2 lg:p-4">
+                    <div className="flex items-center space-x-1 lg:space-x-2">
+                      <button 
+                        onClick={() => handleEdit(category)}
+                        className="p-1 lg:p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(category.id, category.name)}
+                        disabled={deleting === category.id}
+                        className="p-1 lg:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                      >
+                        {deleting === category.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
             </tbody>
           </table>
 
           {filteredAndSortedCategories.length === 0 && (
             <div className="p-6 lg:p-12 text-center">
-              <Tag className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-3 lg:mb-4" />
-              <h3 className="text-lg lg:text-xl font-bold text-white mb-2">Nenhuma categoria encontrada</h3>
-              <p className="text-gray-400 text-sm lg:text-base">Tente ajustar os filtros ou adicione novas categorias</p>
+              <Grid className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-3 lg:mb-4" />
+              <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-2">Nenhuma categoria encontrada</h3>
+              <p className="text-gray-500 text-sm lg:text-base">
+                {searchTerm ? 'Tente ajustar os filtros' : 'Crie sua primeira categoria'}
+              </p>
             </div>
           )}
         </div>
       </motion.div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-gray-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-black mb-1.5">Nome <span className="text-red-500">*</span></p>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Nome da categoria"
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-black mb-1.5">Slug</p>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="categoria-slug (auto-gerado se vazio)"
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-black mb-1.5">Descrição</p>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                  rows={3}
+                  placeholder="Descrição da categoria"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-black mb-1.5">Ícone (emoji)</p>
+                  <input
+                    type="text"
+                    value={formData.icon}
+                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-center text-2xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="📱"
+                    maxLength={2}
+                  />
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-black mb-1.5">Cor</p>
+                  <input
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-black mb-1.5">Marca (opcional)</p>
+                <select
+                  value={formData.brandId}
+                  onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                >
+                  <option value="">Nenhuma</option>
+                  {brands.map(brand => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-black mb-1.5">Ordem</p>
+                <input
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  min="0"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="w-4 h-4 text-blue-400 rounded focus:ring-blue-400"
+                />
+                <label htmlFor="isActive" className="ml-2 text-sm font-semibold text-black">
+                  Categoria ativa
+                </label>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-400 hover:bg-blue-500 rounded-xl text-white font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {editingCategory ? 'Atualizar' : 'Criar'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
+

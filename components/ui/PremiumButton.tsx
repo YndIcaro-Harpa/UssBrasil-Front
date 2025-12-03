@@ -58,18 +58,19 @@ const PremiumButton = ({
   const getBackgroundStyle = () => {
     switch (variant) {
       case 'primary':
-        return { background: 'var(--uss-gradient-premium)' }
+        return { background: 'linear-gradient(135deg, #60a5fa, #3b82f6)' }
       case 'secondary':
-        return { background: 'var(--uss-gradient-secondary)' }
+        return { background: '#f3f4f6', color: '#374151' }
       case 'accent':
         return { background: 'linear-gradient(135deg, #06B6D4, #0EA5E9)' }
       case 'outline':
         return { 
-          borderImage: 'var(--uss-gradient-premium) 1',
-          background: 'transparent'
+          border: '2px solid #60a5fa',
+          background: 'transparent',
+          color: '#3b82f6'
         }
       default:
-        return { background: 'var(--uss-gradient-premium)' }
+        return { background: 'linear-gradient(135deg, #60a5fa, #3b82f6)' }
     }
   }
 
@@ -88,7 +89,7 @@ const PremiumButton = ({
       style={getBackgroundStyle()}
       whileHover={!isDisabled ? { 
         y: -2,
-        boxShadow: glowEffect ? 'var(--uss-shadow-glow)' : 'var(--uss-shadow-xl)'
+        boxShadow: glowEffect ? '0 10px 40px -10px rgba(96, 165, 250, 0.5)' : '0 10px 30px -10px rgba(0, 0, 0, 0.2)'
       } : {}}
       whileTap={!isDisabled ? { scale: 0.95 } : {}}
       disabled={isDisabled}
@@ -120,7 +121,7 @@ const PremiumButton = ({
       {glowEffect && (
         <motion.div
           className="absolute inset-0 rounded-xl opacity-0"
-          style={{ background: 'var(--uss-gradient-premium)' }}
+          style={{ background: 'linear-gradient(135deg, #60a5fa, #3b82f6)' }}
           whileHover={{ opacity: 0.1 }}
           transition={{ duration: 0.3 }}
         />
@@ -130,3 +131,4 @@ const PremiumButton = ({
 }
 
 export default PremiumButton
+

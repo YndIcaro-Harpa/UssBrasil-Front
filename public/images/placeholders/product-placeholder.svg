@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="400" fill="#f8fafc"/>
+  
+  <!-- Border -->
+  <rect x="1" y="1" width="398" height="398" stroke="#e2e8f0" stroke-width="2" fill="none"/>
+  
+  <!-- Product Box Icon -->
+  <g transform="translate(140, 130)">
+    <!-- Box Front -->
+    <path d="M60 20L120 55V125L60 90L0 125V55L60 20Z" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+    
+    <!-- Box Top -->
+    <path d="M60 20L120 55L60 90L0 55L60 20Z" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+    
+    <!-- Box Ribbon -->
+    <path d="M60 20V90M0 55H120" stroke="#94a3b8" stroke-width="2"/>
+    
+    <!-- Shine effect -->
+    <path d="M30 40L45 50" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  </g>
+  
+  <!-- USS Brasil Branding -->
+  <text x="200" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#034a6e" font-weight="bold">USS Brasil</text>
+  <text x="200" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#64748b">Imagem não disponível</text>
+</svg>

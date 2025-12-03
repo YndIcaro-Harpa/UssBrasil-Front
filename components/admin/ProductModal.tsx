@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Dialog, 
@@ -18,8 +18,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive } from 'lucide-react';
+import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2 } from 'lucide-react';
 import { Product } from '@/hooks/use-admin-crud';
+import { toast } from 'sonner';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -49,8 +50,8 @@ const brands = [
 ];
 
 const statusOptions = [
-  { value: 'active', label: 'Ativo', color: 'bg-green-500' },
-  { value: 'inactive', label: 'Inativo', color: 'bg-gray-500' },
+  { value: 'active', label: 'Ativo', color: 'bg-blue-600' },
+  { value: 'inactive', label: 'Inativo', color: 'bg-gray-400' },
   { value: 'out_of_stock', label: 'Sem Estoque', color: 'bg-red-500' },
 ];
 
@@ -72,14 +73,113 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     status: 'active' as Product['status'],
     isNew: false,
     isFeatured: false,
-    colors: [{ name: '', code: '' }],
+    colors: [{ name: '', code: '', image: '' }],
     storage: [''],
     specifications: {} as Record<string, string>
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [newSpecKey, setNewSpecKey] = useState('');
   const [newSpecValue, setNewSpecValue] = useState('');
+  
+  const mainImageInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Cloudinary Upload Function
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+  
+  const uploadToCloudinary = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const response = await fetch(`${API_URL}/upload/product-image`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro no upload');
+      }
+      
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast.error('Erro ao fazer upload da imagem');
+      return null;
+    }
+  };
+
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    const url = await uploadToCloudinary(file);
+    setUploading(false);
+    
+    if (url) {
+      setFormData(prev => ({
+        ...prev,
+        images: { ...prev.images, main: url }
+      }));
+      toast.success('Imagem principal carregada!');
+    }
+  };
+
+  const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingIndex(index);
+    const url = await uploadToCloudinary(file);
+    setUploadingIndex(null);
+    
+    if (url) {
+      const newGallery = [...formData.images.gallery];
+      newGallery[index] = url;
+      setFormData(prev => ({
+        ...prev,
+        images: { ...prev.images, gallery: newGallery }
+      }));
+      toast.success(`Imagem ${index + 1} carregada!`);
+    }
+  };
+
+  // Price Calculation State
+  const [priceCalculations, setPriceCalculations] = useState({
+    discounted: 0,
+    proposed: 0,
+    receivable: 0
+  });
+
+  // Calculate prices whenever base price changes
+  useEffect(() => {
+    const basePrice = Number(formData.price) || 0;
+    
+    // 1. Valor com 12% de desconto
+    const discounted = basePrice * 0.88;
+    
+    // 2. Valor Proposto (Base + 15%)
+    const proposed = basePrice * 1.15;
+    
+    // 3. Valor Recebível
+    // (Proposto com 12% de desconto) - Taxas
+    // Taxas: Stripe (~3.99% + 0.39) + 7% Fixo (Nota Fiscal)
+    const proposedDiscounted = proposed * 0.88;
+    const stripeFee = (proposedDiscounted * 0.0399) + 0.39;
+    const taxFee = proposedDiscounted * 0.07;
+    const receivable = proposedDiscounted - stripeFee - taxFee;
+
+    setPriceCalculations({
+      discounted,
+      proposed,
+      receivable
+    });
+  }, [formData.price]);
 
   useEffect(() => {
     if (product && (mode === 'edit' || mode === 'view')) {
@@ -97,7 +197,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         status: product.status,
         isNew: product.isNew,
         isFeatured: product.isFeatured,
-        colors: product.colors || [{ name: '', code: '' }],
+        colors: (product.colors || []).map(c => ({ name: c.name || '', code: c.code || '', image: (c as any).image || '' })),
         storage: product.storage || [''],
         specifications: product.specifications
       });
@@ -119,7 +219,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         status: 'active',
         isNew: false,
         isFeatured: false,
-        colors: [{ name: '', code: '' }],
+        colors: [{ name: '', code: '', image: '' }],
         storage: [''],
         specifications: {}
       });
@@ -161,7 +261,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
   const addColor = () => {
     setFormData(prev => ({
       ...prev,
-      colors: [...prev.colors, { name: '', code: '' }]
+      colors: [...prev.colors, { name: '', code: '', image: '' }]
     }));
   };
 
@@ -231,389 +331,465 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
+      <DialogContent className="w-[95vw] !max-w-[95vw] sm:!max-w-[95vw] h-[95vh] p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b shrink-0 bg-[#001941] text-white">
+          <DialogTitle className="flex items-center gap-2 text-white text-xl">
+            <Package className="h-5 w-5 text-blue-400" />
             {mode === 'create' && 'Criar Novo Produto'}
             {mode === 'edit' && 'Editar Produto'}
             {mode === 'view' && 'Detalhes do Produto'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="basic" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="basic">Básico</TabsTrigger>
-              <TabsTrigger value="images">Imagens</TabsTrigger>
-              <TabsTrigger value="variants">Variações</TabsTrigger>
-              <TabsTrigger value="specs">Especificações</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="basic" className="space-y-4">
-              {/* Informações básicas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Produto</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    disabled={mode === 'view'}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sku">SKU</Label>
-                  <Input
-                    id="sku"
-                    value={formData.sku}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                    disabled={mode === 'view'}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  disabled={mode === 'view'}
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    disabled={mode === 'view'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="brand">Marca</Label>
-                  <Select
-                    value={formData.brand}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
-                    disabled={mode === 'view'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma marca" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map(brand => (
-                        <SelectItem key={brand} value={brand}>
-                          {brand}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Product['status'] }))}
-                    disabled={mode === 'view'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${option.color}`} />
-                            {option.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Preço</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                    disabled={mode === 'view'}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="originalPrice">Preço Original (opcional)</Label>
-                  <Input
-                    id="originalPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.originalPrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || 0 }))}
-                    disabled={mode === 'view'}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Estoque</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-                    disabled={mode === 'view'}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isNew"
-                    checked={formData.isNew}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNew: checked }))}
-                    disabled={mode === 'view'}
-                  />
-                  <Label htmlFor="isNew">Produto Novo</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isFeatured"
-                    checked={formData.isFeatured}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
-                    disabled={mode === 'view'}
-                  />
-                  <Label htmlFor="isFeatured">Produto em Destaque</Label>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="images" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mainImage">Imagem Principal</Label>
+        <form onSubmit={handleSubmit} className="flex flex-1 overflow-hidden">
+          {/* Left Side - Form Fields */}
+          <div className="flex-[3] overflow-y-auto p-6 border-r bg-white">
+            
+            {/* Row 1: Basic Info */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4">
+              <div className="lg:col-span-2 space-y-1">
+                <Label htmlFor="name" className="text-black text-sm">Nome do Produto</Label>
                 <Input
-                  id="mainImage"
-                  value={formData.images.main}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    images: { ...prev.images, main: e.target.value }
-                  }))}
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   disabled={mode === 'view'}
-                  placeholder="URL da imagem principal"
+                  required
+                  className="text-black h-9"
+                  placeholder="Nome do produto"
                 />
               </div>
+              <div className="space-y-1">
+                <Label htmlFor="sku" className="text-black text-sm">SKU</Label>
+                <Input
+                  id="sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                  disabled={mode === 'view'}
+                  required
+                  className="text-black h-9"
+                  placeholder="SKU-001"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="brand" className="text-black text-sm">Marca</Label>
+                <Select
+                  value={formData.brand}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
+                  disabled={mode === 'view'}
+                >
+                  <SelectTrigger className="h-9 text-black">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brands.map(brand => (
+                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Galeria de Imagens</Label>
+            {/* Row 2: Category, Status, Price, Stock */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+              <div className="space-y-1">
+                <Label className="text-black text-sm">Categoria</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  disabled={mode === 'view'}
+                >
+                  <SelectTrigger className="h-9 text-black">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-black text-sm">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Product['status'] }))}
+                  disabled={mode === 'view'}
+                >
+                  <SelectTrigger className="h-9 text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${option.color}`} />
+                          {option.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-black text-sm">Preço (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  disabled={mode === 'view'}
+                  required
+                  className="text-black h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-black text-sm">Preço "De"</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.originalPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || 0 }))}
+                  disabled={mode === 'view'}
+                  className="text-black h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-black text-sm">Estoque</Label>
+                <Input
+                  type="number"
+                  value={formData.stock}
+                  onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                  disabled={mode === 'view'}
+                  required
+                  className="text-black h-9"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Description */}
+            <div className="mb-4 space-y-1">
+              <Label className="text-black text-sm">Descrição</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                disabled={mode === 'view'}
+                rows={2}
+                required
+                className="text-black resize-none"
+                placeholder="Descrição do produto..."
+              />
+            </div>
+
+            {/* Row 4: Images + Options */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              {/* Images with Cloudinary Upload */}
+              <div className="space-y-3">
+                <Label className="text-black text-sm flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-gray-600" />
+                  Imagens
+                </Label>
+                
+                {/* Main Image */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500">Imagem Principal</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.images.main}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        images: { ...prev.images, main: e.target.value }
+                      }))}
+                      disabled={mode === 'view'}
+                      placeholder="URL da imagem principal"
+                      className="text-black h-9 flex-1"
+                    />
+                    <input
+                      type="file"
+                      ref={mainImageInputRef}
+                      onChange={handleMainImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => mainImageInputRef.current?.click()}
+                      disabled={mode === 'view' || uploading}
+                      className="h-9 px-3 bg-white hover:bg-gray-50"
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {formData.images.main && (
+                    <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                      <img src={formData.images.main} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Gallery Images */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500">Galeria</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.images.gallery.slice(0, 3).map((image, index) => (
+                      <div key={index} className="flex gap-1 items-center">
+                        <div className="relative flex-1">
+                          <Input
+                            value={image}
+                            onChange={(e) => {
+                              const newGallery = [...formData.images.gallery];
+                              newGallery[index] = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                images: { ...prev.images, gallery: newGallery }
+                              }));
+                            }}
+                            disabled={mode === 'view'}
+                            placeholder={`Imagem ${index + 1}`}
+                            className="text-black h-9 w-32 text-xs"
+                          />
+                        </div>
+                        <input
+                          type="file"
+                          ref={el => { galleryInputRefs.current[index] = el; }}
+                          onChange={(e) => handleGalleryImageUpload(e, index)}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => galleryInputRefs.current[index]?.click()}
+                          disabled={mode === 'view' || uploadingIndex === index}
+                          className="h-9 w-9 p-0 bg-white hover:bg-gray-50"
+                        >
+                          {uploadingIndex === index ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Upload className="h-3 w-3" />
+                          )}
+                        </Button>
+                        {image && (
+                          <div className="w-9 h-9 rounded overflow-hidden border">
+                            <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Options: New, Featured, Colors, Storage */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="isNew"
+                      checked={formData.isNew}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNew: checked }))}
+                      disabled={mode === 'view'}
+                    />
+                    <Label htmlFor="isNew" className="text-black text-sm">Novo</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="isFeatured"
+                      checked={formData.isFeatured}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                      disabled={mode === 'view'}
+                    />
+                    <Label htmlFor="isFeatured" className="text-black text-sm">Destaque</Label>
+                  </div>
+                </div>
+                
+                {/* Colors inline */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-black text-sm">Cores:</Label>
+                  {formData.colors.map((color, index) => (
+                    <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1">
+                      <input
+                        type="color"
+                        value={color.code || '#000000'}
+                        onChange={(e) => {
+                          const newColors = [...formData.colors];
+                          newColors[index] = { ...newColors[index], code: e.target.value };
+                          setFormData(prev => ({ ...prev, colors: newColors }));
+                        }}
+                        disabled={mode === 'view'}
+                        className="w-5 h-5 border-0 p-0 cursor-pointer"
+                      />
+                      <Input
+                        value={color.name}
+                        onChange={(e) => {
+                          const newColors = [...formData.colors];
+                          newColors[index] = { ...newColors[index], name: e.target.value };
+                          setFormData(prev => ({ ...prev, colors: newColors }));
+                        }}
+                        disabled={mode === 'view'}
+                        placeholder="Nome"
+                        className="w-20 h-7 text-xs text-black"
+                      />
+                      {mode !== 'view' && formData.colors.length > 1 && (
+                        <button type="button" onClick={() => removeColor(index)} className="text-red-500 hover:text-red-700">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                   {mode !== 'view' && (
-                    <Button type="button" variant="outline" size="sm" onClick={addGalleryImage}>
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Adicionar Imagem
+                    <Button type="button" variant="outline" size="sm" onClick={addColor} className="h-7 px-2 text-xs">
+                      + Cor
                     </Button>
                   )}
                 </div>
-                
-                {formData.images.gallery.map((image, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={image}
-                      onChange={(e) => {
-                        const newGallery = [...formData.images.gallery];
-                        newGallery[index] = e.target.value;
-                        setFormData(prev => ({
-                          ...prev,
-                          images: { ...prev.images, gallery: newGallery }
-                        }));
-                      }}
-                      disabled={mode === 'view'}
-                      placeholder={`URL da imagem ${index + 1}`}
-                    />
-                    {mode !== 'view' && formData.images.gallery.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeGalleryImage(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
 
-            <TabsContent value="variants" className="space-y-4">
-              {/* Cores */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Cores Disponíveis</Label>
+                {/* Storage inline */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-black text-sm">Armazenamento:</Label>
+                  {formData.storage.map((storage, index) => (
+                    <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1">
+                      <Input
+                        value={storage}
+                        onChange={(e) => {
+                          const newStorage = [...formData.storage];
+                          newStorage[index] = e.target.value;
+                          setFormData(prev => ({ ...prev, storage: newStorage }));
+                        }}
+                        disabled={mode === 'view'}
+                        className="w-16 h-7 text-xs text-black"
+                        placeholder="128GB"
+                      />
+                      {mode !== 'view' && formData.storage.length > 1 && (
+                        <button type="button" onClick={() => removeStorage(index)} className="text-red-500 hover:text-red-700">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                   {mode !== 'view' && (
-                    <Button type="button" variant="outline" size="sm" onClick={addColor}>
-                      <Palette className="h-4 w-4 mr-2" />
-                      Adicionar Cor
+                    <Button type="button" variant="outline" size="sm" onClick={addStorage} className="h-7 px-2 text-xs">
+                      + Armazenamento
                     </Button>
                   )}
                 </div>
-                
-                {formData.colors.map((color, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Input
-                      value={color.name}
-                      onChange={(e) => {
-                        const newColors = [...formData.colors];
-                        newColors[index] = { ...newColors[index], name: e.target.value };
-                        setFormData(prev => ({ ...prev, colors: newColors }));
-                      }}
-                      disabled={mode === 'view'}
-                      placeholder="Nome da cor"
-                      className="flex-1"
-                    />
-                    <Input
-                      type="color"
-                      value={color.code}
-                      onChange={(e) => {
-                        const newColors = [...formData.colors];
-                        newColors[index] = { ...newColors[index], code: e.target.value };
-                        setFormData(prev => ({ ...prev, colors: newColors }));
-                      }}
-                      disabled={mode === 'view'}
-                      className="w-20"
-                    />
-                    {mode !== 'view' && formData.colors.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeColor(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
               </div>
+            </div>
 
-              {/* Armazenamento */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Opções de Armazenamento</Label>
-                  {mode !== 'view' && (
-                    <Button type="button" variant="outline" size="sm" onClick={addStorage}>
-                      <HardDrive className="h-4 w-4 mr-2" />
-                      Adicionar Opção
-                    </Button>
-                  )}
-                </div>
-                
-                {formData.storage.map((storage, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={storage}
-                      onChange={(e) => {
-                        const newStorage = [...formData.storage];
-                        newStorage[index] = e.target.value;
-                        setFormData(prev => ({ ...prev, storage: newStorage }));
-                      }}
-                      disabled={mode === 'view'}
-                      placeholder="Ex: 256GB, 512GB, 1TB"
-                    />
-                    {mode !== 'view' && formData.storage.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeStorage(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="specs" className="space-y-4">
+            {/* Row 5: Specifications */}
+            <div className="space-y-2">
+              <Label className="text-black text-sm flex items-center gap-2">
+                <Tag className="h-4 w-4 text-gray-600" />
+                Especificações
+              </Label>
               {mode !== 'view' && (
                 <div className="flex gap-2">
                   <Input
                     value={newSpecKey}
                     onChange={(e) => setNewSpecKey(e.target.value)}
-                    placeholder="Nome da especificação"
+                    placeholder="Chave (ex: Processador)"
+                    className="flex-1 h-8 text-sm text-black"
                   />
                   <Input
                     value={newSpecValue}
                     onChange={(e) => setNewSpecValue(e.target.value)}
-                    placeholder="Valor"
+                    placeholder="Valor (ex: A15 Bionic)"
+                    className="flex-1 h-8 text-sm text-black"
                   />
-                  <Button type="button" onClick={addSpecification}>
+                  <Button type="button" onClick={addSpecification} size="sm" className="h-8 px-3 bg-[#001941] hover:bg-blue-900">
                     Adicionar
                   </Button>
                 </div>
               )}
-
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {Object.entries(formData.specifications).map(([key, value]) => (
-                  <div key={key} className="flex gap-2 items-center p-2 bg-gray-50 rounded">
-                    <div className="flex-1">
-                      <span className="font-medium">{key}:</span> {value}
-                    </div>
+                  <div key={key} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1 text-sm">
+                    <span className="text-gray-700 font-medium">{key}:</span>
+                    <span className="text-black">{value}</span>
                     {mode !== 'view' && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeSpecification(key)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <button type="button" onClick={() => removeSpecification(key)} className="text-red-500 hover:text-red-700 ml-1">
+                        <X className="h-3 w-3" />
+                      </button>
                     )}
                   </div>
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
 
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            {mode !== 'view' && (
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Salvando...' : mode === 'create' ? 'Criar Produto' : 'Salvar Alterações'}
-              </Button>
-            )}
-          </DialogFooter>
+          {/* Right Side - Preview & Actions */}
+          <div className="w-[280px] flex flex-col bg-gray-50 h-full shrink-0">
+            <div className="p-3 border-b bg-gray-50">
+              <h3 className="font-semibold text-black text-sm flex items-center gap-2">
+                <Package className="h-4 w-4 text-gray-700" />
+                Preview
+              </h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Image Preview */}
+              <div className="aspect-square rounded-lg border border-gray-200 flex items-center justify-center bg-white overflow-hidden relative">
+                {formData.images.main ? (
+                  <img 
+                    src={formData.images.main} 
+                    alt="Preview" 
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-1 opacity-50" />
+                    <span className="text-xs">Sem imagem</span>
+                  </div>
+                )}
+                {formData.isNew && (
+                  <Badge className="absolute top-1 left-1 bg-blue-500 hover:bg-blue-600 text-xs px-1.5 py-0.5">Novo</Badge>
+                )}
+                {formData.isFeatured && (
+                  <Badge className="absolute top-1 right-1 bg-[#001941] hover:bg-blue-900 text-xs px-1.5 py-0.5">Destaque</Badge>
+                )}
+              </div>
+
+              {/* Price Summary */}
+              <div className="space-y-2">
+                <div className="p-3 bg-[#001941] rounded-lg">
+                  <p className="text-blue-200 text-xs uppercase">À Vista (12% OFF)</p>
+                  <p className="text-xl font-bold text-white">{formatCurrency(priceCalculations.discounted)}</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <p className="text-gray-500 text-xs uppercase">Preço Sugerido</p>
+                  <p className="text-lg font-bold text-blue-600">{formatCurrency(priceCalculations.proposed)}</p>
+                </div>
+                <div className="p-3 bg-gray-100 rounded-lg">
+                  <p className="text-gray-500 text-xs uppercase">Líquido Est.</p>
+                  <p className="text-lg font-bold text-gray-700">{formatCurrency(priceCalculations.receivable)}</p>
+                  <p className="text-[9px] text-gray-500">Após taxas (~11%)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 border-t bg-gray-50">
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" onClick={onClose} className="h-9 text-sm">
+                  Cancelar
+                </Button>
+                {mode !== 'view' && (
+                  <Button type="submit" disabled={loading} className="h-9 text-sm bg-[#001941] hover:bg-blue-900 text-white">
+                    {loading ? 'Salvando...' : mode === 'create' ? 'Criar' : 'Salvar'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
+

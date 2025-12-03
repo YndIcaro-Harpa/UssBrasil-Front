@@ -116,7 +116,7 @@ export default function AdminPagesPage() {
                   </p>
                 </div>
                 <Button 
-                  className="bg-gradient-to-r from-[#00CED1] to-[#20B2AA] text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:scale-105 transition-transform"
+                  className="bg-[#001941] hover:bg-[#023a58] text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:scale-105 transition-transform"
                   onClick={() => toast.info('Funcionalidade de criar nova página em breve!')}
                 >
                   <Plus className="mr-2 h-5 w-5" />
@@ -132,7 +132,7 @@ export default function AdminPagesPage() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                   <Input
                     placeholder="Buscar por nome da página..."
-                    className="w-full pl-12 pr-4 py-3 bg-white/80 border-gray-300/50 rounded-xl focus:ring-2 focus:ring-[#00CED1]/50"
+                    className="w-full pl-12 pr-4 py-3 bg-white/80 border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-400/50"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -240,15 +240,15 @@ export default function AdminPagesPage() {
               </div>
               <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                 <div className="space-y-2">
-                  <Label htmlFor="pageName">Nome da Página</Label>
+                  <p className="text-sm font-semibold text-black">Nome da Página</p>
                   <Input id="pageName" value={selectedCategory.name} onChange={e => setSelectedCategory(p => p && {...p, name: e.target.value})} className="bg-white/80"/>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pageSlug">Slug</Label>
+                  <p className="text-sm font-semibold text-black">Slug</p>
                   <Input id="pageSlug" value={selectedCategory.slug} onChange={e => setSelectedCategory(p => p && {...p, slug: e.target.value})} className="bg-white/80"/>
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>Visível no site</Label>
+                  <p className="text-sm font-semibold text-black">Visível no site</p>
                   <Switch checked={selectedCategory.visible} onCheckedChange={c => setSelectedCategory(p => p && {...p, visible: c})} />
                 </div>
                 
@@ -258,7 +258,7 @@ export default function AdminPagesPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <Label>Tipo de Banner</Label>
+                      <p className="text-sm font-semibold text-black">Tipo de Banner</p>
                       <Select value={selectedCategory.bannerType} onValueChange={v => setSelectedCategory(p => p && {...p, bannerType: v})}>
                         <SelectTrigger className="bg-white/80"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -285,7 +285,7 @@ export default function AdminPagesPage() {
                       )}
                       {selectedCategory.bannerType === 'color' && (
                         <div className="flex items-center space-x-2">
-                          <Label>Cor</Label>
+                          <p className="text-sm font-semibold text-black">Cor</p>
                           <Input type="color" value={selectedCategory.bannerValue} onChange={e => setSelectedCategory(p => p && {...p, bannerValue: e.target.value})} className="w-24 h-10 p-1 bg-white/80"/>
                         </div>
                       )}
@@ -294,7 +294,7 @@ export default function AdminPagesPage() {
                 </Card>
               </div>
               <div className="p-6 border-t border-black/5">
-                <Button className="w-full bg-gradient-to-r from-[#00CED1] to-[#20B2AA] text-white font-bold py-3 rounded-xl shadow-lg hover:scale-102 transition-transform" onClick={handleUpdateCategory}>
+                <Button className="w-full bg-[#001941] hover:bg-[#023a58] text-white font-bold py-3 rounded-xl shadow-lg hover:scale-102 transition-transform" onClick={handleUpdateCategory}>
                   <Save className="mr-2 h-5 w-5" />
                   Salvar Alterações
                 </Button>
@@ -306,3 +306,4 @@ export default function AdminPagesPage() {
     </AdminLayout>
   )
 }
+

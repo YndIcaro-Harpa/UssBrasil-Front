@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Heart, ShoppingCart, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
+
+// Imagem padrão de fallback da USS Brasil
+const DEFAULT_FALLBACK_IMAGE = '/Empresa/07.png'
 
 interface SimpleProductCardProps {
   id: string | number
@@ -54,19 +57,20 @@ export function SimpleProductCard({
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
           {/* Product Image */}
           <Link href={`/product/${id}`}>
-            <Image
-              src={image}
+            <OptimizedImage
+              src={image || DEFAULT_FALLBACK_IMAGE}
               alt={name}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              onError={() => {}}
             />
           </Link>
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {isNew && (
-              <Badge className="bg-blue-600 text-white shadow-lg">
+              <Badge className="bg-blue-400 text-white shadow-lg">
                 Novo
               </Badge>
             )}
@@ -132,7 +136,7 @@ export function SimpleProductCard({
 
           {/* Product Name */}
           <Link href={`/product/${id}`}>
-            <h3 className="font-semibold text-gray-900 line-clamp-2 hover:text-blue-600 transition-colors">
+            <h3 className="font-semibold text-gray-900 line-clamp-2 hover:text-blue-400 transition-colors">
               {name}
             </h3>
           </Link>
@@ -172,3 +176,4 @@ export function SimpleProductCard({
     </motion.div>
   )
 }
+

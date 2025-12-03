@@ -342,3 +342,4 @@ const EnhancedProductCard: FC<EnhancedProductCardProps> = ({ product }) => {
 }
 
 export default EnhancedProductCard
+

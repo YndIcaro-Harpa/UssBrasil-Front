@@ -90,3 +90,4 @@ const CartModal: React.FC<GlobalCartProps> = ({
 };
 
 export default CartModal;
+

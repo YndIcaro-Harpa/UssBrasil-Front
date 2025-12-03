@@ -51,3 +51,4 @@ export const LazyChart = createLazyComponent(
   () => import('@/components/charts/Chart'),
   <div className="h-64 bg-uss-gray-100 animate-pulse rounded-lg"></div>
 )
+

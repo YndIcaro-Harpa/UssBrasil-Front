@@ -4,6 +4,7 @@ import { useState } from 'react'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminHeader from '@/components/admin/AdminHeader'
 import QuickActionModals from '@/components/admin/QuickActionModals'
+import { PageTransition } from '@/components/admin/PageTransition'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -26,7 +27,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--uss-gradient-dark)' }}>
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <AdminSidebar 
         collapsed={sidebarCollapsed}
@@ -46,7 +47,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           sidebarCollapsed ? 'ml-20' : 'ml-72'
         }`}
       >
-        <div className="p-6">{children}</div>
+        <div className="p-6">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </div>
       </main>
 
       {/* Quick Action Modals */}
@@ -57,3 +62,4 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   )
 }
+

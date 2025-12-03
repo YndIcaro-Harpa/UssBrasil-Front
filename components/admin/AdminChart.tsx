@@ -32,10 +32,10 @@ interface ChartProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#0C1A33]/95 border border-[#0E7466]/30 rounded-lg p-3 shadow-lg">
+      <div className="bg-[#0C1A33]/95 border border-[#001941]/30 rounded-lg p-3 shadow-lg">
         <p className="text-white font-medium">{`${label}`}</p>
         {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-[#0E7466]">
+          <p key={index} className="text-[#60a5fa]">
             {`${entry.name}: ${entry.value}`}
           </p>
         ))}
@@ -51,8 +51,8 @@ export default function AdminChart({
   dataKey, 
   xAxisKey = 'name',
   secondaryDataKey,
-  color = '#0E7466',
-  secondaryColor = '#3B82F6',
+  color = '#001941',
+  secondaryColor = '#60a5fa',
   gradient = false,
   height = 300 
 }: ChartProps) {
@@ -193,3 +193,4 @@ export default function AdminChart({
     </div>
   )
 }
+

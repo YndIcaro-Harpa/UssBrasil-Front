@@ -1,15 +1,17 @@
 "use client"
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Heart, ShoppingCart, Star, Eye, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useModal } from '@/contexts/ModalContext'
 import { slugifyCategory } from '@/lib/slugify'
 import { toast } from 'sonner'
+import { getMediaUrl } from '@/lib/media-utils'
 
 interface Product {
   id: string
@@ -40,7 +42,8 @@ export default function ProductCard({
   className = '' 
 }: ProductCardProps) {
   const { addToCart } = useCart()
-  const { favorites, toggleFavorite } = useAuth()
+  const { user, favorites, toggleFavorite } = useAuth()
+  const { openModal } = useModal()
   const [imageLoading, setImageLoading] = useState(true)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
 
@@ -55,33 +58,46 @@ export default function ProductCard({
     e.preventDefault()
     e.stopPropagation()
     addToCart({
-      id: Number(product.id),
+      id: product.id,
       name: product.name,
       price: product.discountPrice || product.price,
       image: product.image,
-      category: product.category
+      category: product.category,
+      stock: product.stock
     })
   }
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    
+    // Validar se usuário está logado
+    if (!user) {
+      toast.error('Faça login para adicionar aos favoritos')
+      openModal('auth')
+      return
+    }
+    
+    const wasFavorite = favorites.includes(product.id)
     toggleFavorite(product.id)
-    toast.success(isFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
+    toast.success(wasFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos', {
+      icon: wasFavorite ? '💔' : '❤️'
+    })
   }
 
   if (variant === 'compact') {
     return (
       <motion.div
         whileHover={{ y: -4 }}
-        className={`group relative bg-white rounded-lg border border-uss-gray-300 hover:border-uss-primary/30 hover:shadow-lg transition-all duration-300 ${className}`}
+        className={`group relative bg-gray-50/50 rounded-lg border border-gray-200 hover:border-uss-primary/30 hover:shadow-md transition-all duration-300 shadow-sm ${className}`}
       >
         <Link href={productLink} className="block p-3">
           <div className="aspect-square relative mb-2 rounded-md overflow-hidden bg-uss-gray-50">
-            <Image
-              src={product.image}
+            <OptimizedImage
+              src={getMediaUrl(product.image, 'image')}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 100px, 150px"
               className="object-contain group-hover:scale-105 transition-transform duration-300"
               onLoad={() => setImageLoading(false)}
             />
@@ -131,7 +147,7 @@ export default function ProductCard({
               <Button
                 size="sm"
                 onClick={handleAddToCart}
-                className="h-6 px-2 bg-uss-primary hover:bg-uss-secondary text-white text-xs"
+                className="h-6 px-2 bg-uss-primary hover:bg-uss-primary-dark text-white text-xs shadow-sm hover:shadow-md transition-all"
                 disabled={product.stock <= 0}
               >
                 <ShoppingCart className="h-3 w-3" />
@@ -147,14 +163,15 @@ export default function ProductCard({
     return (
       <motion.div
         whileHover={{ y: -8 }}
-        className={`group relative bg-white rounded-xl border border-uss-gray-300 hover:border-uss-primary/50 hover:shadow-xl transition-all duration-300 overflow-hidden ${className}`}
+        className={`group relative bg-gray-50/50 rounded-xl border border-gray-200 hover:border-uss-primary/50 hover:shadow-md transition-all duration-300 overflow-hidden shadow-sm ${className}`}
       >
         <Link href={productLink} className="block">
           <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-uss-gray-50 to-uss-gray-100">
-            <Image
-              src={product.image}
+            <OptimizedImage
+              src={getMediaUrl(product.image, 'image')}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-contain group-hover:scale-105 transition-transform duration-500"
               onLoad={() => setImageLoading(false)}
             />
@@ -208,11 +225,14 @@ export default function ProductCard({
           </div>
           
           <div className="p-4">
-            <div className="mb-2">
-              <Badge variant="outline" className="text-xs mb-2">
+            <div className="mb-2 flex flex-col gap-1">
+              <Badge variant="outline" className="text-xs font-semibold text-uss-primary bg-uss-primary/5 border-uss-primary/20 w-fit">
                 {product.marca}
               </Badge>
-              <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 group-hover:text-uss-primary transition-colors">
+              <Badge className="text-xs text-gray-700 bg-gray-200 border-gray-200 w-fit">
+                {product.category}
+              </Badge>
+              <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 group-hover:text-uss-primary transition-colors mt-1">
                 {product.name}
               </h3>
             </div>
@@ -259,14 +279,24 @@ export default function ProductCard({
               </div>
             </div>
             
-            <Button
-              onClick={handleAddToCart}
-              className="w-full bg-uss-primary hover:bg-uss-secondary text-white"
-              disabled={product.stock <= 0}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              {product.stock <= 0 ? 'Indisponível' : 'Adicionar ao Carrinho'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleAddToCart}
+                className="flex-1 bg-uss-primary hover:bg-uss-primary-dark text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                disabled={product.stock <= 0}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                {product.stock <= 0 ? 'Indisponível' : 'Comprar'}
+              </Button>
+              <Link href={productLink} className="flex-shrink-0">
+                <Button
+                  variant="outline"
+                  className="bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 font-medium shadow-md hover:shadow-lg transition-all h-full px-4"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </Link>
       </motion.div>
@@ -276,29 +306,31 @@ export default function ProductCard({
   // Default variant
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -8, scale: 1.02 }}
       onHoverStart={() => setShowQuickAdd(true)}
       onHoverEnd={() => setShowQuickAdd(false)}
-      className={`group relative bg-white rounded-lg border border-gray-200 hover:border-uss-primary/30 hover:shadow-lg transition-all duration-300 overflow-hidden ${className}`}
+      className={`group relative bg-white rounded-2xl border border-gray-200 hover:border-uss-primary/50 hover:shadow-2xl hover:shadow-uss-primary/10 transition-all duration-500 overflow-hidden shadow-md ${className} h-full flex flex-col`}
     >
-      <Link href={productLink} className="block">
-        <div className="aspect-square relative overflow-hidden bg-gray-50">
-          <Image
-            src={product.image}
+      <Link href={productLink} className="block flex-1 flex flex-col">
+        <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+          <OptimizedImage
+            src={getMediaUrl(product.image, 'image')}
             alt={product.name}
             fill
-            className="object-contain group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+            className="object-contain p-3 sm:p-4 group-hover:scale-110 transition-transform duration-700"
             onLoad={() => setImageLoading(false)}
           />
           
           {/* Badges */}
           {product.featured && (
-            <Badge className="absolute top-2 left-2 bg-yellow-500 text-white text-xs">
+            <Badge className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-[10px] sm:text-xs font-bold shadow-lg px-2 py-1">
+              <Star className="h-3 w-3 mr-1 inline" />
               Destaque
             </Badge>
           )}
           {discountPercentage > 0 && (
-            <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">
+            <Badge className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs sm:text-sm font-bold shadow-lg px-2 sm:px-3 py-1">
               -{discountPercentage}%
             </Badge>
           )}
@@ -308,7 +340,8 @@ export default function ProductCard({
             size="sm"
             variant="ghost"
             onClick={handleToggleFavorite}
-            className="absolute bottom-2 right-2 h-8 w-8 p-0 bg-white/80 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            className="absolute bottom-2 right-2 h-8 w-8 p-0 bg-white hover:bg-gray-50 shadow-md hover:shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 transition-all duration-300"
+            aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           >
             <Heart 
               className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} 
@@ -316,15 +349,18 @@ export default function ProductCard({
           </Button>
         </div>
         
-        <div className="p-4">
-          <div className="mb-2">
-            <Badge variant="outline" className="text-xs mb-1">
+        <div className="p-3 sm:p-4 flex-1 flex flex-col">
+          <div className="mb-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <Badge variant="outline" className="text-[10px] sm:text-xs font-bold text-white bg-gradient-to-r from-uss-primary to-uss-primary-dark border-0 px-2 py-0.5">
               {product.marca}
             </Badge>
-            <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-uss-primary transition-colors">
-              {product.name}
-            </h3>
+            <Badge className="text-[10px] sm:text-xs font-semibold text-uss-primary bg-uss-primary/10 border border-uss-primary/30 px-2 py-0.5">
+              {product.category}
+            </Badge>
           </div>
+          <h3 className="font-bold text-sm sm:text-base text-gray-900 line-clamp-2 group-hover:text-uss-primary transition-colors mb-2 leading-snug flex-1">
+            {product.name}
+          </h3>
           
           {product.rating && (
             <div className="flex items-center mb-2">
@@ -342,48 +378,52 @@ export default function ProductCard({
             </div>
           )}
           
-          <div className="flex items-center justify-between mb-3">
-            <div>
+          <div className="flex items-end justify-between mb-3">
+            <div className="flex-1">
               {product.discountPrice ? (
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 line-through">
-                    R$ {product.price.toLocaleString('pt-BR')}
+                  <span className="text-[10px] sm:text-xs text-gray-400 line-through">
+                    R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="text-lg font-bold text-uss-primary">
-                    R$ {product.discountPrice.toLocaleString('pt-BR')}
+                  <span className="text-base sm:text-lg md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-uss-primary to-uss-cyan">
+                    R$ {product.discountPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               ) : (
-                <span className="text-lg font-bold text-gray-900">
-                  R$ {product.price.toLocaleString('pt-BR')}
+                <span className="text-base sm:text-lg md:text-xl font-black text-gray-900">
+                  R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               )}
             </div>
             
             <div className="text-right">
-              <div className={`text-xs ${product.stock > 10 ? 'text-green-600' : product.stock > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                {product.stock > 0 ? `${product.stock} em estoque` : 'Esgotado'}
+              <div className={`text-[10px] sm:text-xs font-medium ${product.stock > 10 ? 'text-green-600' : product.stock > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                {product.stock > 0 ? (product.stock <= 5 ? `Últimas ${product.stock}!` : 'Em estoque') : 'Esgotado'}
               </div>
             </div>
           </div>
           
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: showQuickAdd ? 1 : 0, y: showQuickAdd ? 0 : 10 }}
-            transition={{ duration: 0.2 }}
-          >
+          <div className="flex gap-2 mt-auto">
             <Button
               onClick={handleAddToCart}
-              className="w-full bg-uss-primary hover:bg-uss-secondary text-white"
+              className="flex-1 bg-gradient-to-r from-uss-primary via-uss-primary-dark to-uss-primary hover:shadow-xl hover:shadow-uss-primary/30 text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-105 py-2 sm:py-2.5"
               disabled={product.stock <= 0}
-              size="sm"
             >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              {product.stock <= 0 ? 'Indisponível' : 'Adicionar'}
+              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="hidden sm:inline">{product.stock <= 0 ? 'Indisponível' : 'Adicionar'}</span>
+              <span className="sm:hidden">+</span>
             </Button>
-          </motion.div>
+            <Button
+              onClick={handleToggleFavorite}
+              variant="outline"
+              className="px-2 sm:px-3 hover:bg-red-50 hover:border-red-300 transition-all duration-300"
+            >
+              <Heart className={`h-3 w-3 sm:h-4 sm:w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+            </Button>
+          </div>
         </div>
       </Link>
     </motion.div>
   )
 }
+

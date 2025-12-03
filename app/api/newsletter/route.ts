@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { applyRateLimit, getClientIP } from '@/lib/rate-limiter'
 
 export async function POST(req: NextRequest){
+  // Rate limiting - 1 inscrição por dia por IP
+  const rateLimitResponse = applyRateLimit(req, 'newsletter')
+  if (rateLimitResponse) return rateLimitResponse
+
   const { email, name } = await req.json().catch(()=>({}))
   if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
     return NextResponse.json({ error:'invalid email' }, { status:400 })

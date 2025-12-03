@@ -124,9 +124,9 @@ export default function CartModal() {
                 </div>
               ) : (
                 <div className="p-6 space-y-4">
-                  {cartItems.map((item: any) => (
+                  {cartItems.map((item: any, index: number) => (
                     <motion.div
-                      key={item.id}
+                      key={`cart-modal-${item.id || index}`}
                       layout
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -263,3 +263,4 @@ export default function CartModal() {
     </AnimatePresence>
   )
 }
+

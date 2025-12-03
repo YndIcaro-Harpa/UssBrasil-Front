@@ -1,17 +1,11 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { SessionProvider } from 'next-auth/react'
 import ToastWrapper from '@/components/toast-wrapper'
-import { ThemeProvider } from '@/hooks/use-theme'
-import { Toaster } from 'sonner'
-import { CartProvider } from '@/contexts/CartContext'
-import { AuthProvider } from '@/contexts/AuthContext'
-import { ModalProvider } from '@/contexts/ModalContext'
+import { Providers } from '@/components/providers'
 import LayoutWrapper from './LayoutWrapper'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
-
 
 export const metadata: Metadata = {
   title: 'USS Brasil - Produtos Premium & Tecnologia de Ponta',
@@ -65,9 +59,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/Empresa/02.png',
+    shortcut: '/Empresa/02.png',
+    apple: '/Empresa/02.png',
   },
   verification: {
     google: 'your-google-verification-code',
@@ -81,34 +75,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className="scroll-smooth">
-      <body className={`${inter.className} bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased transition-colors duration-300`}>
-        <ThemeProvider>
-          <SessionProvider>
-            <AuthProvider>
-                <CartProvider>
-                  <ModalProvider>
-                    <Toaster 
-                      position="top-center" 
-                      richColors 
-                      className="toast-uss"
-                      toastOptions={{
-                        style: {
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border-primary)',
-                        },
-                      }}
-                    />
-                    <LayoutWrapper>
-                      {children}
-                    </LayoutWrapper>
-                  </ModalProvider>
-                </CartProvider>
-            </AuthProvider>
-          </SessionProvider>
-        </ThemeProvider>
+      <body className={`${inter.className} bg-white text-gray-900 antialiased transition-colors duration-300`}>
+        <Providers>
+          <LayoutWrapper>
+            {children}
+          </LayoutWrapper>
+        </Providers>
         <ToastWrapper />
       </body>
     </html>
   )
 }
+

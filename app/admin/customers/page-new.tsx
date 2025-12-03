@@ -284,7 +284,7 @@ export default function AdminCustomersPage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center space-x-2 bg-gradient-to-r from-[#0E7466] to-[#0C6157] text-white px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all"
+            className="flex items-center space-x-2 bg-gradient-to-r from-[#001941] to-[#001941] text-white px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Cliente</span>
@@ -360,7 +360,7 @@ export default function AdminCustomersPage() {
                 placeholder="Pesquisar por nome, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#001941] transition-all"
               />
             </div>
           </div>
@@ -370,7 +370,7 @@ export default function AdminCustomersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#0E7466] transition-all"
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#001941] transition-all"
             >
               {statuses.map(status => (
                 <option key={status} value={status} className="bg-[#0C1A33] text-white">
@@ -455,7 +455,7 @@ export default function AdminCustomersPage() {
                   >
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#0E7466] to-[#0C6157] flex items-center justify-center text-white text-sm font-medium">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#001941] to-[#001941] flex items-center justify-center text-white text-sm font-medium">
                           {customer.name.charAt(0)}
                         </div>
                         <div>
@@ -548,3 +548,5 @@ export default function AdminCustomersPage() {
     </div>
   )
 }
+
+

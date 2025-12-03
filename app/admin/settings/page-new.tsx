@@ -48,10 +48,10 @@ export default function AdminSettingsPage() {
     <motion.div
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl p-6"
+      className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#001941]/30 rounded-xl p-6"
     >
       <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 rounded-lg bg-[#0E7466]/20 text-[#0E7466]">
+        <div className="p-2 rounded-lg bg-[#001941]/20 text-[#001941]">
           {icon}
         </div>
         <h3 className="text-xl font-bold text-white">{title}</h3>
@@ -86,7 +86,7 @@ export default function AdminSettingsPage() {
     <button
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked ? 'bg-[#0E7466]' : 'bg-gray-600'
+        checked ? 'bg-[#001941]' : 'bg-gray-600'
       }`}
     >
       <span
@@ -119,7 +119,7 @@ export default function AdminSettingsPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleSave}
-            className="flex items-center space-x-2 bg-gradient-to-r from-[#0E7466] to-[#0C6157] 
+            className="flex items-center space-x-2 bg-gradient-to-r from-[#001941] to-[#001941] 
                      text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
           >
             <Save className="w-5 h-5" />
@@ -132,7 +132,7 @@ export default function AdminSettingsPage() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#0E7466]/30 rounded-xl p-2"
+        className="bg-[#0C1A33]/90 backdrop-blur-sm border border-[#001941]/30 rounded-xl p-2"
       >
         <div className="flex space-x-1 overflow-x-auto">
           {tabs.map((tab) => {
@@ -143,7 +143,7 @@ export default function AdminSettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-[#0E7466] text-white'
+                    ? 'bg-[#001941] text-white'
                     : 'text-gray-400 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -165,7 +165,7 @@ export default function AdminSettingsPage() {
                 value={settings.storeName}
                 onChange={(e) => handleInputChange('storeName', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               />
             </SettingRow>
 
@@ -175,7 +175,7 @@ export default function AdminSettingsPage() {
                 onChange={(e) => handleInputChange('storeDescription', e.target.value)}
                 rows={2}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20
                          resize-none min-w-[300px]"
               />
             </SettingRow>
@@ -186,7 +186,7 @@ export default function AdminSettingsPage() {
                 value={settings.storeEmail}
                 onChange={(e) => handleInputChange('storeEmail', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               />
             </SettingRow>
 
@@ -196,7 +196,7 @@ export default function AdminSettingsPage() {
                 value={settings.storePhone}
                 onChange={(e) => handleInputChange('storePhone', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               />
             </SettingRow>
 
@@ -206,7 +206,7 @@ export default function AdminSettingsPage() {
                 value={settings.storeAddress}
                 onChange={(e) => handleInputChange('storeAddress', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20
                          min-w-[300px]"
               />
             </SettingRow>
@@ -264,7 +264,7 @@ export default function AdminSettingsPage() {
                 value={settings.passwordExpiry}
                 onChange={(e) => handleInputChange('passwordExpiry', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               >
                 <option value="30" className="bg-[#0C1A33]">30 dias</option>
                 <option value="60" className="bg-[#0C1A33]">60 dias</option>
@@ -292,7 +292,7 @@ export default function AdminSettingsPage() {
                 value={settings.theme}
                 onChange={(e) => handleInputChange('theme', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               >
                 <option value="dark" className="bg-[#0C1A33]">Escuro</option>
                 <option value="light" className="bg-[#0C1A33]">Claro</option>
@@ -305,7 +305,7 @@ export default function AdminSettingsPage() {
                 value={settings.locale}
                 onChange={(e) => handleInputChange('locale', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               >
                 <option value="pt-BR" className="bg-[#0C1A33]">Português (Brasil)</option>
                 <option value="en-US" className="bg-[#0C1A33]">English (US)</option>
@@ -318,7 +318,7 @@ export default function AdminSettingsPage() {
                 value={settings.currency}
                 onChange={(e) => handleInputChange('currency', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               >
                 <option value="BRL" className="bg-[#0C1A33]">Real (R$)</option>
                 <option value="USD" className="bg-[#0C1A33]">Dólar ($)</option>
@@ -365,7 +365,7 @@ export default function AdminSettingsPage() {
                 value={settings.timezone}
                 onChange={(e) => handleInputChange('timezone', e.target.value)}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white 
-                         focus:outline-none focus:border-[#0E7466] focus:ring-2 focus:ring-[#0E7466]/20"
+                         focus:outline-none focus:border-[#001941] focus:ring-2 focus:ring-[#001941]/20"
               >
                 <option value="America/Sao_Paulo" className="bg-[#0C1A33]">São Paulo (GMT-3)</option>
                 <option value="America/New_York" className="bg-[#0C1A33]">New York (GMT-5)</option>
@@ -378,3 +378,5 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
+
+

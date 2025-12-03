@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { hashPassword } from '@/lib/password'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { applyRateLimit } from '@/lib/rate-limiter'
 
 // Force Node.js runtime for this API route
 export const runtime = 'nodejs'
@@ -14,6 +15,10 @@ const registerSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  // Rate limiting - 3 registros por hora por IP
+  const rateLimitResponse = applyRateLimit(request, 'register')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const body = await request.json()
     const { name, email, password } = registerSchema.parse(body)

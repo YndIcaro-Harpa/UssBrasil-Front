@@ -30,19 +30,19 @@ export default function PageHeader({
     >
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center space-x-2 text-xs lg:text-sm text-gray-400 mb-3 lg:mb-4">
+        <nav className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
           {breadcrumbs.map((crumb, index) => (
             <div key={index} className="flex items-center space-x-2">
               {index > 0 && <ChevronRight className="w-3 h-3 lg:w-4 lg:h-4" />}
               {crumb.href ? (
                 <a 
                   href={crumb.href}
-                  className="hover:text-[#0E7466] transition-colors"
+                  className="hover:text-blue-400 transition-colors"
                 >
                   {crumb.label}
                 </a>
               ) : (
-                <span className={index === breadcrumbs.length - 1 ? 'text-white' : ''}>
+                <span className={index === breadcrumbs.length - 1 ? 'text-gray-900' : ''}>
                   {crumb.label}
                 </span>
               )}
@@ -54,11 +54,11 @@ export default function PageHeader({
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
         {/* Title and Description */}
         <div>
-          <h1 className="text-xl lg:text-3xl font-bold text-white mb-1 lg:mb-2">
+          <h1 className="text-xl lg:text-3xl font-bold text-gray-900 mb-1 lg:mb-2">
             {title}
           </h1>
           {description && (
-            <p className="text-gray-400 text-sm lg:text-lg">
+            <p className="text-gray-500 text-sm lg:text-lg">
               {description}
             </p>
           )}
@@ -73,9 +73,9 @@ export default function PageHeader({
                 type="text"
                 placeholder={searchPlaceholder}
                 onChange={(e) => onSearch?.(e.target.value)}
-                className="pl-8 lg:pl-10 pr-3 lg:pr-4 py-2 lg:py-2.5 bg-[#0C1A33]/50 border border-[#0E7466]/30 rounded-xl 
-                          text-white text-sm lg:text-base placeholder-gray-400 focus:outline-none focus:border-[#0E7466] 
-                          focus:ring-2 focus:ring-[#0E7466]/20 transition-all w-full sm:w-48 lg:w-64"
+                className="pl-8 lg:pl-10 pr-3 lg:pr-4 py-2 lg:py-2.5 bg-white border border-gray-200 rounded-xl 
+                          text-gray-900 text-sm lg:text-base placeholder-gray-400 focus:outline-none focus:border-blue-400 
+                          focus:ring-2 focus:ring-blue-400/20 transition-all w-full sm:w-48 lg:w-64"
               />
             </div>
           )}
@@ -90,3 +90,4 @@ export default function PageHeader({
     </motion.div>
   )
 }
+

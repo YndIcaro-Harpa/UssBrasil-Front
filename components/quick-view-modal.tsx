@@ -145,7 +145,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               <div className="grid grid-cols-2 gap-2">
                 {product.features.map((feature, index) => (
                   <div key={index} className="flex items-center text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-2"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-2"></div>
                     {feature}
                   </div>
                 ))}
@@ -267,3 +267,4 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
     </Dialog>
   )
 }
+
