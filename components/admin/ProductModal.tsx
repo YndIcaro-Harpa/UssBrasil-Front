@@ -403,10 +403,13 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
       currentMargin = ((displayPrice - costPrice) / costPrice) * 100;
     }
     
-    // Verificar alertas de margem
-    const isLowMargin = currentMargin < 15 && currentMargin >= 12;
-    const isCriticalMargin = currentMargin < 12;
-    const showIdealButton = displayPrice < idealPrice && costPrice > 0;
+    // Verificar alertas de margem (só se houver custo preenchido)
+    // Níveis: >= 15% = OK (verde), 12-15% = Atenção (amarelo), < 12% = Crítico (vermelho)
+    const hasValidPrices = costPrice > 0 && displayPrice > 0;
+    const isGoodMargin = hasValidPrices && currentMargin >= 15;
+    const isLowMargin = hasValidPrices && currentMargin >= 12 && currentMargin < 15;
+    const isCriticalMargin = hasValidPrices && currentMargin < 12;
+    const showIdealButton = hasValidPrices && displayPrice < idealPrice;
     
     setPriceCalculations({
       idealPrice,
@@ -977,90 +980,140 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
               </div>
 
               {/* Informativos Calculados */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                {/* Margem Atual */}
-                <div className={`p-1.5 rounded-lg border ${
-                  priceCalculations.isCriticalMargin ? 'bg-red-50 border-red-200' :
-                  priceCalculations.isLowMargin ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-green-50 border-green-200'
-                }`}>
-                  <div className="flex items-center gap-1">
-                    <Percent className="h-2.5 w-2.5" />
-                    <span className="text-[9px] font-medium text-gray-600">Margem</span>
+              {/* Status da Margem - Barra Visual */}
+              {formData.costPrice > 0 && formData.displayPrice > 0 && (
+                <div className="mb-3 p-2 rounded-lg bg-gray-100 border">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-medium text-gray-600">Status da Margem</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      priceCalculations.isCriticalMargin ? 'bg-red-500 text-white' :
+                      priceCalculations.isLowMargin ? 'bg-yellow-500 text-white' :
+                      'bg-green-500 text-white'
+                    }`}>
+                      {priceCalculations.isCriticalMargin ? '⚠️ CRÍTICO' :
+                       priceCalculations.isLowMargin ? '⚡ ATENÇÃO' :
+                       '✅ OK'}
+                    </span>
                   </div>
-                  <p className={`text-xs font-bold ${
-                    priceCalculations.isCriticalMargin ? 'text-red-600' :
-                    priceCalculations.isLowMargin ? 'text-yellow-600' :
-                    'text-green-600'
+                  <div className="flex gap-1 h-2">
+                    <div className={`flex-1 rounded-l ${
+                      priceCalculations.isCriticalMargin ? 'bg-red-500' : 'bg-gray-300'
+                    }`} title="< 12% - Crítico"></div>
+                    <div className={`flex-1 ${
+                      priceCalculations.isLowMargin ? 'bg-yellow-500' : 'bg-gray-300'
+                    }`} title="12-15% - Atenção"></div>
+                    <div className={`flex-1 rounded-r ${
+                      !priceCalculations.isCriticalMargin && !priceCalculations.isLowMargin ? 'bg-green-500' : 'bg-gray-300'
+                    }`} title=">= 15% - OK"></div>
+                  </div>
+                  <div className="flex justify-between mt-1 text-[8px] text-gray-500">
+                    <span>0%</span>
+                    <span>12%</span>
+                    <span>15%</span>
+                    <span>+</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Cards Informativos */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                {/* 1. Margem Atual */}
+                <div className={`p-2 rounded-lg border-2 ${
+                  priceCalculations.isCriticalMargin ? 'bg-red-100 border-red-400' :
+                  priceCalculations.isLowMargin ? 'bg-yellow-100 border-yellow-400' :
+                  formData.costPrice > 0 ? 'bg-green-100 border-green-400' : 'bg-gray-100 border-gray-300'
+                }`}>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Percent className={`h-3 w-3 ${
+                      priceCalculations.isCriticalMargin ? 'text-red-600' :
+                      priceCalculations.isLowMargin ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`} />
+                    <span className="text-[9px] font-semibold text-gray-700">MARGEM</span>
+                  </div>
+                  <p className={`text-sm font-bold ${
+                    priceCalculations.isCriticalMargin ? 'text-red-700' :
+                    priceCalculations.isLowMargin ? 'text-yellow-700' :
+                    'text-green-700'
                   }`}>
-                    {priceCalculations.currentMargin.toFixed(1)}%
+                    {formData.costPrice > 0 ? `${priceCalculations.currentMargin.toFixed(1)}%` : '--'}
+                  </p>
+                  <p className="text-[8px] text-gray-500">
+                    {priceCalculations.isCriticalMargin ? 'Abaixo de 12%' :
+                     priceCalculations.isLowMargin ? 'Entre 12-15%' :
+                     formData.costPrice > 0 ? 'Acima de 15%' : 'Preencha custo'}
                   </p>
                 </div>
 
-                {/* Lucro */}
-                <div className={`p-1.5 rounded-lg border ${
-                  priceCalculations.profitValue < 0 ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+                {/* 2. Lucro por Unidade */}
+                <div className={`p-2 rounded-lg border-2 ${
+                  priceCalculations.profitValue < 0 ? 'bg-red-100 border-red-400' : 'bg-blue-100 border-blue-400'
                 }`}>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 mb-0.5">
                     {priceCalculations.profitValue >= 0 ? 
-                      <TrendingUp className="h-2.5 w-2.5 text-blue-500" /> : 
-                      <TrendingDown className="h-2.5 w-2.5 text-red-500" />
+                      <TrendingUp className="h-3 w-3 text-blue-600" /> : 
+                      <TrendingDown className="h-3 w-3 text-red-600" />
                     }
-                    <span className="text-[9px] font-medium text-gray-600">Lucro</span>
+                    <span className="text-[9px] font-semibold text-gray-700">LUCRO</span>
                   </div>
-                  <p className={`text-xs font-bold ${priceCalculations.profitValue < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                  <p className={`text-sm font-bold ${priceCalculations.profitValue < 0 ? 'text-red-700' : 'text-blue-700'}`}>
                     R$ {priceCalculations.profitValue.toFixed(2)}
                   </p>
+                  <p className="text-[8px] text-gray-500">Por unidade vendida</p>
                 </div>
 
-                {/* Preço Ideal */}
-                <div className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-2.5 w-2.5 text-indigo-500" />
-                    <span className="text-[9px] font-medium text-gray-600">Ideal (+15%)</span>
+                {/* 3. Preço Ideal Sugerido */}
+                <div className="p-2 rounded-lg border-2 bg-indigo-100 border-indigo-400">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <TrendingUp className="h-3 w-3 text-indigo-600" />
+                    <span className="text-[9px] font-semibold text-gray-700">IDEAL</span>
                   </div>
-                  <p className="text-xs font-bold text-indigo-600">
+                  <p className="text-sm font-bold text-indigo-700">
                     R$ {priceCalculations.idealPrice.toFixed(2)}
                   </p>
+                  <p className="text-[8px] text-gray-500">Custo + 15% margem</p>
                 </div>
 
-                {/* Valor com 12% */}
-                <div className="p-1.5 rounded-lg bg-purple-50 border border-purple-200">
-                  <div className="flex items-center gap-1">
-                    <Calculator className="h-2.5 w-2.5 text-purple-500" />
-                    <span className="text-[9px] font-medium text-gray-600">Recebe (-12%)</span>
+                {/* 4. Valor que Você Recebe */}
+                <div className="p-2 rounded-lg border-2 bg-purple-100 border-purple-400">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Calculator className="h-3 w-3 text-purple-600" />
+                    <span className="text-[9px] font-semibold text-gray-700">RECEBE</span>
                   </div>
-                  <p className="text-xs font-bold text-purple-600">
+                  <p className="text-sm font-bold text-purple-700">
                     R$ {priceCalculations.displayPriceWithTax.toFixed(2)}
                   </p>
+                  <p className="text-[8px] text-gray-500">Após desconto 12%</p>
                 </div>
               </div>
 
-              {/* Alertas e Botões */}
-              {(priceCalculations.isLowMargin || priceCalculations.isCriticalMargin) && formData.costPrice > 0 && (
-                <div className={`p-2 rounded-lg mb-2 ${
-                  priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : 'bg-yellow-100 border border-yellow-300'
-                }`}>
-                  <div className="flex items-start gap-1.5">
-                    <AlertTriangle className={`h-3 w-3 mt-0.5 ${
-                      priceCalculations.isCriticalMargin ? 'text-red-600' : 'text-yellow-600'
-                    }`} />
+              {/* Alerta Nível 1: Margem CRÍTICA (< 12%) */}
+              {priceCalculations.isCriticalMargin && (
+                <div className="p-3 rounded-lg mb-2 bg-red-500 text-white border-2 border-red-700 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 animate-pulse" />
                     <div className="flex-1">
-                      <p className={`text-[10px] font-semibold ${
-                        priceCalculations.isCriticalMargin ? 'text-red-800' : 'text-yellow-800'
-                      }`}>
-                        {priceCalculations.isCriticalMargin 
-                          ? '⚠️ CRÍTICO: Margem < 12%'
-                          : '⚠️ Margem abaixo do ideal (15%)'
-                        }
+                      <p className="text-xs font-bold">⛔ ALERTA CRÍTICO: Margem abaixo de 12%</p>
+                      <p className="text-[10px] opacity-90">
+                        Margem atual: {priceCalculations.currentMargin.toFixed(1)}% — Risco de prejuízo!
                       </p>
-                      <p className={`text-[9px] ${
-                        priceCalculations.isCriticalMargin ? 'text-red-700' : 'text-yellow-700'
-                      }`}>
-                        {priceCalculations.isCriticalMargin 
-                          ? `Margem: ${priceCalculations.currentMargin.toFixed(1)}%. Aplique R$ ${priceCalculations.idealPrice.toFixed(2)}`
-                          : `Margem: ${priceCalculations.currentMargin.toFixed(1)}%. Ideal: 15%+`
-                        }
+                      <p className="text-[10px] opacity-90">
+                        💡 Sugestão: Aplique o preço ideal de <strong>R$ {priceCalculations.idealPrice.toFixed(2)}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerta Nível 2: Margem BAIXA (12-15%) */}
+              {priceCalculations.isLowMargin && !priceCalculations.isCriticalMargin && (
+                <div className="p-2 rounded-lg mb-2 bg-yellow-400 text-yellow-900 border-2 border-yellow-600">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <div className="flex-1">
+                      <p className="text-[11px] font-bold">⚡ ATENÇÃO: Margem entre 12-15%</p>
+                      <p className="text-[10px]">
+                        Margem atual: {priceCalculations.currentMargin.toFixed(1)}% — Abaixo do ideal de 15%
                       </p>
                     </div>
                   </div>
