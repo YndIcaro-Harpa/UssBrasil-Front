@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers, Copy, Save, DollarSign, Barcode, Archive } from 'lucide-react';
+import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers, Copy, Save, DollarSign, Barcode, Archive, AlertTriangle, TrendingUp, TrendingDown, Percent, Calculator, ShoppingBag } from 'lucide-react';
 import { Product } from '@/hooks/use-admin-crud';
 import { toast } from 'sonner';
 
@@ -87,8 +87,12 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: 0,
-    originalPrice: 0,
+    // Campos de Preço - 3 campos principais
+    costPrice: 0,           // Custo do Produto (valor pago ao fornecedor)
+    price: 0,               // Valor de Venda (preço base)
+    displayPrice: 0,        // Valor em Exposição (preço exibido na loja)
+    originalPrice: 0,       // Preço Original (para compatibilidade)
+    isOnSale: false,        // Produto em oferta
     category: '',
     subcategory: '',
     brand: '',
@@ -214,12 +218,27 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     }
   };
 
-  // Price Calculation State
+  // ============================================
+  // SISTEMA DE PRECIFICAÇÃO COMPLETO
+  // ============================================
+  
+  // Estados de cálculos de preço
   const [priceCalculations, setPriceCalculations] = useState({
-    discounted: 0,
-    proposed: 0,
-    receivable: 0
+    // Cálculos automáticos
+    idealPrice: 0,              // Valor de Venda + 15%
+    idealPriceWithTax: 0,       // Preço Ideal - 12%
+    displayPriceWithTax: 0,     // Valor em Exposição - 12%
+    // Margens
+    currentMargin: 0,           // Margem atual (%)
+    profitValue: 0,             // Lucro em R$
+    // Alertas
+    isLowMargin: false,         // Margem < 15%
+    isCriticalMargin: false,    // Margem < 12% (prejuízo)
+    showIdealButton: false,     // Mostrar botão "Aplicar Valor Ideal"
   });
+
+  // Estado para confirmação de preço abaixo da margem
+  const [showLowMarginConfirm, setShowLowMarginConfirm] = useState(false);
 
   // Carregar fornecedores
   useEffect(() => {
@@ -270,12 +289,6 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     }
   };
 
-  // Aplicar preço sugerido
-  const applyProposedPrice = () => {
-    setFormData(prev => ({ ...prev, price: Math.round(priceCalculations.proposed * 100) / 100 }));
-    toast.success('Preço sugerido aplicado!');
-  };
-
   // Copiar dados do produto pai para variação
   const copyFromParentProduct = () => {
     const selectedSupplier = suppliers.find(s => s.id === formData.supplierId);
@@ -283,9 +296,9 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
       ...currentVariation,
       name: formData.name,
       sku: formData.sku ? `${formData.sku}-VAR-${productVariations.length + 1}` : '',
-      ncm: (formData.specifications as any)?.ncm || '',
-      price: formData.price,
-      originalPrice: formData.originalPrice,
+      ncm: formData.ncm || '',
+      price: formData.displayPrice || formData.price,
+      originalPrice: formData.costPrice,
       stock: formData.stock,
       supplierId: formData.supplierId,
       supplierName: selectedSupplier?.name || '',
@@ -364,37 +377,88 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     }
   };
 
-  // Calculate prices whenever base price changes
+  // ============================================
+  // CÁLCULOS AUTOMÁTICOS DE PREÇO
+  // ============================================
   useEffect(() => {
-    const basePrice = Number(formData.price) || 0;
+    const costPrice = Number(formData.costPrice) || 0;
+    const salePrice = Number(formData.price) || 0;
+    const displayPrice = Number(formData.displayPrice) || 0;
     
-    // 1. Valor com 12% de desconto (Preço à vista para o cliente)
-    const discounted = basePrice * 0.88;
+    // 1. Preço Ideal = Valor de Venda + 15%
+    const idealPrice = salePrice * 1.15;
     
-    // 2. Valor Proposto/Sugerido (Custo + 15% de margem)
-    const costPrice = Number(formData.originalPrice) || 0;
-    const proposed = costPrice > 0 ? costPrice * 1.15 : basePrice * 1.15;
+    // 2. Valor Total a Receber com Preço Ideal (aplica 12% de desconto)
+    const idealPriceWithTax = idealPrice * 0.88;
     
-    // 3. Valor que você recebe (após taxas)
-    // Taxas: Stripe (~3.99% + 0.39) + 7% Fixo (Nota Fiscal)
-    const stripeFee = (discounted * 0.0399) + 0.39;
-    const taxFee = discounted * 0.07;
-    const receivable = discounted - stripeFee - taxFee;
-
+    // 3. Valor Original com Desconto de 12%
+    const displayPriceWithTax = displayPrice * 0.88;
+    
+    // Calcular margem atual
+    let currentMargin = 0;
+    let profitValue = 0;
+    
+    if (costPrice > 0 && displayPrice > 0) {
+      profitValue = displayPrice - costPrice;
+      currentMargin = ((displayPrice - costPrice) / costPrice) * 100;
+    }
+    
+    // Verificar alertas de margem
+    const isLowMargin = currentMargin < 15 && currentMargin >= 12;
+    const isCriticalMargin = currentMargin < 12;
+    const showIdealButton = displayPrice < idealPrice && costPrice > 0;
+    
     setPriceCalculations({
-      discounted,
-      proposed,
-      receivable
+      idealPrice,
+      idealPriceWithTax,
+      displayPriceWithTax,
+      currentMargin,
+      profitValue,
+      isLowMargin,
+      isCriticalMargin,
+      showIdealButton
     });
-  }, [formData.price, formData.originalPrice]);
+    
+    // Mostrar confirmação se margem crítica
+    if (isCriticalMargin && displayPrice > 0 && costPrice > 0) {
+      setShowLowMarginConfirm(true);
+    } else {
+      setShowLowMarginConfirm(false);
+    }
+  }, [formData.costPrice, formData.price, formData.displayPrice]);
+
+  // Aplicar Valor Ideal
+  const applyIdealPrice = () => {
+    setFormData(prev => ({ 
+      ...prev, 
+      displayPrice: Math.round(priceCalculations.idealPrice * 100) / 100 
+    }));
+    toast.success('Preço ideal aplicado!');
+  };
+
+  // Confirmar produto em oferta
+  const confirmProductOnSale = () => {
+    setFormData(prev => ({ ...prev, isOnSale: true }));
+    setShowLowMarginConfirm(false);
+    toast.success('Produto marcado como "Em Oferta"');
+  };
+
+  // Manter preço abaixo da margem
+  const keepLowPrice = () => {
+    setShowLowMarginConfirm(false);
+    toast.info('Preço mantido abaixo da margem ideal');
+  };
 
   useEffect(() => {
     if (product && (mode === 'edit' || mode === 'view')) {
       setFormData({
         name: product.name,
         description: product.description,
+        costPrice: (product as any).costPrice || product.originalPrice || 0,
         price: product.price,
+        displayPrice: (product as any).displayPrice || product.price || 0,
         originalPrice: product.originalPrice || 0,
+        isOnSale: (product as any).isOnSale || false,
         category: product.category,
         subcategory: product.subcategory || '',
         brand: product.brand,
@@ -419,8 +483,11 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
       setFormData({
         name: '',
         description: '',
+        costPrice: 0,
         price: 0,
+        displayPrice: 0,
         originalPrice: 0,
+        isOnSale: false,
         category: '',
         subcategory: '',
         brand: '',
@@ -822,29 +889,6 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-black text-sm">Preço (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  disabled={mode === 'view'}
-                  required
-                  className="text-black h-9"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-black text-sm">Custo do Produto</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.originalPrice}
-                  onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || 0 }))}
-                  disabled={mode === 'view'}
-                  className="text-black h-9"
-                />
-              </div>
-              <div className="space-y-1">
                 <Label className="text-black text-sm">Estoque</Label>
                 <Input
                   type="number"
@@ -854,6 +898,208 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                   required
                   className="text-black h-9"
                 />
+              </div>
+            </div>
+
+            {/* ============================================ */}
+            {/* SEÇÃO DE PRECIFICAÇÃO COMPLETA */}
+            {/* ============================================ */}
+            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="h-5 w-5 text-blue-600" />
+                <h3 className="font-bold text-gray-900">Sistema de Precificação</h3>
+                {formData.isOnSale && (
+                  <Badge className="bg-orange-500 text-white text-xs">EM OFERTA</Badge>
+                )}
+              </div>
+
+              {/* 3 Campos Principais */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Custo do Produto */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Custo do Produto *
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.costPrice || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
+                    disabled={mode === 'view'}
+                    required
+                    className="text-black h-9 bg-white"
+                    placeholder="0,00"
+                  />
+                  <p className="text-[10px] text-gray-500">Valor pago ao fornecedor</p>
+                </div>
+
+                {/* Valor de Venda */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                    <Tag className="h-3 w-3" />
+                    Valor de Venda *
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.price || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    disabled={mode === 'view'}
+                    required
+                    className="text-black h-9 bg-white"
+                    placeholder="0,00"
+                  />
+                  <p className="text-[10px] text-gray-500">Preço base sem taxas</p>
+                </div>
+
+                {/* Valor em Exposição */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                    <ShoppingBag className="h-3 w-3" />
+                    Valor em Exposição *
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.displayPrice || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, displayPrice: parseFloat(e.target.value) || 0 }))}
+                    disabled={mode === 'view'}
+                    required
+                    className={`text-black h-9 bg-white ${
+                      priceCalculations.isCriticalMargin ? 'border-red-500 ring-1 ring-red-200' :
+                      priceCalculations.isLowMargin ? 'border-yellow-500 ring-1 ring-yellow-200' : ''
+                    }`}
+                    placeholder="0,00"
+                  />
+                  <p className="text-[10px] text-gray-500">Preço exibido na loja</p>
+                </div>
+              </div>
+
+              {/* Informativos Calculados */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                {/* Margem Atual */}
+                <div className={`p-1.5 rounded-lg border ${
+                  priceCalculations.isCriticalMargin ? 'bg-red-50 border-red-200' :
+                  priceCalculations.isLowMargin ? 'bg-yellow-50 border-yellow-200' :
+                  'bg-green-50 border-green-200'
+                }`}>
+                  <div className="flex items-center gap-1">
+                    <Percent className="h-2.5 w-2.5" />
+                    <span className="text-[9px] font-medium text-gray-600">Margem</span>
+                  </div>
+                  <p className={`text-xs font-bold ${
+                    priceCalculations.isCriticalMargin ? 'text-red-600' :
+                    priceCalculations.isLowMargin ? 'text-yellow-600' :
+                    'text-green-600'
+                  }`}>
+                    {priceCalculations.currentMargin.toFixed(1)}%
+                  </p>
+                </div>
+
+                {/* Lucro */}
+                <div className={`p-1.5 rounded-lg border ${
+                  priceCalculations.profitValue < 0 ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <div className="flex items-center gap-1">
+                    {priceCalculations.profitValue >= 0 ? 
+                      <TrendingUp className="h-2.5 w-2.5 text-blue-500" /> : 
+                      <TrendingDown className="h-2.5 w-2.5 text-red-500" />
+                    }
+                    <span className="text-[9px] font-medium text-gray-600">Lucro</span>
+                  </div>
+                  <p className={`text-xs font-bold ${priceCalculations.profitValue < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                    R$ {priceCalculations.profitValue.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Preço Ideal */}
+                <div className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200">
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="h-2.5 w-2.5 text-indigo-500" />
+                    <span className="text-[9px] font-medium text-gray-600">Ideal (+15%)</span>
+                  </div>
+                  <p className="text-xs font-bold text-indigo-600">
+                    R$ {priceCalculations.idealPrice.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Valor com 12% */}
+                <div className="p-1.5 rounded-lg bg-purple-50 border border-purple-200">
+                  <div className="flex items-center gap-1">
+                    <Calculator className="h-2.5 w-2.5 text-purple-500" />
+                    <span className="text-[9px] font-medium text-gray-600">Recebe (-12%)</span>
+                  </div>
+                  <p className="text-xs font-bold text-purple-600">
+                    R$ {priceCalculations.displayPriceWithTax.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Alertas e Botões */}
+              {(priceCalculations.isLowMargin || priceCalculations.isCriticalMargin) && formData.costPrice > 0 && (
+                <div className={`p-2 rounded-lg mb-2 ${
+                  priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : 'bg-yellow-100 border border-yellow-300'
+                }`}>
+                  <div className="flex items-start gap-1.5">
+                    <AlertTriangle className={`h-3 w-3 mt-0.5 ${
+                      priceCalculations.isCriticalMargin ? 'text-red-600' : 'text-yellow-600'
+                    }`} />
+                    <div className="flex-1">
+                      <p className={`text-[10px] font-semibold ${
+                        priceCalculations.isCriticalMargin ? 'text-red-800' : 'text-yellow-800'
+                      }`}>
+                        {priceCalculations.isCriticalMargin 
+                          ? '⚠️ CRÍTICO: Margem < 12%'
+                          : '⚠️ Margem abaixo do ideal (15%)'
+                        }
+                      </p>
+                      <p className={`text-[9px] ${
+                        priceCalculations.isCriticalMargin ? 'text-red-700' : 'text-yellow-700'
+                      }`}>
+                        {priceCalculations.isCriticalMargin 
+                          ? `Margem: ${priceCalculations.currentMargin.toFixed(1)}%. Aplique R$ ${priceCalculations.idealPrice.toFixed(2)}`
+                          : `Margem: ${priceCalculations.currentMargin.toFixed(1)}%. Ideal: 15%+`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botões de Ação */}
+              <div className="flex flex-wrap gap-1.5">
+                {priceCalculations.showIdealButton && mode !== 'view' && (
+                  <Button
+                    type="button"
+                    onClick={applyIdealPrice}
+                    className="h-7 text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2"
+                  >
+                    <TrendingUp className="h-2.5 w-2.5 mr-1" />
+                    Aplicar Ideal (R$ {priceCalculations.idealPrice.toFixed(2)})
+                  </Button>
+                )}
+
+                {showLowMarginConfirm && mode !== 'view' && (
+                  <>
+                    <Button
+                      type="button"
+                      onClick={confirmProductOnSale}
+                      className="h-7 text-[10px] bg-orange-500 hover:bg-orange-600 text-white px-2"
+                    >
+                      <ShoppingBag className="h-2.5 w-2.5 mr-1" />
+                      Confirmar Oferta
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={keepLowPrice}
+                      className="h-7 text-[10px] border-red-300 text-red-600 hover:bg-red-50 px-2"
+                    >
+                      Manter Preço
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1115,38 +1361,39 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                 )}
               </div>
 
-              {/* Price Summary */}
+              {/* Price Summary - Preview */}
               <div className="space-y-2">
-                {/* Preço de Venda (com taxas) */}
-                <div className="p-3 bg-white rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-gray-500 text-xs uppercase">Preço de Venda</p>
-                    {mode !== 'view' && (
+                {/* Preço Ideal Sugerido */}
+                <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <p className="text-blue-700 text-[10px] uppercase font-medium">Preço Ideal</p>
+                    {priceCalculations.showIdealButton && mode !== 'view' && (
                       <button
                         type="button"
-                        onClick={applyProposedPrice}
-                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                        title="Aplicar este valor ao preço"
+                        onClick={applyIdealPrice}
+                        className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-medium"
                       >
                         <Check className="h-3 w-3" />
                         Aplicar
                       </button>
                     )}
                   </div>
-                  <p className="text-lg font-bold text-blue-600">{formatCurrency(priceCalculations.proposed)}</p>
-                  <p className="text-[9px] text-gray-500">Custo + 15% de margem</p>
+                  <p className="text-base font-bold text-blue-600">{formatCurrency(priceCalculations.idealPrice)}</p>
+                  <p className="text-[8px] text-blue-500">+15% margem sobre custo</p>
                 </div>
-                {/* Valor com Desconto (à vista para cliente) */}
-                <div className="p-3 bg-[#001941] rounded-lg">
-                  <p className="text-blue-200 text-xs uppercase">Valor c/ Desconto</p>
-                  <p className="text-xl font-bold text-white">{formatCurrency(priceCalculations.discounted)}</p>
-                  <p className="text-[9px] text-blue-300">Preço à vista (12% OFF)</p>
+                {/* Valor em Exposição */}
+                <div className={`p-2 rounded-lg ${priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : priceCalculations.isLowMargin ? 'bg-yellow-100 border border-yellow-300' : 'bg-[#001941]'}`}>
+                  <p className={`text-[10px] uppercase ${priceCalculations.isCriticalMargin ? 'text-red-700' : priceCalculations.isLowMargin ? 'text-yellow-700' : 'text-blue-200'}`}>Exposição</p>
+                  <p className={`text-lg font-bold ${priceCalculations.isCriticalMargin ? 'text-red-700' : priceCalculations.isLowMargin ? 'text-yellow-700' : 'text-white'}`}>{formatCurrency(formData.displayPrice)}</p>
+                  <p className={`text-[8px] ${priceCalculations.isCriticalMargin ? 'text-red-600' : priceCalculations.isLowMargin ? 'text-yellow-600' : 'text-blue-300'}`}>
+                    Margem: {priceCalculations.currentMargin.toFixed(1)}%
+                  </p>
                 </div>
-                {/* Valor Recebido (líquido após taxas) */}
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-green-700 text-xs uppercase">Você Recebe</p>
-                  <p className="text-lg font-bold text-green-700">{formatCurrency(priceCalculations.receivable)}</p>
-                  <p className="text-[9px] text-green-600">Após taxas Stripe + NF (~11%)</p>
+                {/* Lucro */}
+                <div className="p-2 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-green-700 text-[10px] uppercase">Lucro Bruto</p>
+                  <p className="text-base font-bold text-green-700">{formatCurrency(priceCalculations.profitValue)}</p>
+                  <p className="text-[8px] text-green-600">Por unidade vendida</p>
                 </div>
               </div>
             </div>
