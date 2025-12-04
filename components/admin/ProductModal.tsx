@@ -93,6 +93,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     subcategory: '',
     brand: '',
     sku: '',
+    ncm: '',
     stock: 0,
     images: {
       main: '',
@@ -398,6 +399,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         subcategory: product.subcategory || '',
         brand: product.brand,
         sku: product.sku,
+        ncm: (product as any).ncm || '',
         stock: product.stock,
         images: product.images,
         status: product.status,
@@ -418,6 +420,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         subcategory: '',
         brand: '',
         sku: '',
+        ncm: '',
         stock: 0,
         images: {
           main: '',
@@ -554,9 +557,9 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
           <div className="flex-[3] overflow-y-auto p-6 border-r bg-white">
             
             {/* Row 1: Basic Info */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-3 mb-4">
               <div className="lg:col-span-2 space-y-1">
-                <Label htmlFor="name" className="text-black text-sm">Nome do Produto</Label>
+                <Label htmlFor="name" className="text-black text-sm">Nome do Produto *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -568,7 +571,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="sku" className="text-black text-sm">SKU</Label>
+                <Label htmlFor="sku" className="text-black text-sm">SKU *</Label>
                 <Input
                   id="sku"
                   value={formData.sku}
@@ -577,6 +580,17 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                   required
                   className="text-black h-9"
                   placeholder="SKU-001"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ncm" className="text-black text-sm">NCM</Label>
+                <Input
+                  id="ncm"
+                  value={formData.ncm}
+                  onChange={(e) => setFormData(prev => ({ ...prev, ncm: e.target.value }))}
+                  disabled={mode === 'view'}
+                  className="text-black h-9"
+                  placeholder="8517.12.31"
                 />
               </div>
               <div className="space-y-1">
@@ -595,6 +609,16 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-black text-sm">Subcategoria</Label>
+                <Input
+                  value={formData.subcategory}
+                  onChange={(e) => setFormData(prev => ({ ...prev, subcategory: e.target.value }))}
+                  disabled={mode === 'view'}
+                  className="text-black h-9"
+                  placeholder="Ex: Pro Max"
+                />
               </div>
             </div>
 
