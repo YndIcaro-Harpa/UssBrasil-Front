@@ -409,7 +409,8 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
     const isGoodMargin = hasValidPrices && currentMargin >= 15;
     const isLowMargin = hasValidPrices && currentMargin >= 12 && currentMargin < 15;
     const isCriticalMargin = hasValidPrices && currentMargin < 12;
-    const showIdealButton = hasValidPrices && displayPrice < idealPrice;
+    // Mostrar botão ideal se: preço base preenchido E exposição menor que ideal
+    const showIdealButton = salePrice > 0 && displayPrice < idealPrice;
     
     setPriceCalculations({
       idealPrice,
@@ -965,10 +966,10 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                   <Label className="text-[10px] font-medium text-gray-600 mb-1 block">
                     Exposição (R$)
                   </Label>
-                  {/* Indicação do Valor Ideal - Em cima do campo */}
-                  {priceCalculations.showIdealButton && formData.costPrice > 0 && (
+                  {/* Indicação do Valor Ideal - Em cima do campo (baseado no Preço Base + 15%) */}
+                  {priceCalculations.showIdealButton && formData.price > 0 && (
                     <div className="absolute -top-1 right-0 flex items-center gap-1">
-                      <span className="text-[9px] text-indigo-600 font-medium">
+                      <span className="text-[9px] text-indigo-600 font-medium" title="Preço Base + 15%">
                         Ideal: R$ {priceCalculations.idealPrice.toFixed(2)}
                       </span>
                       {mode !== 'view' && (
