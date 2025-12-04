@@ -114,34 +114,63 @@ export default function AdminProductsPage() {
         storage: productData.storage || []
       }
 
-      const payload = {
-        ...productData,
+      // Mapear categoryId e brandId (podem vir como nome ou id)
+      let categoryId = productData.categoryId || productData.category || ''
+      let brandId = productData.brandId || productData.brand || ''
+      
+      // Se category/brand parecem ser nomes (não UUIDs), tentar encontrar o ID
+      if (categoryId && !categoryId.includes('-') && categories.length > 0) {
+        const foundCategory = categories.find(c => 
+          c.name.toLowerCase() === categoryId.toLowerCase() || c.slug === categoryId
+        )
+        if (foundCategory) categoryId = foundCategory.id
+      }
+
+      // Construir payload apenas com campos válidos para a API
+      const payload: any = {
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        categoryId: categoryId,
+        brandId: brandId,
         specifications: JSON.stringify(complexSpecs),
         isActive: productData.status === 'active',
-        // Ensure images are string if API expects string
         images: typeof productData.images === 'object' && productData.images.gallery 
-          ? productData.images.gallery.join(',') 
-          : productData.images
+          ? [productData.images.main, ...productData.images.gallery].filter(Boolean).join(',') 
+          : productData.images?.main || productData.images,
+        sku: productData.sku || undefined,
+        originalPrice: productData.originalPrice || productData.costPrice || undefined,
+        discountPrice: productData.displayPrice || undefined,
+        isFeatured: productData.isFeatured,
+        colors: JSON.stringify(productData.colors || []),
+        storage: JSON.stringify(productData.storage || []),
       }
 
-      // Remove fields that shouldn't be sent directly if they are not in API schema
-      delete payload.colors
-      delete payload.storage
-      delete payload.status // mapped to isActive
+      // Remover campos undefined
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined || payload[key] === '') {
+          delete payload[key]
+        }
+      })
 
       if (modalMode === 'create') {
-        await api.products.create(payload)
+        const result = await api.products.create(payload)
         toast.success('Produto criado com sucesso!')
+        return result // Retornar para salvar variações
       } else {
         if (!selectedProduct?.id) return
-        await api.products.update(selectedProduct.id, payload)
+        const result = await api.products.update(selectedProduct.id, payload)
         toast.success('Produto atualizado com sucesso!')
+        return { ...result, id: selectedProduct.id }
       }
+    } catch (error: any) {
+      console.error('Erro ao salvar produto:', error)
+      toast.error(error.message || 'Erro ao salvar produto')
+      throw error
+    } finally {
       fetchProducts()
       setIsModalOpen(false)
-    } catch (error) {
-      console.error('Erro ao salvar produto:', error)
-      toast.error('Erro ao salvar produto')
     }
   }
 
