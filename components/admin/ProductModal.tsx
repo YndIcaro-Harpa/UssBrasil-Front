@@ -906,13 +906,13 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
             </div>
 
             {/* ============================================ */}
-            {/* SEÇÃO DE PRECIFICAÇÃO SIMPLIFICADA */}
+            {/* SEÇÃO DE PRECIFICAÇÃO */}
             {/* ============================================ */}
             <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Calculator className="h-4 w-4 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900 text-sm">Precificação</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Preços</h3>
                 </div>
                 {formData.costPrice > 0 && formData.displayPrice > 0 && (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -920,19 +920,17 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     priceCalculations.isLowMargin ? 'bg-yellow-500 text-white' :
                     'bg-green-500 text-white'
                   }`}>
-                    {priceCalculations.isCriticalMargin ? '⚠️ < 12%' :
-                     priceCalculations.isLowMargin ? '⚡ 12-15%' :
-                     `✅ ${priceCalculations.currentMargin.toFixed(0)}%`}
+                    Margem: {priceCalculations.currentMargin.toFixed(0)}%
                   </span>
                 )}
               </div>
 
-              {/* Campos de Preço em Linha */}
+              {/* Campos de Preço */}
               <div className="grid grid-cols-3 gap-3 mb-3">
-                {/* Custo */}
+                {/* Preço de Custo */}
                 <div>
                   <Label className="text-[10px] font-medium text-gray-600 mb-1 block">
-                    Custo (R$)
+                    💰 Preço de Custo
                   </Label>
                   <Input
                     type="number"
@@ -941,14 +939,15 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     onChange={(e) => setFormData(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
                     disabled={mode === 'view'}
                     className="text-black h-8 text-sm bg-white"
-                    placeholder="0,00"
+                    placeholder="R$ 0,00"
                   />
+                  <span className="text-[8px] text-gray-400">Valor pago ao fornecedor</span>
                 </div>
 
-                {/* Preço Base */}
+                {/* Preço de Venda */}
                 <div>
                   <Label className="text-[10px] font-medium text-gray-600 mb-1 block">
-                    Preço Base (R$)
+                    🏷️ Preço de Venda
                   </Label>
                   <Input
                     type="number"
@@ -957,28 +956,29 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                     onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                     disabled={mode === 'view'}
                     className="text-black h-8 text-sm bg-white"
-                    placeholder="0,00"
+                    placeholder="R$ 0,00"
                   />
+                  <span className="text-[8px] text-gray-400">Base para cálculo do ideal</span>
                 </div>
 
-                {/* Preço Exposição com Indicador */}
+                {/* Preço na Vitrine */}
                 <div className="relative">
                   <Label className="text-[10px] font-medium text-gray-600 mb-1 block">
-                    Exposição (R$)
+                    🛒 Preço na Vitrine
                   </Label>
-                  {/* Indicação do Valor Ideal - Em cima do campo (baseado no Preço Base + 15%) */}
+                  {/* Sugestão de Preço Ideal */}
                   {priceCalculations.showIdealButton && formData.price > 0 && (
                     <div className="absolute -top-1 right-0 flex items-center gap-1">
-                      <span className="text-[9px] text-indigo-600 font-medium" title="Preço Base + 15%">
+                      <span className="text-[8px] text-indigo-600 font-medium" title="Preço de Venda + 15%">
                         Ideal: R$ {priceCalculations.idealPrice.toFixed(2)}
                       </span>
                       {mode !== 'view' && (
                         <button
                           type="button"
                           onClick={applyIdealPrice}
-                          className="text-[8px] bg-indigo-500 text-white px-1.5 py-0.5 rounded hover:bg-indigo-600"
+                          className="text-[7px] bg-indigo-500 text-white px-1 py-0.5 rounded hover:bg-indigo-600"
                         >
-                          Aplicar
+                          Usar
                         </button>
                       )}
                     </div>
@@ -993,50 +993,38 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                       priceCalculations.isCriticalMargin ? 'border-red-500 ring-1 ring-red-200' :
                       priceCalculations.isLowMargin ? 'border-yellow-500 ring-1 ring-yellow-200' : ''
                     }`}
-                    placeholder="0,00"
+                    placeholder="R$ 0,00"
                   />
+                  <span className="text-[8px] text-gray-400">Preço exibido na loja</span>
                 </div>
               </div>
 
-              {/* Resumo em Linha */}
-              {formData.costPrice > 0 && (
-                <div className="flex items-center gap-4 p-2 bg-white rounded-lg border text-[10px]">
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-500">Lucro:</span>
-                    <span className={`font-bold ${priceCalculations.profitValue < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      R$ {priceCalculations.profitValue.toFixed(2)}
-                    </span>
+              {/* Resumo Financeiro */}
+              {formData.costPrice > 0 && formData.displayPrice > 0 && (
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border text-[10px]">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <span className="text-gray-500">Lucro:</span>
+                      <span className={`ml-1 font-bold ${priceCalculations.profitValue < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        R$ {priceCalculations.profitValue.toFixed(2)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Você Recebe:</span>
+                      <span className="ml-1 font-bold text-purple-600">
+                        R$ {priceCalculations.displayPriceWithTax.toFixed(2)}
+                      </span>
+                      <span className="text-gray-400 ml-1">(-12% taxas)</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-500">Margem:</span>
-                    <span className={`font-bold ${
-                      priceCalculations.isCriticalMargin ? 'text-red-600' :
-                      priceCalculations.isLowMargin ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {priceCalculations.currentMargin.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-500">Recebe (-12%):</span>
-                    <span className="font-bold text-purple-600">
-                      R$ {priceCalculations.displayPriceWithTax.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Alerta de Margem Crítica */}
-              {priceCalculations.isCriticalMargin && (
-                <div className="mt-2 p-2 rounded-lg bg-red-500 text-white text-[10px] flex items-center gap-2">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span>Margem crítica! Aplique o preço ideal ou confirme como oferta.</span>
-                  {mode !== 'view' && (
+                  
+                  {priceCalculations.isCriticalMargin && mode !== 'view' && (
                     <button
                       type="button"
                       onClick={confirmProductOnSale}
-                      className="ml-auto bg-white text-red-600 px-2 py-0.5 rounded text-[9px] font-medium hover:bg-red-50"
+                      className="bg-orange-500 text-white px-2 py-1 rounded text-[9px] font-medium hover:bg-orange-600"
                     >
-                      Marcar Oferta
+                      ⚡ Marcar como Oferta
                     </button>
                   )}
                 </div>
@@ -1059,113 +1047,83 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
 
             {/* Row 4: Images + Options */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              {/* Images with Cloudinary Upload */}
-              <div className="space-y-3">
+              {/* Imagem Principal com Upload Cloudinary */}
+              <div className="space-y-2">
                 <Label className="text-black text-sm flex items-center gap-2">
                   <ImageIcon className="h-4 w-4 text-gray-600" />
-                  Imagens
+                  Imagem Principal
                 </Label>
                 
-                {/* Main Image */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">Imagem Principal</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.images.main}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        images: { ...prev.images, main: e.target.value }
-                      }))}
-                      disabled={mode === 'view'}
-                      placeholder="URL da imagem principal"
-                      className="text-black h-9 flex-1"
-                    />
-                    <input
-                      type="file"
-                      ref={mainImageInputRef}
-                      onChange={handleMainImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => mainImageInputRef.current?.click()}
-                      disabled={mode === 'view' || uploading}
-                      className="h-9 px-3 bg-white hover:bg-gray-50"
-                    >
-                      {uploading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {formData.images.main && (
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border">
-                      <img src={formData.images.main} alt="Preview" className="w-full h-full object-cover" />
+                {/* Upload Zone */}
+                <div 
+                  className={`relative border-2 border-dashed rounded-lg p-4 transition-colors ${
+                    mode === 'view' ? 'bg-gray-50' : 'hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+                  } ${formData.images.main ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
+                  onClick={() => mode !== 'view' && mainImageInputRef.current?.click()}
+                >
+                  <input
+                    type="file"
+                    ref={mainImageInputRef}
+                    onChange={handleMainImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  
+                  {uploading ? (
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                      <span className="text-xs text-gray-500 mt-2">Enviando para Cloudinary...</span>
+                    </div>
+                  ) : formData.images.main ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-white shadow">
+                        <img src={formData.images.main} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-green-700">✓ Imagem carregada</p>
+                        <p className="text-[10px] text-gray-500 truncate max-w-[200px]">{formData.images.main}</p>
+                        {mode !== 'view' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, images: { ...prev.images, main: '' } }));
+                            }}
+                            className="text-[10px] text-red-500 hover:text-red-700 mt-1"
+                          >
+                            Remover imagem
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <Upload className="h-8 w-8 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-2">Clique para fazer upload</span>
+                      <span className="text-[10px] text-gray-400">PNG, JPG até 5MB</span>
                     </div>
                   )}
                 </div>
 
-                {/* Gallery Images */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">Galeria</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.images.gallery.slice(0, 3).map((image, index) => (
-                      <div key={index} className="flex gap-1 items-center">
-                        <div className="relative flex-1">
-                          <Input
-                            value={image}
-                            onChange={(e) => {
-                              const newGallery = [...formData.images.gallery];
-                              newGallery[index] = e.target.value;
-                              setFormData(prev => ({
-                                ...prev,
-                                images: { ...prev.images, gallery: newGallery }
-                              }));
-                            }}
-                            disabled={mode === 'view'}
-                            placeholder={`Imagem ${index + 1}`}
-                            className="text-black h-9 w-32 text-xs"
-                          />
-                        </div>
-                        <input
-                          type="file"
-                          ref={el => { galleryInputRefs.current[index] = el; }}
-                          onChange={(e) => handleGalleryImageUpload(e, index)}
-                          accept="image/*"
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => galleryInputRefs.current[index]?.click()}
-                          disabled={mode === 'view' || uploadingIndex === index}
-                          className="h-9 w-9 p-0 bg-white hover:bg-gray-50"
-                        >
-                          {uploadingIndex === index ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Upload className="h-3 w-3" />
-                          )}
-                        </Button>
-                        {image && (
-                          <div className="w-9 h-9 rounded overflow-hidden border">
-                            <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                {/* URL Manual (opcional) */}
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.images.main}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      images: { ...prev.images, main: e.target.value }
+                    }))}
+                    disabled={mode === 'view'}
+                    placeholder="Ou cole a URL da imagem"
+                    className="text-black h-8 text-xs flex-1"
+                  />
                 </div>
               </div>
 
-              {/* Options: New, Featured, Colors, Storage */}
+              {/* Opções e Galeria */}
               <div className="space-y-3">
-                <div className="flex items-center gap-6">
+                {/* Switches */}
+                <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Switch
                       id="isNew"
@@ -1173,7 +1131,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                       onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNew: checked }))}
                       disabled={mode === 'view'}
                     />
-                    <Label htmlFor="isNew" className="text-black text-sm">Novo</Label>
+                    <Label htmlFor="isNew" className="text-black text-xs">Lançamento</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -1182,49 +1140,92 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                       onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
                       disabled={mode === 'view'}
                     />
-                    <Label htmlFor="isFeatured" className="text-black text-sm">Destaque</Label>
+                    <Label htmlFor="isFeatured" className="text-black text-xs">Destaque</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="isOnSale"
+                      checked={formData.isOnSale}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isOnSale: checked }))}
+                      disabled={mode === 'view'}
+                    />
+                    <Label htmlFor="isOnSale" className="text-black text-xs">Em Oferta</Label>
                   </div>
                 </div>
-                
-                {/* Preview das variações */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label className="text-black text-sm">Cores:</Label>
-                  {formData.colors.filter(c => c.name).map((color, index) => (
-                    <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1">
-                      <div
-                        className="w-4 h-4 rounded-full border border-gray-300"
-                        style={{ backgroundColor: color.code || '#ccc' }}
-                      />
-                      <span className="text-xs text-black">{color.name}</span>
-                    </div>
-                  ))}
-                  {formData.colors.filter(c => c.name).length === 0 && (
-                    <span className="text-xs text-gray-400">Nenhuma cor definida</span>
-                  )}
+
+                {/* Galeria Compacta */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-600">Galeria de Imagens</Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {formData.images.gallery.slice(0, 4).map((image, index) => (
+                      <div key={index} className="relative">
+                        <input
+                          type="file"
+                          ref={el => { galleryInputRefs.current[index] = el; }}
+                          onChange={(e) => handleGalleryImageUpload(e, index)}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        <div
+                          className={`w-14 h-14 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                            image ? 'border-green-300' : 'border-gray-300 hover:border-blue-400'
+                          }`}
+                          onClick={() => mode !== 'view' && galleryInputRefs.current[index]?.click()}
+                        >
+                          {uploadingIndex === index ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                          ) : image ? (
+                            <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
+                          ) : (
+                            <Plus className="h-4 w-4 text-gray-400" />
+                          )}
+                        </div>
+                        {image && mode !== 'view' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newGallery = [...formData.images.gallery];
+                              newGallery[index] = '';
+                              setFormData(prev => ({ ...prev, images: { ...prev.images, gallery: newGallery } }));
+                            }}
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                          >
+                            <X className="h-2 w-2 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label className="text-black text-sm">Armazenamento:</Label>
-                  {formData.storage.filter(s => s).map((storage, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {storage}
-                    </Badge>
-                  ))}
-                  {formData.storage.filter(s => s).length === 0 && (
-                    <span className="text-xs text-gray-400">Nenhum armazenamento definido</span>
-                  )}
-                </div>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowVariationsModal(true)}
-                  className="h-8 text-xs"
-                >
-                  <Settings className="h-3 w-3 mr-1" />
-                  Editar Variações
-                </Button>
+                {/* Preview de Cores */}
+                {formData.colors.filter(c => c.name).length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Label className="text-xs text-gray-600">Cores:</Label>
+                    {formData.colors.filter(c => c.name).map((color, index) => (
+                      <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-0.5">
+                        <div
+                          className="w-3 h-3 rounded-full border border-gray-300"
+                          style={{ backgroundColor: color.code || '#ccc' }}
+                        />
+                        <span className="text-[10px] text-gray-700">{color.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Preview de Armazenamento */}
+                {formData.storage.filter(s => s).length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Label className="text-xs text-gray-600">Armazenamento:</Label>
+                    {formData.storage.filter(s => s).map((storage, index) => (
+                      <Badge key={index} variant="secondary" className="text-[10px] py-0">
+                        {storage}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
