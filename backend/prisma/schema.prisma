@@ -155,15 +155,80 @@ model Product {
   colors        String?      // JSON array of colors
   sizes         String?      // JSON array of sizes
   storage       String?      // JSON array of storage options
+  ncm           String?      // Código NCM do produto
+  supplierId    String?      // ID do fornecedor
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
   category    Category     @relation(fields: [categoryId], references: [id])
   brand       Brand        @relation(fields: [brandId], references: [id])
+  supplier    Supplier?    @relation(fields: [supplierId], references: [id])
+  variations  ProductVariation[]
   orderItems  OrderItem[]
   reviews     Review[]
   cartItems   CartItem[]
   wishlist    Wishlist[]
+}
+
+// Model de Variação de Produto
+model ProductVariation {
+  id            String   @id @default(cuid())
+  productId     String   // Produto pai
+  name          String   // Nome da variação (ex: "iPhone 15 Pro - 256GB Preto")
+  sku           String   @unique // SKU único da variação
+  ncm           String?  // NCM da variação
+  
+  // Atributos da variação
+  colorName     String?  // Nome da cor
+  colorCode     String?  // Código hex da cor
+  colorImage    String?  // Imagem específica da cor
+  storage       String?  // Armazenamento (ex: "256GB")
+  size          String?  // Tamanho (ex: "6.7 polegadas")
+  
+  // Preços
+  costPrice     Float?   // Preço de custo
+  price         Float    // Preço de venda
+  discountPrice Float?   // Preço com desconto
+  
+  // Estoque
+  stock         Int      @default(0)
+  
+  // Status
+  status        String   @default("ACTIVE") // ACTIVE, INACTIVE, OUT_OF_STOCK
+  isActive      Boolean  @default(true)
+  
+  // Imagem principal da variação
+  image         String?
+  
+  // Fornecedor
+  supplierId    String?
+  supplierName  String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relacionamentos
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+}
+
+// Model de Fornecedor
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  cnpj      String?  @unique
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  products   Product[]
+  variations ProductVariation[]
 }
 
 model CartItem {

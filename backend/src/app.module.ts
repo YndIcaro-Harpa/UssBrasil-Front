@@ -16,6 +16,8 @@ import { StripeModule } from './stripe/stripe.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { EmailModule } from './email/email.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
+import { VariationsModule } from './variations/variations.module';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
     StripeModule,
     CouponsModule,
     AnalyticsModule,
+    SuppliersModule,
+    VariationsModule,
   ],
   providers: [
     {

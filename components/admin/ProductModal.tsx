@@ -410,6 +410,11 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         specifications: product.specifications,
         supplierId: (product as any).supplierId || ''
       });
+      
+      // Carregar variações existentes do produto
+      if (product.id) {
+        loadProductVariations(product.id);
+      }
     } else if (mode === 'create') {
       setFormData({
         name: '',
@@ -434,8 +439,43 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         specifications: {},
         supplierId: ''
       });
+      // Limpar variações ao criar novo produto
+      setProductVariations([]);
     }
   }, [product, mode]);
+
+  // Carregar variações do produto
+  const loadProductVariations = async (productId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/variations/product/${productId}`);
+      if (response.ok) {
+        const variations = await response.json();
+        const mappedVariations: ProductVariation[] = variations.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          sku: v.sku,
+          ncm: v.ncm || '',
+          color: {
+            name: v.colorName || '',
+            code: v.colorCode || '#000000',
+            image: v.colorImage || ''
+          },
+          storage: v.storage || '',
+          size: v.size || '',
+          price: v.price,
+          originalPrice: v.costPrice || 0,
+          stock: v.stock,
+          supplierId: v.supplierId || '',
+          supplierName: v.supplierName || '',
+          image: v.image || '',
+          status: (v.status || 'ACTIVE').toLowerCase() as 'active' | 'inactive' | 'out_of_stock'
+        }));
+        setProductVariations(mappedVariations);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar variações:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -453,7 +493,47 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
         }
       };
       
-      await onSave(cleanedData);
+      // Salvar produto
+      const savedProduct = await onSave(cleanedData);
+      
+      // Se tem variações, salvar no backend
+      if (productVariations.length > 0 && savedProduct && (savedProduct as any).id) {
+        const productId = (savedProduct as any).id;
+        
+        // Salvar variações em bulk
+        try {
+          await fetch(`${API_URL}/variations/bulk`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId,
+              variations: productVariations.map(v => ({
+                productId,
+                name: v.name,
+                sku: v.sku,
+                ncm: v.ncm,
+                colorName: v.color.name,
+                colorCode: v.color.code,
+                colorImage: v.color.image,
+                storage: v.storage,
+                size: v.size,
+                costPrice: v.originalPrice,
+                price: v.price,
+                stock: v.stock,
+                status: v.status.toUpperCase(),
+                image: v.image,
+                supplierId: v.supplierId || null,
+                supplierName: v.supplierName || null,
+              }))
+            })
+          });
+          toast.success(`${productVariations.length} variação(ões) salvas!`);
+        } catch (varError) {
+          console.error('Erro ao salvar variações:', varError);
+          toast.error('Produto salvo, mas erro ao salvar variações');
+        }
+      }
+      
       onClose();
     } catch (error) {
       console.error('Erro ao salvar produto:', error);
