@@ -2,13 +2,13 @@ import { IsString, IsOptional, IsNumber, IsBoolean, Min } from 'class-validator'
 
 export class CreateVariationDto {
   @IsString()
-  productId: string;
+  productId!: string;
 
   @IsString()
-  name: string;
+  name!: string;
 
   @IsString()
-  sku: string;
+  sku!: string;
 
   @IsOptional()
   @IsString()
@@ -40,7 +40,7 @@ export class CreateVariationDto {
 
   @IsNumber()
   @Min(0)
-  price: number;
+  price!: number;
 
   @IsOptional()
   @IsNumber()
@@ -146,7 +146,7 @@ export class UpdateVariationDto {
 
 export class BulkCreateVariationsDto {
   @IsString()
-  productId: string;
+  productId!: string;
 
-  variations: CreateVariationDto[];
+  variations!: CreateVariationDto[];
 }

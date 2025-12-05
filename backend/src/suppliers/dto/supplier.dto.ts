@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsBoolean, IsEmail } from 'class-validator';
 
 export class CreateSupplierDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()

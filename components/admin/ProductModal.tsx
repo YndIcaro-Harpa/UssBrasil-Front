@@ -265,25 +265,36 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
 
     setSavingSupplier(true);
     try {
+      console.log('Salvando fornecedor:', newSupplier);
+      console.log('API_URL:', API_URL);
+      
       const response = await fetch(`${API_URL}/suppliers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(newSupplier)
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const created = await response.json();
+        console.log('Fornecedor criado:', created);
         setSuppliers(prev => [...prev, created]);
         setFormData(prev => ({ ...prev, supplierId: created.id }));
         setShowSupplierModal(false);
         setNewSupplier({ name: '', cnpj: '', email: '', phone: '', address: '' });
         toast.success('Fornecedor cadastrado com sucesso!');
       } else {
-        throw new Error('Erro ao criar fornecedor');
+        const errorData = await response.text();
+        console.error('Erro response:', errorData);
+        toast.error(`Erro: ${response.status} - ${errorData || 'Erro ao criar fornecedor'}`);
       }
-    } catch (error) {
-      console.error('Erro:', error);
-      toast.error('Erro ao cadastrar fornecedor');
+    } catch (error: any) {
+      console.error('Erro completo:', error);
+      toast.error(`Erro de conexão: ${error.message}`);
     } finally {
       setSavingSupplier(false);
     }
@@ -693,7 +704,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] !max-w-[95vw] sm:!max-w-[95vw] h-[95vh] p-0 gap-0 overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] !max-w-[95vw] sm:!max-w-[95vw] h-[95vh] p-0 gap-0 overflow-hidden flex flex-col" showCloseButton={false}>
         <DialogHeader className="px-6 py-4 border-b shrink-0 bg-[#001941] text-white">
           <DialogTitle className="flex items-center gap-2 text-white text-xl">
             <Package className="h-5 w-5 text-blue-400" />
@@ -707,212 +718,211 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
           {/* Left Side - Form Fields */}
           <div className="flex-[3] overflow-y-auto p-6 border-r bg-white">
             
-            {/* Row 1: Basic Info */}
-            <div className="grid grid-cols-1 lg:grid-cols-6 gap-3 mb-4">
-              <div className="lg:col-span-2 space-y-1">
-                <Label htmlFor="name" className="text-black text-sm">Nome do Produto *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  disabled={mode === 'view'}
-                  required
-                  className="text-black h-9"
-                  placeholder="Nome do produto"
-                />
+            {/* ========== SEÇÃO 1: IDENTIFICAÇÃO ========== */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                <Package className="h-4 w-4 text-blue-600" />
+                <h3 className="font-semibold text-gray-800 text-sm">Identificação do Produto</h3>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="sku" className="text-black text-sm">SKU *</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                  disabled={mode === 'view'}
-                  required
-                  className="text-black h-9"
-                  placeholder="SKU-001"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="ncm" className="text-black text-sm">NCM</Label>
-                <Input
-                  id="ncm"
-                  value={formData.ncm}
-                  onChange={(e) => setFormData(prev => ({ ...prev, ncm: e.target.value }))}
-                  disabled={mode === 'view'}
-                  className="text-black h-9"
-                  placeholder="8517.12.31"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="brand" className="text-black text-sm">Marca</Label>
-                <Select
-                  value={formData.brand}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
-                  disabled={mode === 'view'}
-                >
-                  <SelectTrigger className="h-9 text-black">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brands.map(brand => (
-                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-black text-sm">Subcategoria</Label>
-                <Input
-                  value={formData.subcategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subcategory: e.target.value }))}
-                  disabled={mode === 'view'}
-                  className="text-black h-9"
-                  placeholder="Ex: Pro Max"
-                />
+              
+              <div className="grid grid-cols-6 gap-3">
+                {/* Nome - ocupa 3 colunas */}
+                <div className="col-span-3 space-y-1">
+                  <Label htmlFor="name" className="text-xs text-gray-600">Nome do Produto *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    disabled={mode === 'view'}
+                    required
+                    className="text-black h-9"
+                    placeholder="Ex: iPhone 15 Pro Max 256GB"
+                  />
+                </div>
+                
+                {/* SKU */}
+                <div className="space-y-1">
+                  <Label htmlFor="sku" className="text-xs text-gray-600">SKU *</Label>
+                  <Input
+                    id="sku"
+                    value={formData.sku}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                    disabled={mode === 'view'}
+                    required
+                    className="text-black h-9 font-mono text-xs"
+                    placeholder="IP15PM-256"
+                  />
+                </div>
+                
+                {/* NCM */}
+                <div className="space-y-1">
+                  <Label htmlFor="ncm" className="text-xs text-gray-600">NCM</Label>
+                  <Input
+                    id="ncm"
+                    value={formData.ncm}
+                    onChange={(e) => setFormData(prev => ({ ...prev, ncm: e.target.value }))}
+                    disabled={mode === 'view'}
+                    className="text-black h-9 font-mono text-xs"
+                    placeholder="8517.12.31"
+                  />
+                </div>
+                
+                {/* Estoque */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Estoque *</Label>
+                  <Input
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                    disabled={mode === 'view'}
+                    required
+                    className="text-black h-9"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Row 1.5: Fornecedor */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4">
-              <div className="lg:col-span-2 space-y-1">
-                <Label className="text-black text-sm flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-gray-600" />
-                  Fornecedor
-                </Label>
-                <div className="flex gap-2">
+            {/* ========== SEÇÃO 2: CLASSIFICAÇÃO ========== */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                <Tag className="h-4 w-4 text-green-600" />
+                <h3 className="font-semibold text-gray-800 text-sm">Classificação</h3>
+              </div>
+              
+              <div className="grid grid-cols-5 gap-3">
+                {/* Categoria */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Categoria *</Label>
                   <Select
-                    value={formData.supplierId}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value }))}
+                    value={formData.category}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                     disabled={mode === 'view'}
                   >
-                    <SelectTrigger className="h-9 text-black flex-1">
-                      <SelectValue placeholder="Selecione um fornecedor" />
+                    <SelectTrigger className="h-9 text-black">
+                      <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {suppliers.map(supplier => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name} {supplier.cnpj && `(${supplier.cnpj})`}
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Subcategoria */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Subcategoria</Label>
+                  <Input
+                    value={formData.subcategory}
+                    onChange={(e) => setFormData(prev => ({ ...prev, subcategory: e.target.value }))}
+                    disabled={mode === 'view'}
+                    className="text-black h-9"
+                    placeholder="Pro Max"
+                  />
+                </div>
+                
+                {/* Marca */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Marca</Label>
+                  <Select
+                    value={formData.brand}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
+                    disabled={mode === 'view'}
+                  >
+                    <SelectTrigger className="h-9 text-black">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brands.map(brand => (
+                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Status */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Product['status'] }))}
+                    disabled={mode === 'view'}
+                  >
+                    <SelectTrigger className="h-9 text-black">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${option.color}`} />
+                            {option.label}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {mode !== 'view' && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowSupplierModal(true)}
-                        className="h-9 px-3 bg-white hover:bg-gray-50"
-                        title="Adicionar novo fornecedor"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowSuppliersListModal(true)}
-                        className="h-9 px-3 bg-white hover:bg-gray-50"
-                        title="Gerenciar fornecedores"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
+                </div>
+                
+                {/* Fornecedor */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600 flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    Fornecedor
+                  </Label>
+                  <div className="flex gap-1">
+                    <Select
+                      value={formData.supplierId}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value }))}
+                      disabled={mode === 'view'}
+                    >
+                      <SelectTrigger className="h-9 text-black flex-1">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.map(supplier => (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {mode !== 'view' && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSupplierModal(true)}
+                          className="h-9 w-9 p-0 bg-green-50 border-green-300 hover:bg-green-100"
+                          title="Novo fornecedor"
+                        >
+                          <Plus className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSuppliersListModal(true)}
+                          className="h-9 w-9 p-0"
+                          title="Ver todos fornecedores"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              {/* Botão de Variações */}
-              <div className="lg:col-span-2 space-y-1">
-                <Label className="text-black text-sm flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-gray-600" />
-                  Variações do Produto
-                  {productVariations.length > 0 && (
-                    <Badge className="bg-indigo-100 text-indigo-700 text-xs ml-1">
-                      {productVariations.length} cadastrada(s)
-                    </Badge>
-                  )}
-                </Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowVariationsModal(true)}
-                  className="h-9 w-full justify-start text-black bg-white hover:bg-gray-50"
-                >
-                  <Palette className="h-4 w-4 mr-2 text-gray-600" />
-                  {productVariations.length > 0 
-                    ? `${productVariations.length} variação(ões) - Clique para gerenciar`
-                    : 'Clique para adicionar variações'
-                  }
-                  <Settings className="h-4 w-4 ml-auto text-gray-400" />
-                </Button>
-              </div>
             </div>
 
-            {/* Row 2: Category, Status, Price, Stock */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
-              <div className="space-y-1">
-                <Label className="text-black text-sm">Categoria</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                  disabled={mode === 'view'}
-                >
-                  <SelectTrigger className="h-9 text-black">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-black text-sm">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Product['status'] }))}
-                  disabled={mode === 'view'}
-                >
-                  <SelectTrigger className="h-9 text-black">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${option.color}`} />
-                          {option.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-black text-sm">Estoque</Label>
-                <Input
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-                  disabled={mode === 'view'}
-                  required
-                  className="text-black h-9"
-                />
-              </div>
-            </div>
-
-            {/* ============================================ */}
-            {/* SEÇÃO DE PRECIFICAÇÃO */}
-            {/* ============================================ */}
-            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
+            {/* ========== SEÇÃO 3: PRECIFICAÇÃO ========== */}
+            <div className="mb-5 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-200">
                 <div className="flex items-center gap-2">
                   <Calculator className="h-4 w-4 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900 text-sm">Preços</h3>
+                  <h3 className="font-semibold text-gray-800 text-sm">Precificação</h3>
                 </div>
                 {formData.costPrice > 0 && formData.displayPrice > 0 && (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -1031,82 +1041,85 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
               )}
             </div>
 
-            {/* Row 3: Description */}
-            <div className="mb-4 space-y-1">
-              <Label className="text-black text-sm">Descrição</Label>
+            {/* ========== SEÇÃO 4: DESCRIÇÃO ========== */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Edit2 className="h-4 w-4 text-purple-600" />
+                <Label className="font-semibold text-gray-800 text-sm">Descrição do Produto</Label>
+              </div>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 disabled={mode === 'view'}
-                rows={2}
+                rows={3}
                 required
                 className="text-black resize-none"
-                placeholder="Descrição do produto..."
+                placeholder="Descreva o produto de forma detalhada..."
               />
             </div>
 
-            {/* Row 4: Images + Options */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              {/* Imagem Principal com Upload Cloudinary */}
-              <div className="space-y-2">
-                <Label className="text-black text-sm flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-gray-600" />
-                  Imagem Principal
-                </Label>
-                
-                {/* Upload Zone */}
-                <div 
-                  className={`relative border-2 border-dashed rounded-lg p-4 transition-colors ${
-                    mode === 'view' ? 'bg-gray-50' : 'hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
-                  } ${formData.images.main ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
-                  onClick={() => mode !== 'view' && mainImageInputRef.current?.click()}
-                >
-                  <input
-                    type="file"
-                    ref={mainImageInputRef}
-                    onChange={handleMainImageUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
+            {/* ========== SEÇÃO 5: IMAGENS E OPÇÕES ========== */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                <ImageIcon className="h-4 w-4 text-orange-600" />
+                <h3 className="font-semibold text-gray-800 text-sm">Imagens e Opções</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Imagem Principal com Upload Cloudinary */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-600">Imagem Principal</Label>
                   
-                  {uploading ? (
-                    <div className="flex flex-col items-center justify-center py-4">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                      <span className="text-xs text-gray-500 mt-2">Enviando para Cloudinary...</span>
-                    </div>
-                  ) : formData.images.main ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-white shadow">
-                        <img src={formData.images.main} alt="Preview" className="w-full h-full object-cover" />
+                  {/* Upload Zone */}
+                  <div 
+                    className={`relative border-2 border-dashed rounded-lg p-3 transition-colors ${
+                      mode === 'view' ? 'bg-gray-50' : 'hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+                    } ${formData.images.main ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
+                    onClick={() => mode !== 'view' && mainImageInputRef.current?.click()}
+                  >
+                    <input
+                      type="file"
+                      ref={mainImageInputRef}
+                      onChange={handleMainImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    
+                    {uploading ? (
+                      <div className="flex flex-col items-center justify-center py-3">
+                        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                        <span className="text-[10px] text-gray-500 mt-1">Enviando...</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-green-700">✓ Imagem carregada</p>
-                        <p className="text-[10px] text-gray-500 truncate max-w-[200px]">{formData.images.main}</p>
-                        {mode !== 'view' && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFormData(prev => ({ ...prev, images: { ...prev.images, main: '' } }));
-                            }}
-                            className="text-[10px] text-red-500 hover:text-red-700 mt-1"
-                          >
-                            Remover imagem
-                          </button>
-                        )}
+                    ) : formData.images.main ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow">
+                          <img src={formData.images.main} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-medium text-green-700">✓ Imagem carregada</p>
+                          {mode !== 'view' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData(prev => ({ ...prev, images: { ...prev.images, main: '' } }));
+                              }}
+                              className="text-[10px] text-red-500 hover:text-red-700"
+                            >
+                              Remover
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-4">
-                      <Upload className="h-8 w-8 text-gray-400" />
-                      <span className="text-xs text-gray-500 mt-2">Clique para fazer upload</span>
-                      <span className="text-[10px] text-gray-400">PNG, JPG até 5MB</span>
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-3">
+                        <Upload className="h-6 w-6 text-gray-400" />
+                        <span className="text-[10px] text-gray-500 mt-1">Clique para upload</span>
+                      </div>
+                    )}
+                  </div>
 
-                {/* URL Manual (opcional) */}
-                <div className="flex gap-2">
+                  {/* URL Manual */}
                   <Input
                     value={formData.images.main}
                     onChange={(e) => setFormData(prev => ({
@@ -1114,49 +1127,12 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                       images: { ...prev.images, main: e.target.value }
                     }))}
                     disabled={mode === 'view'}
-                    placeholder="Ou cole a URL da imagem"
-                    className="text-black h-8 text-xs flex-1"
+                    placeholder="Ou cole URL da imagem"
+                    className="text-black h-7 text-[10px]"
                   />
-                </div>
-              </div>
 
-              {/* Opções e Galeria */}
-              <div className="space-y-3">
-                {/* Switches */}
-                <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="isNew"
-                      checked={formData.isNew}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNew: checked }))}
-                      disabled={mode === 'view'}
-                    />
-                    <Label htmlFor="isNew" className="text-black text-xs">Lançamento</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="isFeatured"
-                      checked={formData.isFeatured}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
-                      disabled={mode === 'view'}
-                    />
-                    <Label htmlFor="isFeatured" className="text-black text-xs">Destaque</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="isOnSale"
-                      checked={formData.isOnSale}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isOnSale: checked }))}
-                      disabled={mode === 'view'}
-                    />
-                    <Label htmlFor="isOnSale" className="text-black text-xs">Em Oferta</Label>
-                  </div>
-                </div>
-
-                {/* Galeria Compacta */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-600">Galeria de Imagens</Label>
-                  <div className="flex gap-2 flex-wrap">
+                  {/* Galeria */}
+                  <div className="flex gap-1.5 mt-2">
                     {formData.images.gallery.slice(0, 4).map((image, index) => (
                       <div key={index} className="relative">
                         <input
@@ -1167,69 +1143,97 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                           className="hidden"
                         />
                         <div
-                          className={`w-14 h-14 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                          className={`w-12 h-12 rounded border-2 border-dashed flex items-center justify-center cursor-pointer ${
                             image ? 'border-green-300' : 'border-gray-300 hover:border-blue-400'
                           }`}
                           onClick={() => mode !== 'view' && galleryInputRefs.current[index]?.click()}
                         >
                           {uploadingIndex === index ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
                           ) : image ? (
-                            <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
+                            <img src={image} alt={`G${index + 1}`} className="w-full h-full object-cover rounded" />
                           ) : (
-                            <Plus className="h-4 w-4 text-gray-400" />
+                            <Plus className="h-3 w-3 text-gray-400" />
                           )}
                         </div>
-                        {image && mode !== 'view' && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newGallery = [...formData.images.gallery];
-                              newGallery[index] = '';
-                              setFormData(prev => ({ ...prev, images: { ...prev.images, gallery: newGallery } }));
-                            }}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
-                          >
-                            <X className="h-2 w-2 text-white" />
-                          </button>
-                        )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Preview de Cores */}
-                {formData.colors.filter(c => c.name).length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Label className="text-xs text-gray-600">Cores:</Label>
+                {/* Opções do Produto */}
+                <div className="space-y-3">
+                  {/* Switches em linha */}
+                  <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="isNew"
+                        checked={formData.isNew}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNew: checked }))}
+                        disabled={mode === 'view'}
+                      />
+                      <Label htmlFor="isNew" className="text-[10px] text-gray-700">Lançamento</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="isFeatured"
+                        checked={formData.isFeatured}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                        disabled={mode === 'view'}
+                      />
+                      <Label htmlFor="isFeatured" className="text-[10px] text-gray-700">Destaque</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="isOnSale"
+                        checked={formData.isOnSale}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isOnSale: checked }))}
+                        disabled={mode === 'view'}
+                      />
+                      <Label htmlFor="isOnSale" className="text-[10px] text-gray-700">Em Oferta</Label>
+                    </div>
+                  </div>
+
+                  {/* Variações */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-600 flex items-center gap-1">
+                      <Layers className="h-3 w-3" />
+                      Variações
+                      {productVariations.length > 0 && (
+                        <Badge className="bg-indigo-100 text-indigo-700 text-[9px] ml-1">
+                          {productVariations.length}
+                        </Badge>
+                      )}
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowVariationsModal(true)}
+                      className="h-8 w-full justify-start text-xs"
+                    >
+                      <Palette className="h-3 w-3 mr-2" />
+                      {productVariations.length > 0 ? 'Gerenciar variações' : 'Adicionar variações'}
+                    </Button>
+                  </div>
+
+                  {/* Preview de Cores e Armazenamento */}
+                  <div className="flex flex-wrap gap-2">
                     {formData.colors.filter(c => c.name).map((color, index) => (
-                      <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-2 py-0.5">
-                        <div
-                          className="w-3 h-3 rounded-full border border-gray-300"
-                          style={{ backgroundColor: color.code || '#ccc' }}
-                        />
-                        <span className="text-[10px] text-gray-700">{color.name}</span>
+                      <div key={index} className="flex items-center gap-1 bg-gray-100 rounded px-1.5 py-0.5">
+                        <div className="w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: color.code || '#ccc' }} />
+                        <span className="text-[9px] text-gray-600">{color.name}</span>
                       </div>
                     ))}
-                  </div>
-                )}
-
-                {/* Preview de Armazenamento */}
-                {formData.storage.filter(s => s).length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Label className="text-xs text-gray-600">Armazenamento:</Label>
                     {formData.storage.filter(s => s).map((storage, index) => (
-                      <Badge key={index} variant="secondary" className="text-[10px] py-0">
-                        {storage}
-                      </Badge>
+                      <Badge key={index} variant="secondary" className="text-[9px] py-0 px-1.5">{storage}</Badge>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
-            {/* Row 5: Specifications */}
+            {/* SEÇÃO 6: ESPECIFICAÇÕES */}
             <div className="space-y-2">
               <Label className="text-black text-sm flex items-center gap-2">
                 <Tag className="h-4 w-4 text-gray-600" />
@@ -1361,7 +1365,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
               onClick={(e) => {
                 if (e.target === e.currentTarget) setShowSupplierModal(false);
               }}
@@ -1476,7 +1480,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
               onClick={(e) => {
                 if (e.target === e.currentTarget) setShowSuppliersListModal(false);
               }}
@@ -1592,7 +1596,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
               onClick={(e) => {
                 if (e.target === e.currentTarget) setShowVariationsModal(false);
               }}
@@ -1780,30 +1784,42 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                         <div className="space-y-1">
                           <Label className="text-xs text-gray-600 flex items-center gap-1">
                             <Building2 className="h-3 w-3" />
-                            Fornecedor
+                            Fornecedor da Variação
                           </Label>
-                          <Select
-                            value={currentVariation.supplierId}
-                            onValueChange={(value) => {
-                              const supplier = suppliers.find(s => s.id === value);
-                              setCurrentVariation({
-                                ...currentVariation,
-                                supplierId: value,
-                                supplierName: supplier?.name || ''
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="h-9 text-sm text-black">
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {suppliers.map(supplier => (
-                                <SelectItem key={supplier.id} value={supplier.id}>
-                                  {supplier.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex gap-1">
+                            <Select
+                              value={currentVariation.supplierId}
+                              onValueChange={(value) => {
+                                const supplier = suppliers.find(s => s.id === value);
+                                setCurrentVariation({
+                                  ...currentVariation,
+                                  supplierId: value,
+                                  supplierName: supplier?.name || ''
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="h-9 text-sm text-black flex-1">
+                                <SelectValue placeholder="Selecione fornecedor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {suppliers.map(supplier => (
+                                  <SelectItem key={supplier.id} value={supplier.id}>
+                                    {supplier.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowSupplierModal(true)}
+                              className="h-9 w-9 p-0 bg-green-50 border-green-300 hover:bg-green-100"
+                              title="Cadastrar novo fornecedor"
+                            >
+                              <Plus className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
 
@@ -1937,12 +1953,20 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode }: Product
                                     <span className="text-sm font-bold text-green-600">
                                       R$ {variation.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </span>
-                                    {variation.supplierName && (
-                                      <span className="text-xs text-gray-400">
-                                        {variation.supplierName}
-                                      </span>
-                                    )}
                                   </div>
+                                  
+                                  {/* Fornecedor destacado */}
+                                  {variation.supplierName ? (
+                                    <div className="mt-1 flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs w-fit">
+                                      <Building2 className="h-3 w-3" />
+                                      <span className="font-medium">{variation.supplierName}</span>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-1 flex items-center gap-1 bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-xs w-fit">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      <span>Sem fornecedor</span>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Ações */}
