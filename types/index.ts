@@ -1,45 +1,21 @@
-// Tipos base do sistema USS Brasil
-export interface Product {
-  id: string
-  name: string
-  brand: string
-  price: number
-  originalPrice?: number
-  image: string
-  images?: string[]
-  category: string
-  subcategory?: string
-  description?: string
-  specifications?: Record<string, string>
-  colors?: string[]
-  storage?: string[]
-  rating: number
-  reviews: number
-  inStock: boolean
-  isNew?: boolean
-  isFeatured?: boolean
-  discount?: number
-  warranty?: string
-  slug?: string
-  tags?: string[]
-  status?: 'active' | 'inactive' | 'out-of-stock'
-  createdAt?: string
-  updatedAt?: string
-}
+// Re-exporta tipos unificados de produtos
+export * from './product-unified';
 
-export interface CartItem extends Pick<Product, 'id' | 'name' | 'brand' | 'price' | 'image'> {
-  quantity: number
-  selectedColor?: string
-  selectedStorage?: string
-  originalPrice?: number
-  warranty: string
-  inStock: boolean
-}
-
-export interface FavoriteItem extends Pick<Product, 'id' | 'name' | 'brand' | 'price' | 'image' | 'rating' | 'reviews' | 'inStock' | 'category'> {
-  originalPrice?: number
-  addedAt: string
-}
+// Alias para compatibilidade com código legado
+export type { 
+  Product,
+  CartItem,
+  FavoriteItem,
+  ProductVariation,
+  ProductBrand,
+  ProductCategory,
+  ProductSpecifications,
+  CreateProductData,
+  UpdateProductData,
+  ProductFilters,
+  ProductStats,
+  ProductsListResponse,
+} from './product-unified';
 
 export interface VideoCategory {
   id: string
@@ -124,12 +100,12 @@ export interface PaginationInfo {
 // Tipos de eventos
 export interface CartAction {
   type: 'ADD_ITEM' | 'REMOVE_ITEM' | 'UPDATE_QUANTITY' | 'CLEAR_CART'
-  payload?: any
+  payload?: CartItem | { id: string; quantity?: number }
 }
 
 export interface FavoritesAction {
   type: 'ADD_FAVORITE' | 'REMOVE_FAVORITE' | 'CLEAR_FAVORITES'
-  payload?: any
+  payload?: FavoriteItem | { id: string }
 }
 
 // Tipos de API Response
@@ -166,7 +142,7 @@ export interface ThemeConfig {
 // Tipos para analytics
 export interface AnalyticsEvent {
   event: string
-  properties: Record<string, any>
+  properties: Record<string, string | number | boolean>
   timestamp: string
 }
 

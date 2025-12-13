@@ -14,7 +14,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     <>
       {!isAdminRoute && <NavbarImproved />}
       {/* Espaçamento para navbar sticky */}
-      {!isAdminRoute && <div className="h-20 md:h-24" />}
+      {!isAdminRoute && <div className="h-12" />}
       <main className="min-h-screen bg-white transition-colors duration-300">
         <div className="relative">
           {children}

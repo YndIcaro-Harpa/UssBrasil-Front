@@ -207,7 +207,7 @@ export default function SobrePage() {
                       <div className="pt-4">
                         <div className="bg-gradient-to-r from-blue-400 to-cyan-600 text-white p-4 sm:p-6 rounded-xl">
                           <p className="font-bold text-base sm:text-lg lg:text-xl">
-                            💎 Não vendemos apenas produtos, entregamos experiências tecnológicas únicas.
+                            Não vendemos apenas produtos, entregamos experiências tecnológicas únicas.
                           </p>
                         </div>
                       </div>

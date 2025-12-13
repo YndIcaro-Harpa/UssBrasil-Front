@@ -27,6 +27,7 @@ import StatCard from '@/components/admin/StatCard'
 import ProductImage from '@/components/admin/ProductImage'
 import { ProductModal } from '@/components/admin/ProductModal'
 import { ProductOrdersModal } from '@/components/admin/ProductOrdersModal'
+import { CatalogManagementButtons } from '@/components/admin/CatalogModals'
 import PremiumButton from '@/components/ui/PremiumButton'
 import { api, Product, Category } from '@/services/api'
 import { toast } from 'sonner'
@@ -79,11 +80,13 @@ export default function AdminProductsPage() {
   const { token, isLoading: authLoading } = useAdminAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [totalProducts, setTotalProducts] = useState(0)
   
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -92,6 +95,17 @@ export default function AdminProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
   
   // Estado para modal de pedidos do produto
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false)
@@ -114,26 +128,51 @@ export default function AdminProductsPage() {
         storage: productData.storage || []
       }
 
+      // Função para verificar se é um UUID válido
+      const isValidUUID = (str: string) => {
+        if (!str || typeof str !== 'string') return false
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        return uuidRegex.test(str)
+      }
+
       // Mapear categoryId e brandId (podem vir como nome ou id)
-      let categoryId = productData.categoryId || productData.category || ''
-      let brandId = productData.brandId || productData.brand || ''
+      let categoryId: string | undefined = undefined
+      let brandId: string | undefined = undefined
       
-      // Se category/brand parecem ser nomes (não UUIDs), tentar encontrar o ID
-      if (categoryId && !categoryId.includes('-') && categories.length > 0) {
-        const foundCategory = categories.find(c => 
-          c.name.toLowerCase() === categoryId.toLowerCase() || c.slug === categoryId
-        )
-        if (foundCategory) categoryId = foundCategory.id
+      // Processar category
+      const categoryValue = productData.categoryId || productData.category
+      if (categoryValue) {
+        if (typeof categoryValue === 'object' && categoryValue !== null) {
+          categoryId = categoryValue.id || undefined
+        } else if (typeof categoryValue === 'string' && isValidUUID(categoryValue)) {
+          categoryId = categoryValue
+        } else if (typeof categoryValue === 'string' && categories.length > 0) {
+          // Tentar encontrar categoria pelo nome
+          const foundCategory = categories.find(c => 
+            c.name.toLowerCase() === categoryValue.toLowerCase() || 
+            c.slug === categoryValue || 
+            c.id === categoryValue
+          )
+          categoryId = foundCategory?.id || undefined
+        }
+      }
+      
+      // Processar brand
+      const brandValue = productData.brandId || productData.brand
+      if (brandValue) {
+        if (typeof brandValue === 'object' && brandValue !== null) {
+          brandId = brandValue.id || undefined
+        } else if (typeof brandValue === 'string' && isValidUUID(brandValue)) {
+          brandId = brandValue
+        }
       }
 
       // Construir payload apenas com campos válidos para a API
-      const payload: any = {
+      const payload: Record<string, any> = {
         name: productData.name,
         description: productData.description,
         price: productData.price,
         stock: productData.stock,
-        categoryId: categoryId,
-        brandId: brandId,
         specifications: JSON.stringify(complexSpecs),
         isActive: productData.status === 'active',
         images: typeof productData.images === 'object' && productData.images.gallery 
@@ -146,23 +185,34 @@ export default function AdminProductsPage() {
         colors: JSON.stringify(productData.colors || []),
         storage: JSON.stringify(productData.storage || []),
       }
+      
+      // Só incluir categoryId e brandId se forem UUIDs válidos
+      if (categoryId && isValidUUID(categoryId)) {
+        payload.categoryId = categoryId
+      }
+      if (brandId && isValidUUID(brandId)) {
+        payload.brandId = brandId
+      }
 
-      // Remover campos undefined
+      // Remover campos undefined, null e strings vazias
       Object.keys(payload).forEach(key => {
-        if (payload[key] === undefined || payload[key] === '') {
+        if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
           delete payload[key]
         }
       })
 
+      if (!token) {
+        toast.error('Sessão expirada ou inválida. Por favor, recarregue a página.')
+        return
+      }
+
       if (modalMode === 'create') {
-        const result = await api.products.create(payload)
+        await api.products.create(payload, token)
         toast.success('Produto criado com sucesso!')
-        return result // Retornar para salvar variações
       } else {
         if (!selectedProduct?.id) return
-        const result = await api.products.update(selectedProduct.id, payload)
+        await api.products.update(selectedProduct.id, payload, token)
         toast.success('Produto atualizado com sucesso!')
-        return { ...result, id: selectedProduct.id }
       }
     } catch (error: any) {
       console.error('Erro ao salvar produto:', error)
@@ -186,30 +236,43 @@ export default function AdminProductsPage() {
     setIsModalOpen(true)
   }
 
+  // Fetch categories and brands once
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesResponse, brandsResponse] = await Promise.all([
+          api.categories.getAll(),
+          api.brands.getAll()
+        ])
+        setCategories(categoriesResponse || [])
+        setBrands(brandsResponse || [])
+      } catch (error) {
+        console.error('Erro ao carregar dados iniciais:', error)
+      }
+    }
+    fetchData()
+  }, [])
+
   // Fetch products
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const [productsResponse, categoriesResponse] = await Promise.all([
-        api.products.getAll({
-          page,
-          limit: 20,
-          categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
-          search: searchTerm || undefined
-        }),
-        api.categories.getAll()
-      ])
+      const productsResponse = await api.products.getAll({
+        page,
+        limit: 20,
+        categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
+        search: debouncedSearch || undefined
+      })
 
       setProducts(productsResponse.data || [])
       setTotalProducts(productsResponse.total || 0)
-      setCategories(categoriesResponse || [])
     } catch (error: any) {
       console.error('[Admin Products] Erro:', error)
       toast.error('Erro ao carregar produtos')
     } finally {
       setLoading(false)
     }
-  }, [page, selectedCategory, searchTerm])
+  }, [page, selectedCategory, debouncedSearch])
 
   useEffect(() => {
     fetchProducts()
@@ -231,13 +294,59 @@ export default function AdminProductsPage() {
     }
   }
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return
+    if (!confirm(`Tem certeza que deseja excluir ${selectedProducts.length} produtos selecionados?`)) return
+
+    setBulkDeleting(true)
+    try {
+      // Assuming api.products.bulkDelete exists or we loop
+      // Since api.products.bulkDelete might not be exposed in api.ts yet, let's check or loop
+      // Checking api.ts... it doesn't have bulkDelete exposed.
+      // We can implement it in api.ts or loop here.
+      // Let's loop for now as it's safer without modifying api.ts again immediately, 
+      // but ideally we should add bulkDelete to api.ts.
+      // Actually, let's add it to api.ts first for better performance.
+      
+      // For now, let's loop to be safe with current api.ts
+      await Promise.all(selectedProducts.map(id => api.products.delete(id, token || undefined)))
+      
+      toast.success(`${selectedProducts.length} produtos excluídos com sucesso!`)
+      setSelectedProducts([])
+      fetchProducts()
+    } catch (error: any) {
+      toast.error('Erro ao excluir alguns produtos')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === products.length) {
+      setSelectedProducts([])
+    } else {
+      setSelectedProducts(products.map(p => p.id))
+    }
+  }
+
+  const toggleSelectProduct = (id: string) => {
+    if (selectedProducts.includes(id)) {
+      setSelectedProducts(selectedProducts.filter(pId => pId !== id))
+    } else {
+      setSelectedProducts([...selectedProducts, id])
+    }
+  }
+
   // Sort and filter
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = selectedStatus === 'all' || 
         (selectedStatus === 'active' && product.isActive) ||
-        (selectedStatus === 'inactive' && !product.isActive)
+        (selectedStatus === 'inactive' && !product.isActive) ||
+        (selectedStatus === 'low_stock' && product.stock > 0 && product.stock <= 10) ||
+        (selectedStatus === 'out_of_stock' && product.stock === 0)
       return matchesSearch && matchesStatus
     })
 
@@ -450,6 +559,24 @@ export default function AdminProductsPage() {
         searchPlaceholder="Pesquisar produtos..."
         actions={
           <>
+            {/* Botões de gerenciamento de catálogo */}
+            <CatalogManagementButtons 
+              token={token || undefined} 
+              onDataChange={fetchProducts}
+            />
+            
+            {selectedProducts.length > 0 && (
+              <PremiumButton
+                variant="danger"
+                size="sm"
+                icon={bulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+              >
+                Excluir ({selectedProducts.length})
+              </PremiumButton>
+            )}
+
             <PremiumButton
               variant="secondary"
               size="sm"
@@ -495,38 +622,38 @@ export default function AdminProductsPage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 lg:gap-3">
         <StatCard
-          title="Total de Produtos"
+          title="Total"
           value={totalProducts}
-          icon={<Package className="w-5 h-5" />}
+          icon={<Package className="w-4 h-4" />}
         />
         
         <StatCard
-          title="Produtos Ativos"
+          title="Ativos"
           value={activeProducts}
-          icon={<CheckCircle className="w-5 h-5" />}
+          icon={<CheckCircle className="w-4 h-4" />}
           trend="up"
           trendValue={totalProducts > 0 ? `${Math.round((activeProducts / totalProducts) * 100)}%` : '0%'}
         />
         
         <StatCard
-          title="Valor do Estoque"
+          title="Valor Estoque"
           value={formatCurrency(totalValue)}
-          icon={<DollarSign className="w-5 h-5" />}
+          icon={<DollarSign className="w-4 h-4" />}
         />
         
         <StatCard
           title="Estoque Baixo"
           value={lowStockProducts}
-          icon={<AlertTriangle className="w-5 h-5" />}
+          icon={<AlertTriangle className="w-4 h-4" />}
           trend={lowStockProducts > 5 ? "down" : "neutral"}
         />
         
         <StatCard
           title="Sem Estoque"
           value={outOfStockProducts}
-          icon={<Trash2 className="w-5 h-5" />}
+          icon={<Trash2 className="w-4 h-4" />}
           trend="neutral"
         />
       </div>
@@ -568,6 +695,8 @@ export default function AdminProductsPage() {
               <option value="all">Todos os status</option>
               <option value="active">Ativos</option>
               <option value="inactive">Inativos</option>
+              <option value="low_stock">Estoque Baixo (≤10)</option>
+              <option value="out_of_stock">Sem Estoque</option>
             </select>
           </div>
         </div>
@@ -583,6 +712,14 @@ export default function AdminProductsPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
+                <th className="p-2 lg:p-4 w-10">
+                  <input 
+                    type="checkbox" 
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={selectedProducts.length === products.length && products.length > 0}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm">Produto</th>
                 <th className="text-left p-2 lg:p-4 text-gray-600 font-medium text-xs lg:text-sm hidden md:table-cell">Categoria</th>
                 <th 
@@ -620,11 +757,19 @@ export default function AdminProductsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-all"
+                    className={`border-b border-gray-100 hover:bg-gray-50 transition-all ${selectedProducts.includes(product.id) ? 'bg-blue-50' : ''}`}
                   >
                     <td className="p-2 lg:p-4">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={() => toggleSelectProduct(product.id)}
+                      />
+                    </td>
+                    <td className="p-2 lg:p-4">
                       <div className="flex items-center space-x-2 lg:space-x-3">
-                        <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-xl overflow-hidden">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl overflow-hidden">
                           <ProductImage
                             src={getProductImage(product)}
                             alt={product.name}
@@ -723,6 +868,8 @@ export default function AdminProductsPage() {
         product={transformedProduct}
         onSave={handleSaveProduct}
         mode={modalMode}
+        categories={categories}
+        brands={brands}
       />
 
       <ProductOrdersModal

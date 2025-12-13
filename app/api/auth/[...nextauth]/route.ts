@@ -1,5 +1,6 @@
 import { handlers } from "@/lib/auth"
 
-export const runtime = 'edge'
+// Removido edge runtime para melhor compatibilidade com middleware
+// export const runtime = 'edge'
 
 export const { GET, POST } = handlers

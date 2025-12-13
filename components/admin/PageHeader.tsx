@@ -26,14 +26,14 @@ export default function PageHeader({
     <motion.div
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="mb-4 lg:mb-8"
+      className="mb-3 lg:mb-4"
     >
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
+        <nav className="flex items-center space-x-1.5 text-[10px] lg:text-xs text-gray-500 mb-2">
           {breadcrumbs.map((crumb, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              {index > 0 && <ChevronRight className="w-3 h-3 lg:w-4 lg:h-4" />}
+            <div key={index} className="flex items-center space-x-1.5">
+              {index > 0 && <ChevronRight className="w-3 h-3" />}
               {crumb.href ? (
                 <a 
                   href={crumb.href}
@@ -42,7 +42,7 @@ export default function PageHeader({
                   {crumb.label}
                 </a>
               ) : (
-                <span className={index === breadcrumbs.length - 1 ? 'text-gray-900' : ''}>
+                <span className={index === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : ''}>
                   {crumb.label}
                 </span>
               )}
@@ -51,37 +51,37 @@ export default function PageHeader({
         </nav>
       )}
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-3">
         {/* Title and Description */}
-        <div>
-          <h1 className="text-xl lg:text-3xl font-bold text-gray-900 mb-1 lg:mb-2">
+        <div className="min-w-0">
+          <h1 className="text-lg lg:text-xl font-bold text-gray-900 truncate">
             {title}
           </h1>
           {description && (
-            <p className="text-gray-500 text-sm lg:text-lg">
+            <p className="text-gray-500 text-xs lg:text-sm truncate">
               {description}
             </p>
           )}
         </div>
 
         {/* Search and Actions */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 lg:gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
           {showSearch && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 lg:w-5 lg:h-5" />
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
               <input
                 type="text"
                 placeholder={searchPlaceholder}
                 onChange={(e) => onSearch?.(e.target.value)}
-                className="pl-8 lg:pl-10 pr-3 lg:pr-4 py-2 lg:py-2.5 bg-white border border-gray-200 rounded-xl 
-                          text-gray-900 text-sm lg:text-base placeholder-gray-400 focus:outline-none focus:border-blue-400 
-                          focus:ring-2 focus:ring-blue-400/20 transition-all w-full sm:w-48 lg:w-64"
+                className="pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg 
+                          text-gray-900 text-xs placeholder-gray-400 focus:outline-none focus:border-blue-400 
+                          focus:ring-2 focus:ring-blue-400/20 transition-all w-full sm:w-40 lg:w-52"
               />
             </div>
           )}
           
           {actions && (
-            <div className="flex items-center gap-2 lg:gap-3 overflow-x-auto">
+            <div className="flex items-center gap-1.5 lg:gap-2">
               {actions}
             </div>
           )}

@@ -1,23 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-
-export interface CreateCategoryDto {
-  name: string;
-  description?: string;
-  icon?: string;
-  color?: string;
-  brandId?: string;
-}
-
-export interface UpdateCategoryDto {
-  name?: string;
-  description?: string;
-  icon?: string;
-  color?: string;
-  brandId?: string;
-  isActive?: boolean;
-}
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 
 @Injectable()
 export class CategoriesService {

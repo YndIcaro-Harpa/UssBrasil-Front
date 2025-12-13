@@ -12,18 +12,23 @@ export function useAdminAuth() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push('/auth/login?redirect=/admin')
-        setChecking(false)
-        return
-      }
-
-      // Check if user is admin
-      const userIsAdmin = user?.role === 'ADMIN' || user?.role === 'admin'
+      // Check if user is admin (case-insensitive)
+      const userRole = user?.role?.toUpperCase()
+      const userIsAdmin = userRole === 'ADMIN'
+      
+      console.log('[useAdminAuth] Status:', { 
+        isAuthenticated, 
+        userRole: user?.role,
+        userIsAdmin,
+        email: user?.email 
+      })
+      
       setIsAdmin(userIsAdmin)
       
-      if (!userIsAdmin) {
-        router.push('/')
+      // Não redirecionar - o middleware já faz isso
+      // Se chegou aqui e está autenticado, confiar no middleware
+      if (isAuthenticated) {
+        setIsAdmin(userIsAdmin)
       }
       
       setChecking(false)

@@ -1,6 +1,7 @@
 "use client"
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
+import { api, WishlistItem, WishlistResponse } from '@/services/api'
 
 interface UserProfile { 
   id: string
@@ -10,6 +11,7 @@ interface UserProfile {
   role?: string
   image?: string
   phone?: string
+  permissions?: string[]
 }
 
 interface OrderItem { 
@@ -56,6 +58,7 @@ interface AuthContextType {
   isLoading: boolean
   token: string | null
   favorites: string[]
+  favoriteItems: WishlistItem[]
   orders: Order[]
   addresses: Address[]
   paymentMethods: PaymentMethod[]
@@ -67,7 +70,9 @@ interface AuthContextType {
   
   // User Actions
   setUser: (user: UserProfile | null) => void
-  toggleFavorite: (id: string) => void
+  toggleFavorite: (id: string) => Promise<void>
+  isFavorite: (id: string) => boolean
+  syncFavorites: () => Promise<void>
   addOrder: (items: OrderItem[]) => Order
   updateOrderStatus: (orderId: string, status: string) => void
   
@@ -98,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [favorites, setFavorites] = useState<string[]>([])
+  const [favoriteItems, setFavoriteItems] = useState<WishlistItem[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [addresses, setAddresses] = useState<Address[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -272,13 +278,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const toggleFavorite = useCallback((id: string) => {
-    setFavorites(prev => 
-      prev.includes(id) 
-        ? prev.filter(f => f !== id)
-        : [...prev, id]
-    )
-  }, [])
+  // Função para sincronizar favoritos com o servidor
+  const syncFavorites = useCallback(async () => {
+    const authToken = token || localStorage.getItem(AUTH_TOKEN_KEY)
+    if (!authToken) return
+
+    try {
+      // Buscar favoritos do servidor
+      const response = await api.wishlist.getWishlist(authToken)
+      setFavoriteItems(response.items)
+      setFavorites(response.items.map(item => item.productId))
+      
+      // Atualizar localStorage
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(response.items.map(item => item.productId)))
+    } catch (error) {
+      console.error('[Auth] Erro ao sincronizar favoritos:', error)
+    }
+  }, [token])
+
+  // Carregar favoritos quando logar
+  useEffect(() => {
+    if (token && user) {
+      syncFavorites()
+    }
+  }, [token, user, syncFavorites])
+
+  const toggleFavorite = useCallback(async (id: string) => {
+    const authToken = token || localStorage.getItem(AUTH_TOKEN_KEY)
+    
+    if (authToken) {
+      // Usuário logado - usar API
+      try {
+        const isCurrentlyFavorite = favorites.includes(id)
+        
+        if (isCurrentlyFavorite) {
+          await api.wishlist.removeFromWishlist(authToken, id)
+          setFavorites(prev => prev.filter(f => f !== id))
+          setFavoriteItems(prev => prev.filter(item => item.productId !== id))
+        } else {
+          const newItem = await api.wishlist.addToWishlist(authToken, id)
+          setFavorites(prev => [...prev, id])
+          setFavoriteItems(prev => [...prev, newItem])
+        }
+      } catch (error: any) {
+        console.error('[Auth] Erro ao alternar favorito:', error)
+        // Fallback para localStorage
+        setFavorites(prev => 
+          prev.includes(id) 
+            ? prev.filter(f => f !== id)
+            : [...prev, id]
+        )
+      }
+    } else {
+      // Usuário não logado - usar localStorage
+      setFavorites(prev => 
+        prev.includes(id) 
+          ? prev.filter(f => f !== id)
+          : [...prev, id]
+      )
+    }
+  }, [token, favorites])
+
+  const isFavorite = useCallback((id: string): boolean => {
+    return favorites.includes(id)
+  }, [favorites])
 
   const addOrder = useCallback((items: OrderItem[]): Order => {
     const order: Order = {
@@ -340,6 +403,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     token,
     favorites,
+    favoriteItems,
     orders,
     addresses,
     paymentMethods,
@@ -349,6 +413,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     setUser,
     toggleFavorite,
+    isFavorite,
+    syncFavorites,
     addOrder,
     updateOrderStatus,
     addAddress,
@@ -375,6 +441,7 @@ export function useAuth() {
       isLoading: true,
       token: null,
       favorites: [],
+      favoriteItems: [],
       orders: [],
       addresses: [],
       paymentMethods: [],
@@ -382,7 +449,9 @@ export function useAuth() {
       register: async () => {},
       logout: () => {},
       setUser: () => {},
-      toggleFavorite: () => {},
+      toggleFavorite: async () => {},
+      isFavorite: () => false,
+      syncFavorites: async () => {},
       addOrder: () => ({ id: '', items: [], total: 0, createdAt: '', status: '' }),
       updateOrderStatus: () => {},
       addAddress: () => ({ id: '', label: '', street: '', city: '', state: '', zip: '' }),

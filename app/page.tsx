@@ -6,7 +6,8 @@ import {
     ShoppingCart, Heart, ChevronRight, ChevronLeft,
     Zap, Truck, Shield, HeadphonesIcon, Award,
     Sparkles, ArrowRight, Package, Star, Check,
-    Smartphone, Headphones, Plane, Camera, Cable
+    Smartphone, Headphones, Plane, Camera, Cable,
+    Monitor, Cpu, BatteryFull
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -93,18 +94,28 @@ const categoryIcons = {
 }
 
 // Video Hero Section - Optimized
-function VideoHeroSection() {
+interface HeroVideo {
+    src: string
+    poster: string
+    title: string
+    subtitle: string
+    description: string
+    cta: string
+    link: string
+}
+
+function VideoHeroSection({ videos = heroVideos }: { videos?: HeroVideo[] }) {
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
     const videoRef = useRef<HTMLVideoElement>(null)
 
-    const currentVideo = heroVideos[currentVideoIndex]
+    const currentVideo = videos[currentVideoIndex] || heroVideos[0]
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentVideoIndex(prev => (prev + 1) % heroVideos.length)
+            setCurrentVideoIndex(prev => (prev + 1) % videos.length)
         }, 15000)
         return () => clearInterval(interval)
-    }, [])
+    }, [videos.length])
 
     return (
         <section className="relative h-screen overflow-hidden bg-black">
@@ -119,7 +130,7 @@ function VideoHeroSection() {
                     playsInline
                     poster={currentVideo.poster}
                     preload="metadata"
-                    onEnded={() => setCurrentVideoIndex(prev => (prev + 1) % heroVideos.length)}
+                    onEnded={() => setCurrentVideoIndex(prev => (prev + 1) % videos.length)}
                 >
                     <source src={currentVideo.src} type="video/mp4" />
                 </video>
@@ -156,15 +167,15 @@ function VideoHeroSection() {
                             {currentVideo.description}
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                             <Link href={currentVideo.link}>
-                                <button className="group px-10 py-5 bg-blue-400 hover:bg-blue-500 text-white rounded-full font-semibold text-lg transition-all duration-300 shadow-2xl hover:shadow-blue-400/50 hover:scale-105 flex items-center justify-center gap-3">
+                                <button className="group px-6 py-3 sm:px-8 sm:py-3.5 bg-blue-400 hover:bg-blue-500 text-white rounded-full font-semibold text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-blue-400/50 hover:scale-105 flex items-center justify-center gap-2">
                                     {currentVideo.cta}
-                                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </Link>
                             <Link href="/produtos">
-                                <button className="px-10 py-5 bg-white/10 hover:bg-white/20 text-white rounded-full font-semibold text-lg backdrop-blur-md border border-white/30 transition-all duration-300">
+                                <button className="px-6 py-3 sm:px-8 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-full font-semibold text-sm sm:text-base backdrop-blur-md border border-white/30 transition-all duration-300">
                                     Saiba Mais
                                 </button>
                             </Link>
@@ -174,33 +185,33 @@ function VideoHeroSection() {
             </div>
 
             {/* Navigation Controls - Premium Style */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 z-20">
+            <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
                 <button
-                    onClick={() => setCurrentVideoIndex(prev => prev === 0 ? heroVideos.length - 1 : prev - 1)}
-                    className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all duration-300"
+                    onClick={() => setCurrentVideoIndex(prev => prev === 0 ? videos.length - 1 : prev - 1)}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all duration-300"
                 >
-                    <ChevronLeft className="h-6 w-6 text-white" />
+                    <ChevronLeft className="h-5 w-5 text-white" />
                 </button>
 
-                <div className="flex gap-3">
-                    {heroVideos.map((_, index) => (
+                <div className="flex gap-2">
+                    {videos.map((_, index) => (
                         <button
                             key={index}
                             onClick={() => setCurrentVideoIndex(index)}
-                            className={`h-2 rounded-full transition-all duration-500 ${
+                            className={`h-1.5 rounded-full transition-all duration-500 ${
                                 index === currentVideoIndex 
-                                    ? 'w-12 bg-white shadow-lg shadow-white/50' 
-                                    : 'w-2 bg-white/30 hover:bg-white/50'
+                                    ? 'w-8 sm:w-10 bg-white shadow-lg shadow-white/50' 
+                                    : 'w-1.5 bg-white/30 hover:bg-white/50'
                             }`}
                         />
                     ))}
                 </div>
 
                 <button
-                    onClick={() => setCurrentVideoIndex(prev => (prev + 1) % heroVideos.length)}
-                    className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all duration-300"
+                    onClick={() => setCurrentVideoIndex(prev => (prev + 1) % videos.length)}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all duration-300"
                 >
-                    <ChevronRight className="h-6 w-6 text-white" />
+                    <ChevronRight className="h-5 w-5 text-white" />
                 </button>
             </div>
         </section>
@@ -243,9 +254,7 @@ function ProductCard({ product }: { product: Product }) {
         }
         const wasFavorite = favorites.includes(product.id)
         toggleFavorite(product.id)
-        toast.success(wasFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos', {
-            icon: wasFavorite ? '💔' : '❤️'
-        })
+        toast.success(wasFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
     }
 
     return (
@@ -387,7 +396,7 @@ function FeaturedProductsCarousel({ products }: { products: Product[] }) {
 
                     <div
                         key={currentPage}
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 transition-opacity duration-300"
+                        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6 transition-opacity duration-300"
                     >
                         {getCurrentPageProducts().map((product) => (
                             <ProductCard key={product.id} product={product} />
@@ -646,20 +655,20 @@ function IPhone17Section() {
     const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.5, 1, 1, 0.5])
 
     const features = [
-        { icon: '🎨', title: 'Display ProMotion', desc: 'LTPO 120Hz com Always-On' },
-        { icon: '⚡', title: 'Chip A18 Pro', desc: 'Arquitetura 3nm revolucionária' },
-        { icon: '📸', title: 'Câmera 48MP', desc: 'Sistema triple com zoom 5x' },
-        { icon: '🔋', title: 'Bateria Suprema', desc: 'Até 29h de reprodução de vídeo' },
+        { Icon: Monitor, title: 'Display ProMotion', desc: 'LTPO 120Hz com Always-On' },
+        { Icon: Cpu, title: 'Chip A18 Pro', desc: 'Arquitetura 3nm revolucionária' },
+        { Icon: Camera, title: 'Câmera 48MP', desc: 'Sistema triple com zoom 5x' },
+        { Icon: BatteryFull, title: 'Bateria Suprema', desc: 'Até 29h de reprodução de vídeo' },
     ]
 
     return (
-        <section ref={ref} className="relative min-h-screen overflow-hidden bg-black">
+        <section ref={ref} className="relative overflow-hidden bg-black">
             {/* Background dinâmico */}
             <div className="absolute inset-0">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-950/40 via-black to-black" />
                 <motion.div 
                     style={{ opacity }}
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-gradient-to-b from-blue-500/20 via-blue-600/10 to-transparent rounded-full blur-3xl"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] lg:w-[800px] lg:h-[800px] bg-gradient-to-b from-blue-500/20 via-blue-600/10 to-transparent rounded-full blur-3xl"
                 />
                 <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5" />
             </div>
@@ -680,19 +689,19 @@ function IPhone17Section() {
                 />
             </div>
 
-            <div className="container mx-auto px-6 lg:px-12 relative z-10 py-24 lg:py-32">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-10 relative z-10 py-12 sm:py-16 lg:py-20">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
-                    className="text-center mb-16"
+                    className="text-center mb-8 sm:mb-10 lg:mb-12"
                 >
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={isInView ? { scale: 1, opacity: 1 } : {}}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 backdrop-blur-xl border border-blue-400/30 text-blue-400 font-bold text-sm mb-8"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 backdrop-blur-xl border border-blue-400/30 text-blue-400 font-bold text-xs sm:text-sm mb-4 sm:mb-6"
                     >
                         <span className="relative flex h-3 w-3">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -703,38 +712,38 @@ function IPhone17Section() {
                     </motion.div>
                 </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                    {/* Imagem do iPhone com efeitos */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
+                    {/* Imagem do iPhone - Primeiro no mobile */}
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
                         animate={isInView ? { opacity: 1, scale: 1, rotateY: 0 } : {}}
                         transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="relative order-2 lg:order-1 flex items-center justify-center perspective-1000"
+                        className="relative flex items-center justify-center perspective-1000"
                     >
                         {/* Glow effects */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" />
+                            <div className="w-[180px] h-[180px] sm:w-[250px] sm:h-[250px] lg:w-[350px] lg:h-[350px] bg-blue-500/30 rounded-full blur-[60px] animate-pulse" />
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-[300px] h-[300px] lg:w-[400px] lg:h-[400px] bg-blue-400/20 rounded-full blur-[80px] animate-pulse delay-500" />
+                            <div className="w-[140px] h-[140px] sm:w-[200px] sm:h-[200px] lg:w-[280px] lg:h-[280px] bg-blue-400/20 rounded-full blur-[50px] animate-pulse delay-500" />
                         </div>
 
-                        {/* Círculos decorativos */}
+                        {/* Círculos decorativos - hidden on mobile */}
                         <motion.div 
                             animate={{ rotate: 360 }}
                             transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                            className="absolute w-[450px] h-[450px] lg:w-[550px] lg:h-[550px] border border-blue-400/10 rounded-full"
+                            className="absolute w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] lg:w-[400px] lg:h-[400px] border border-blue-400/10 rounded-full hidden sm:block"
                         />
                         <motion.div 
                             animate={{ rotate: -360 }}
                             transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-                            className="absolute w-[500px] h-[500px] lg:w-[600px] lg:h-[600px] border border-blue-400/5 rounded-full"
+                            className="absolute w-[260px] h-[260px] sm:w-[350px] sm:h-[350px] lg:w-[450px] lg:h-[450px] border border-blue-400/5 rounded-full hidden sm:block"
                         />
 
                         {/* Imagem principal */}
                         <motion.div 
                             style={{ y: imageY }}
-                            className="relative w-full h-[500px] lg:h-[650px] z-10"
+                            className="relative w-full h-[260px] sm:h-[320px] lg:h-[450px] z-10"
                         >
                             {(() => {
                                 const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -776,33 +785,34 @@ function IPhone17Section() {
                                                     src={currentImage.src}
                                                     alt={`${currentImage.model} - ${currentImage.variant}`}
                                                     fill
-                                                    className="object-contain drop-shadow-[0_0_80px_rgba(59,130,246,0.4)]"
+                                                    className="object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.3)] sm:drop-shadow-[0_0_80px_rgba(59,130,246,0.4)]"
                                                     priority
                                                     style={{ objectFit: 'contain', mixBlendMode: 'normal' }}
                                                 />
                                             </motion.div>
                                         </AnimatePresence>
                                         
-                                        {/* Model indicator */}
+                                        {/* Model indicator - mais visível no mobile */}
                                         <motion.div
                                             key={`label-${currentImageIndex}`}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-4 py-2"
+                                            className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-3 py-1.5 sm:px-4 sm:py-2"
                                         >
-                                            <p className="text-white text-sm font-bold">{currentImage.model}</p>
+                                            <p className="text-white text-xs sm:text-sm font-bold">{currentImage.model}</p>
+                                            <p className="text-blue-400 text-[10px] sm:text-xs text-center">{currentImage.variant}</p>
                                         </motion.div>
 
                                         {/* Carousel indicators */}
-                                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                        <div className="absolute -bottom-10 sm:-bottom-8 left-1/2 -translate-x-1/2 flex gap-1">
                                             {iPhoneImages.map((_, index) => (
                                                 <button
                                                     key={index}
                                                     onClick={() => setCurrentImageIndex(index)}
-                                                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                                                    className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
                                                         index === currentImageIndex 
-                                                            ? 'w-6 bg-blue-400' 
-                                                            : 'w-1.5 bg-white/30 hover:bg-white/50'
+                                                            ? 'w-4 sm:w-6 bg-blue-400' 
+                                                            : 'w-1 sm:w-1.5 bg-white/30 hover:bg-white/50'
                                                     }`}
                                                 />
                                             ))}
@@ -812,49 +822,50 @@ function IPhone17Section() {
                             })()}
                         </motion.div>
 
-                        {/* Floating badges */}
+                        {/* Floating badges - hidden on mobile */}
                         <motion.div
                             initial={{ opacity: 0, x: -50, y: -20 }}
                             animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
                             transition={{ duration: 0.6, delay: 0.8 }}
-                            className="absolute top-20 -left-4 lg:left-0 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-4 py-3 shadow-2xl"
+                            className="hidden sm:block absolute top-20 -left-4 lg:left-0 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-3 py-2 lg:px-4 lg:py-3 shadow-2xl"
                         >
-                            <p className="text-xs text-blue-400 font-bold">Titânio Grau 5</p>
-                            <p className="text-white font-black text-lg">4 Cores</p>
+                            <p className="text-[10px] lg:text-xs text-blue-400 font-bold">Titânio Grau 5</p>
+                            <p className="text-white font-black text-sm lg:text-lg">4 Cores</p>
                         </motion.div>
 
                         <motion.div
                             initial={{ opacity: 0, x: 50, y: 20 }}
                             animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
                             transition={{ duration: 0.6, delay: 1 }}
-                            className="absolute bottom-32 -right-4 lg:right-0 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-4 py-3 shadow-2xl"
+                            className="hidden sm:block absolute bottom-32 -right-4 lg:right-0 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-3 py-2 lg:px-4 lg:py-3 shadow-2xl"
                         >
-                            <p className="text-xs text-blue-400 font-bold">Armazenamento</p>
-                            <p className="text-white font-black text-lg">Até 1TB</p>
+                            <p className="text-[10px] lg:text-xs text-blue-400 font-bold">Armazenamento</p>
+                            <p className="text-white font-black text-sm lg:text-lg">Até 1TB</p>
                         </motion.div>
                     </motion.div>
 
-                    {/* Conteúdo */}
-                    <div className="space-y-8 order-1 lg:order-2">
+                    {/* Conteúdo - Nome, Specs e Comprar */}
+                    <div className="space-y-6 lg:space-y-8">
                         <motion.div
                             initial={{ opacity: 0, x: 30 }}
                             animate={isInView ? { opacity: 1, x: 0 } : {}}
                             transition={{ duration: 0.8, delay: 0.4 }}
+                            className="text-center lg:text-left"
                         >
-                            <h2 className="text-5xl lg:text-6xl xl:text-7xl font-black text-white mb-6 tracking-tight leading-[0.9]">
+                            <h2 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white mb-4 lg:mb-6 tracking-tight leading-[0.9]">
                                 iPhone 17
                                 <span className="block bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-transparent bg-clip-text">
                                     Pro Max
                                 </span>
                             </h2>
-                            <p className="text-xl lg:text-2xl text-gray-300 font-light leading-relaxed max-w-lg">
+                            <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 font-light leading-relaxed max-w-lg mx-auto lg:mx-0">
                                 O smartphone mais avançado já criado. Design em titânio aeroespacial com tecnologia de ponta.
                             </p>
                         </motion.div>
                         
                         {/* Features Grid */}
                         <motion.div 
-                            className="grid grid-cols-2 gap-4"
+                            className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4"
                             initial={{ opacity: 0, y: 30 }}
                             animate={isInView ? { opacity: 1, y: 0 } : {}}
                             transition={{ duration: 0.6, delay: 0.6 }}
@@ -866,13 +877,13 @@ function IPhone17Section() {
                                     animate={isInView ? { opacity: 1, y: 0 } : {}}
                                     transition={{ duration: 0.4, delay: 0.7 + (index * 0.1) }}
                                     whileHover={{ scale: 1.05, y: -5 }}
-                                    className="group p-4 lg:p-5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-300 cursor-default"
+                                    className="group p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-300 cursor-default"
                                 >
-                                    <span className="text-2xl lg:text-3xl mb-3 block">{feature.icon}</span>
-                                    <h4 className="text-white font-bold text-sm lg:text-base mb-1 group-hover:text-blue-400 transition-colors">
+                                    <feature.Icon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 mb-2 lg:mb-3 text-blue-400" />
+                                    <h4 className="text-white font-bold text-xs sm:text-sm lg:text-base mb-0.5 lg:mb-1 group-hover:text-blue-400 transition-colors">
                                         {feature.title}
                                     </h4>
-                                    <p className="text-gray-400 text-xs lg:text-sm">{feature.desc}</p>
+                                    <p className="text-gray-400 text-[10px] sm:text-xs lg:text-sm leading-tight">{feature.desc}</p>
                                 </motion.div>
                             ))}
                         </motion.div>
@@ -884,18 +895,18 @@ function IPhone17Section() {
                             transition={{ duration: 0.6, delay: 1 }}
                             className="relative"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-3xl blur-xl" />
-                            <div className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-6 lg:p-8">
-                                <div className="flex items-end justify-between mb-6">
-                                    <div>
-                                        <p className="text-sm text-blue-400 font-bold uppercase tracking-wider mb-1">A partir de</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <p className="text-4xl lg:text-5xl font-black text-white">R$ 7.999</p>
-                                            <span className="text-gray-400 text-sm line-through">R$ 9.499</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-2xl lg:rounded-3xl blur-xl" />
+                            <div className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-4 sm:mb-6 gap-3">
+                                    <div className="w-full sm:w-auto text-center sm:text-left">
+                                        <p className="text-xs sm:text-sm text-blue-400 font-bold uppercase tracking-wider mb-1">A partir de</p>
+                                        <div className="flex items-baseline gap-2 justify-center sm:justify-start">
+                                            <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white">R$ 7.999</p>
+                                            <span className="text-gray-400 text-xs sm:text-sm line-through">R$ 9.499</span>
                                         </div>
-                                        <p className="text-sm text-gray-400 mt-2 flex items-center gap-2">
-                                            <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">-16%</span>
-                                            ou 12x de R$ 666,58 sem juros
+                                        <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2 flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] sm:text-xs font-bold">-16%</span>
+                                            <span>ou 12x de R$ 666,58</span>
                                         </p>
                                     </div>
                                     <div className="hidden lg:flex flex-col items-end">
@@ -908,23 +919,23 @@ function IPhone17Section() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="flex flex-col sm:flex-row gap-3">
                                     <Link href="/iphone17" className="flex-1">
                                         <motion.button 
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
-                                            className="w-full group px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl font-bold text-base transition-all duration-300 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 flex items-center justify-center gap-3"
+                                            className="w-full group px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base transition-all duration-300 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 flex items-center justify-center gap-2 sm:gap-3"
                                         >
-                                            <ShoppingCart className="h-5 w-5" />
+                                            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                                             Comprar Agora
-                                            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                                         </motion.button>
                                     </Link>
                                     <Link href="/iphone17">
                                         <motion.button 
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
-                                            className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold text-base backdrop-blur-sm border border-white/20 hover:border-blue-400/50 transition-all duration-300"
+                                            className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base backdrop-blur-sm border border-white/20 hover:border-blue-400/50 transition-all duration-300"
                                         >
                                             Saiba Mais
                                         </motion.button>
@@ -932,17 +943,17 @@ function IPhone17Section() {
                                 </div>
 
                                 {/* Trust badges */}
-                                <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-white/10">
-                                    <div className="flex items-center gap-2 text-gray-400 text-xs">
-                                        <Truck className="h-4 w-4 text-blue-400" />
+                                <div className="flex items-center justify-center gap-3 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 flex-wrap">
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-[10px] sm:text-xs">
+                                        <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400" />
                                         <span>Frete Grátis</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-400 text-xs">
-                                        <Shield className="h-4 w-4 text-blue-400" />
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-[10px] sm:text-xs">
+                                        <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400" />
                                         <span>Garantia Apple</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-400 text-xs">
-                                        <Package className="h-4 w-4 text-blue-400" />
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-[10px] sm:text-xs">
+                                        <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400" />
                                         <span>Produto Oficial</span>
                                     </div>
                                 </div>
@@ -1084,7 +1095,7 @@ function NewsletterSection() {
                     </div>
 
                     <p className="text-sm text-gray-400 mt-6">
-                        🔒 Seus dados estão protegidos. Sem spam, apenas conteúdo premium.
+                        Seus dados estão protegidos. Sem spam, apenas conteúdo premium.
                     </p>
                 </motion.div>
             </div>
@@ -1097,17 +1108,20 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true)
     const [products, setProducts] = useState<Product[]>([])
     const [categories, setCategories] = useState<Category[]>([])
+    const [siteConfig, setSiteConfig] = useState<any>({})
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [productsRes, categoriesRes] = await Promise.all([
+                const [productsRes, categoriesRes, configRes] = await Promise.all([
                     apiClient.getProducts({ limit: 100 }),
-                    apiClient.getCategories()
+                    apiClient.getCategories(),
+                    apiClient.get('/site-config')
                 ])
                 
                 setProducts(productsRes)
                 setCategories(categoriesRes)
+                setSiteConfig(configRes.data)
             } catch (error) {
                 console.error('Error loading data:', error)
                 toast.error('Erro ao carregar dados')
@@ -1118,6 +1132,8 @@ export default function HomePage() {
 
         loadData()
     }, [])
+
+    const heroVideosConfig = siteConfig.hero_videos ? JSON.parse(siteConfig.hero_videos) : undefined
 
     if (loading) {
         return (
@@ -1136,7 +1152,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-white">
-            <VideoHeroSection />
+            <VideoHeroSection videos={heroVideosConfig} />
             <FeaturedProductsCarousel products={products} />
             <CategoriesSection categories={categories} />
             <BrandsSection />

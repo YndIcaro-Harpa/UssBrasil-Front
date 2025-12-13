@@ -43,11 +43,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main Content */}
       <main 
-        className={`pt-16 min-h-screen transition-all duration-300 ${
+        className={`pt-12 min-h-screen transition-all duration-300 ${
           sidebarCollapsed ? 'ml-20' : 'ml-72'
         }`}
       >
-        <div className="p-6">
+        <div className="p-4">
           <PageTransition>
             {children}
           </PageTransition>

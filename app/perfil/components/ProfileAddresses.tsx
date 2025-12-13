@@ -270,9 +270,9 @@ export default function ProfileAddresses({ userId }: ProfileAddressesProps) {
                 onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#54c4cf] focus:border-[#54c4cf] transition-colors"
               >
-                <option value="Casa">🏠 Casa</option>
-                <option value="Trabalho">🏢 Trabalho</option>
-                <option value="Outro">📦 Outro</option>
+                <option value="Casa">Casa</option>
+                <option value="Trabalho">Trabalho</option>
+                <option value="Outro">Outro</option>
               </select>
             </div>
 

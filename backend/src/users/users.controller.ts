@@ -7,9 +7,11 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService, CreateUserDto, UpdateUserDto } from './users.service';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('users')
 @Controller('users')
@@ -24,6 +26,8 @@ export class UsersController {
   }
 
   @Get()
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar usuários com paginação' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -35,12 +39,16 @@ export class UsersController {
   }
 
   @Get('stats')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obter estatísticas de usuários' })
   getStats() {
     return this.usersService.getStats();
   }
 
   @Get('customers')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar clientes com estatísticas (admin)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -80,6 +88,8 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Desativar usuário' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);

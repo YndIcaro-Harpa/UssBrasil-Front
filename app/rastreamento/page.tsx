@@ -337,7 +337,7 @@ function RastreamentoContent() {
           </div>
 
           <p className="text-sm text-gray-500 mt-3">
-            💡 Códigos de exemplo para teste: <code className="bg-gray-100 px-2 py-0.5 rounded">BR123456789BR</code> ou <code className="bg-gray-100 px-2 py-0.5 rounded">USS987654321</code>
+            Códigos de exemplo para teste: <code className="bg-gray-100 px-2 py-0.5 rounded">BR123456789BR</code> ou <code className="bg-gray-100 px-2 py-0.5 rounded">USS987654321</code>
           </p>
         </div>
 
@@ -548,7 +548,7 @@ function RastreamentoContent() {
         {/* Dicas */}
         {!searched && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">💡 Dicas de Rastreamento</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Dicas de Rastreamento</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />

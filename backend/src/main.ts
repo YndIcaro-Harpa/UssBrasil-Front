@@ -2,16 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { WinstonLogger } from './common/logger';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  const winstonLogger = new WinstonLogger();
+  winstonLogger.setContext('Bootstrap');
+  
   const isProduction = process.env.NODE_ENV === 'production';
 
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Necessário para processar webhooks do Stripe
-    logger: isProduction 
-      ? ['error', 'warn', 'log'] 
-      : ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger: winstonLogger,
   });
 
   // Configuração global de validação
@@ -28,6 +30,7 @@ async function bootstrap() {
   const allowedOrigins = isProduction 
     ? [
         process.env.FRONTEND_URL || 'https://ussbrasil.com.br',
+        'https://ussbrasil.pages.dev', // Cloudflare Pages
         'https://ussbrasil.netlify.app',
         'https://ussbrasil.vercel.app',
       ]

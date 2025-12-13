@@ -12,7 +12,7 @@ interface WhatsAppButtonProps {
 }
 
 export function WhatsAppButton({ 
-  message = '👋 Olá! Vim do site da USS Brasil Tecnologia e gostaria de mais informações.',
+  message = 'Olá! Vim do site da USS Brasil Tecnologia e gostaria de mais informações.',
   position = 'bottom-right',
   size = 'lg',
   showTooltip = true

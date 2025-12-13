@@ -433,10 +433,10 @@ export default function CategoriesPage() {
                   <td className="p-2 lg:p-4">
                     <div className="flex items-center space-x-3">
                       <div 
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl text-white"
                         style={{ backgroundColor: category.color || '#034a6e' }}
                       >
-                        {category.icon || '📦'}
+                        {category.icon || '●'}
                       </div>
                       <div>
                         <h4 className="text-gray-900 font-medium text-sm">{category.name}</h4>
@@ -500,88 +500,88 @@ export default function CategoriesPage() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-[10%]">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-gray-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white border border-gray-200 rounded-xl w-full max-w-md max-h-[85vh] overflow-y-auto"
           >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-base font-bold text-gray-900">
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-4 h-4 text-gray-500" />
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3">
               <div>
-                <p className="text-sm font-semibold text-black mb-1.5">Nome <span className="text-red-500">*</span></p>
+                <p className="text-[10px] font-semibold text-black mb-1">Nome <span className="text-red-500">*</span></p>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Nome da categoria"
                 />
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-black mb-1.5">Slug</p>
+                <p className="text-[10px] font-semibold text-black mb-1">Slug</p>
                 <input
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="categoria-slug (auto-gerado se vazio)"
                 />
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-black mb-1.5">Descrição</p>
+                <p className="text-[10px] font-semibold text-black mb-1">Descrição</p>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                  rows={3}
+                  className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                  rows={2}
                   placeholder="Descrição da categoria"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-black mb-1.5">Ícone (emoji)</p>
+                  <p className="text-[10px] font-semibold text-black mb-1">Ícone</p>
                   <input
                     type="text"
                     value={formData.icon}
                     onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-center text-2xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="📱"
+                    className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="●"
                     maxLength={2}
                   />
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-black mb-1.5">Cor</p>
+                  <p className="text-[10px] font-semibold text-black mb-1">Cor</p>
                   <input
                     type="color"
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer"
+                    className="w-full h-7 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer"
                   />
                 </div>
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-black mb-1.5">Marca (opcional)</p>
+                <p className="text-[10px] font-semibold text-black mb-1">Marca (opcional)</p>
                 <select
                   value={formData.brandId}
                   onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="">Nenhuma</option>
                   {brands.map(brand => (
@@ -593,12 +593,12 @@ export default function CategoriesPage() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-black mb-1.5">Ordem</p>
+                <p className="text-[10px] font-semibold text-black mb-1">Ordem</p>
                 <input
                   type="number"
                   value={formData.sortOrder}
                   onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
                   min="0"
                 />
               </div>
@@ -609,30 +609,30 @@ export default function CategoriesPage() {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-blue-400 rounded focus:ring-blue-400"
+                  className="w-3.5 h-3.5 text-blue-400 rounded focus:ring-blue-400"
                 />
-                <label htmlFor="isActive" className="ml-2 text-sm font-semibold text-black">
+                <label htmlFor="isActive" className="ml-2 text-[10px] font-semibold text-black">
                   Categoria ativa
                 </label>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-4 border-t border-gray-100 flex justify-end gap-2">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-xs transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-400 hover:bg-blue-500 rounded-xl text-white font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-3 py-1.5 bg-blue-400 hover:bg-blue-500 rounded-lg text-white text-xs font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
                 {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3.5 h-3.5" />
                 )}
                 {editingCategory ? 'Atualizar' : 'Criar'}
               </button>

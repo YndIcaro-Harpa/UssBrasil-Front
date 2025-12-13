@@ -18,6 +18,9 @@ import { EmailModule } from './email/email.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { VariationsModule } from './variations/variations.module';
+import { SiteConfigModule } from './site-config/site-config.module';
+import { CartModule } from './cart/cart.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -55,6 +58,9 @@ import { VariationsModule } from './variations/variations.module';
     AnalyticsModule,
     SuppliersModule,
     VariationsModule,
+    SiteConfigModule,
+    CartModule,
+    WishlistModule,
   ],
   providers: [
     {

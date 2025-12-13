@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Menu, X, User, ShoppingBag, Heart, ChevronDown,
@@ -29,13 +30,18 @@ const NavbarImproved = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [brands, setBrands] = useState<NavbarBrand[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSearchResults, setShowSearchResults] = useState(false)
   
   const { cartItems } = useCart()
   const { favorites, user, logout } = useAuth()
   const { openAuthModal } = useModal()
+  const router = useRouter()
   
   const dropdownRef = useRef<HTMLDivElement>(null)
   const profileDropdownRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   // Carregar marcas do backend
   useEffect(() => {
@@ -68,10 +74,38 @@ const NavbarImproved = () => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false)
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Busca com debounce - pré-visualização após 3 caracteres
+  useEffect(() => {
+    if (searchTerm.length < 3) {
+      setSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+
+    const debounceTimer = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const results = await apiClient.getProducts({ search: searchTerm, limit: 6 })
+        setSearchResults(results)
+        setShowSearchResults(true)
+      } catch (error) {
+        console.error('Erro na busca:', error)
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(debounceTimer)
+  }, [searchTerm])
 
   const handleLogout = () => {
     // Remove all USS auth data
@@ -86,10 +120,27 @@ const NavbarImproved = () => {
     window.location.href = '/'
   }
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (searchTerm.trim()) {
-      window.location.href = `/produtos?search=${encodeURIComponent(searchTerm)}`
+      router.push(`/produtos?search=${encodeURIComponent(searchTerm.trim())}`)
+      setSearchTerm('')
+      setShowSearchResults(false)
+      setIsMenuOpen(false)
+    }
+  }
+
+  const handleSelectProduct = (slug: string) => {
+    router.push(`/produto/${slug}`)
+    setSearchTerm('')
+    setShowSearchResults(false)
+    setIsMenuOpen(false)
+  }
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchTerm(value)
+    if (value.length >= 3) {
+      setShowSearchResults(true)
     }
   }
 
@@ -100,34 +151,34 @@ const NavbarImproved = () => {
   return (
     <>
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white/90 backdrop-blur-sm'
+        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-white/90 backdrop-blur-sm'
       }`}>
         <nav className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-12">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="relative w-12 h-12 md:w-14 md:h-14  p-1.5 group-hover:shadow-xl transition-all duration-300">
+            <Link href="/" className="flex items-center space-x-2 group">
+              <div className="relative w-8 h-8 md:w-9 md:h-9 p-1 group-hover:shadow-lg transition-all duration-300">
                 <Image
                   src="/Empresa/05.png"
                   alt="UssBrasil"
                   fill
-                  className="object-contain p-1"
+                  className="object-contain"
                   priority
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">
+                <span className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-tight">
                   <span className="text-blue-900">UssBrasil</span>
                 </span>
-                <span className="text-[9px] md:text-[10px] text-gray-500 font-medium -mt-0.5 hidden sm:block">
+                <span className="text-[7px] md:text-[8px] text-gray-500 font-medium -mt-0.5 hidden sm:block">
                   Tecnologia
                 </span>
               </div>
             </Link>
 
             {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center space-x-8">
-              <Link href="/" className="text-gray-700 hover:text-blue-400 font-medium transition-colors">
+            <div className="hidden lg:flex items-center space-x-5">
+              <Link href="/" className="text-sm text-gray-700 hover:text-blue-400 font-medium transition-colors">
                 Home
               </Link>
               
@@ -135,10 +186,10 @@ const NavbarImproved = () => {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => toggleDropdown('products')}
-                  className="flex items-center space-x-1 text-gray-700 hover:text-blue-400 font-medium transition-colors"
+                  className="flex items-center space-x-1 text-sm text-gray-700 hover:text-blue-400 font-medium transition-colors"
                 >
                   <span>Produtos</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${
                     activeDropdown === 'products' ? 'rotate-180' : ''
                   }`} />
                 </button>
@@ -203,43 +254,112 @@ const NavbarImproved = () => {
                 </AnimatePresence>
               </div>
 
-              <Link href="/categorias" className="text-gray-700 hover:text-blue-400 font-medium transition-colors">
+              <Link href="/categorias" className="text-sm text-gray-700 hover:text-blue-400 font-medium transition-colors">
                 Categorias
               </Link>
               
-              <Link href="/sobre" className="text-gray-700 hover:text-blue-400 font-medium transition-colors">
+              <Link href="/sobre" className="text-sm text-gray-700 hover:text-blue-400 font-medium transition-colors">
                 Sobre
               </Link>
               
-              <Link href="/contato" className="text-gray-700 hover:text-blue-400 font-medium transition-colors">
+              <Link href="/contato" className="text-sm text-gray-700 hover:text-blue-400 font-medium transition-colors">
                 Contato
               </Link>
             </div>
 
             {/* Search Bar */}
-            <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-              <form onSubmit={handleSearch} className="relative w-full">
-                <Input
-                  type="text"
-                  placeholder="Buscar produtos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="hidden md:flex items-center flex-1 max-w-sm mx-6 relative" ref={searchRef}>
+              <form onSubmit={handleSearch} className="relative w-full flex">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar produtos..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    onFocus={() => searchTerm.length >= 3 && setShowSearchResults(true)}
+                    className="pl-8 pr-3 py-1 h-8 text-sm w-full border border-gray-300 rounded-l-md rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-r-md transition-colors"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                </button>
               </form>
+
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {showSearchResults && searchTerm.length >= 3 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-80 overflow-y-auto"
+                  >
+                    {isSearching ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+                        <span className="text-sm">Buscando...</span>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <>
+                        <div className="p-2 border-b border-gray-100 bg-gray-50">
+                          <span className="text-xs text-gray-500 font-medium">{searchResults.length} resultado(s) encontrado(s)</span>
+                        </div>
+                        {searchResults.map((product) => (
+                          <button
+                            key={product.id}
+                            onClick={() => handleSelectProduct(product.slug || product.id)}
+                            className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
+                          >
+                            <div className="relative w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                              <Image
+                                src={product.images?.[0] || '/fallback-product.png'}
+                                alt={product.name}
+                                fill
+                                className="object-contain p-1"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                              <p className="text-xs text-gray-500">{product.brand?.name || 'Marca'}</p>
+                              <p className="text-sm font-bold text-blue-600">
+                                R$ {(product.discountPrice || product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                        <button
+                          onClick={handleSearch}
+                          className="w-full p-3 text-center text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors border-t border-gray-100"
+                        >
+                          Ver todos os resultados para "{searchTerm}"
+                        </button>
+                      </>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">Nenhum produto encontrado</p>
+                        <p className="text-xs text-gray-400">Tente outro termo de busca</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {/* Favoritos */}
               <button
                 onClick={() => setIsFavoritesSidebarOpen(true)}
-                className="relative p-2 text-gray-700 hover:text-red-500 transition-colors"
+                className="relative p-1.5 text-gray-700 hover:text-red-500 transition-colors"
               >
-                <Heart className="h-6 w-6" />
+                <Heart className="h-5 w-5" />
                 {favorites.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
                     {favorites.length}
                   </span>
                 )}
@@ -248,11 +368,11 @@ const NavbarImproved = () => {
               {/* Carrinho */}
               <button
                 onClick={() => setIsCartSidebarOpen(true)}
-                className="relative p-2 text-gray-700 hover:text-blue-400 transition-colors"
+                className="relative p-1.5 text-gray-700 hover:text-blue-400 transition-colors"
               >
-                <ShoppingBag className="h-6 w-6" />
+                <ShoppingBag className="h-5 w-5" />
                 {cartItems && cartItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-400 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-blue-400 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
                     {cartItems.length}
                   </span>
                 )}
@@ -268,9 +388,9 @@ const NavbarImproved = () => {
                       openAuthModal()
                     }
                   }}
-                  className="p-2 text-gray-700 hover:text-blue-400 transition-colors"
+                  className="p-1.5 text-gray-700 hover:text-blue-400 transition-colors"
                 >
-                  <User className="h-6 w-6" />
+                  <User className="h-5 w-5" />
                 </button>
 
                 {/* Profile Dropdown */}
@@ -343,9 +463,9 @@ const NavbarImproved = () => {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden p-2 text-gray-700 hover:text-blue-400"
+                className="lg:hidden p-1.5 text-gray-700 hover:text-blue-400"
               >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
           </div>
@@ -360,19 +480,63 @@ const NavbarImproved = () => {
                 className="lg:hidden border-t border-gray-200 py-4 space-y-4"
               >
                 <div className="md:hidden mb-4">
-                  <form onSubmit={handleSearch} className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Buscar produtos..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 w-full"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <form onSubmit={handleSearch} className="flex">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Buscar produtos..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchInputChange(e.target.value)}
+                        className="pl-10 pr-3 py-2 w-full rounded-l-md rounded-r-none"
+                      />
+                    </div>
+                    <button 
+                      type="submit"
+                      className="px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-r-md transition-colors"
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
                   </form>
+                  
+                  {/* Mobile Search Results */}
+                  {showSearchResults && searchTerm.length >= 3 && (
+                    <div className="mt-2 bg-white rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
+                      {isSearching ? (
+                        <div className="p-3 text-center text-gray-500">
+                          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                        </div>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.slice(0, 4).map((product) => (
+                          <button
+                            key={product.id}
+                            onClick={() => handleSelectProduct(product.slug || product.id)}
+                            className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0"
+                          >
+                            <div className="relative w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                              <Image
+                                src={product.images?.[0] || '/fallback-product.png'}
+                                alt={product.name}
+                                fill
+                                className="object-contain p-0.5"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                              <p className="text-xs font-bold text-blue-600">
+                                R$ {(product.discountPrice || product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-gray-500 text-sm">Nenhum resultado</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <Link href="/" className="block py-2 text-gray-700 hover:text-blue-400 font-medium">
+                <Link href="/" className="block py-2 text-gray-700 hover:text-blue-400 font-medium" onClick={() => setIsMenuOpen(false)}>
                   Home
                 </Link>
                 <Link href="/produtos" className="block py-2 text-gray-700 hover:text-blue-400 font-medium">

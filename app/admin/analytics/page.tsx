@@ -404,18 +404,18 @@ export default function AnalyticsPage() {
               xAxisKey="month"
               secondaryDataKey="visitantes"
               color="#034a6e"
-              secondaryColor="blue-400"
+              secondaryColor="#60A5FA"
               height={320}
             />
           </div>
           
           <div className="flex items-center justify-center space-x-6 mt-4">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#001941]" />
+              <div className="w-3 h-3 rounded-full bg-[#034a6e]" />
               <span className="text-gray-600 text-sm">Vendas</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[blue-400]" />
+              <div className="w-3 h-3 rounded-full bg-[#60A5FA]" />
               <span className="text-gray-600 text-sm">Visitantes</span>
             </div>
           </div>
@@ -622,8 +622,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="w-full h-3 bg-gray-200 rounded-full">
                   <div 
-                    className="h-full bg-gradient-to-r from-[#001941] to-[blue-400] rounded-full 
-                             transition-all duration-1000"
+                    className="h-full bg-[#034a6e] rounded-full transition-all duration-1000"
                     style={{ width: `${device.percentage}%` }}
                   />
                 </div>
@@ -831,13 +830,13 @@ export default function AnalyticsPage() {
 
                 <div className="h-96 mb-6">
                   <AdminChart 
-                    data={salesData}
+                    data={chartSalesData}
                     type="area"
                     dataKey="vendas"
                     xAxisKey="month"
                     secondaryDataKey="visitantes"
                     color="#034a6e"
-                    secondaryColor="blue-400"
+                    secondaryColor="#60A5FA"
                     height={384}
                   />
                 </div>

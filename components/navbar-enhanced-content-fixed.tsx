@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ShoppingCart, User, Heart, Package, Menu, X, Sun, Moon } from 'lucide-react'
+import { Search, ShoppingCart, User, Heart, Package, Menu, X, Sun, Moon, LayoutDashboard } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -465,6 +465,32 @@ const NavbarEnhanced: React.FC<NavbarEnhancedProps> = ({
                                                 {orders.length}
                                             </motion.div>
                                         )}
+                                    </Button>
+                                </motion.div>
+                            )}
+
+                            {/* Admin Dashboard - Só aparece para administradores */}
+                            {user && (user.role === 'ADMIN' || user.role === 'admin') && (
+                                <motion.div 
+                                    whileHover={{ scale: 1.1 }} 
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className={cn(
+                                            "relative p-2 lg:p-3 rounded-xl transition-colors group",
+                                            isScrolled 
+                                                ? "hover:bg-amber-500/10 text-amber-600 hover:text-amber-700" 
+                                                : "hover:bg-amber-500/20 text-amber-400 hover:text-amber-300"
+                                        )}
+                                        onClick={() => router.push('/admin')}
+                                        title="Painel Administrativo"
+                                    >
+                                        <LayoutDashboard className="h-5 w-5 lg:h-6 lg:w-6" />
+                                        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-amber-500 text-white px-2 py-0.5 rounded">
+                                            Admin
+                                        </span>
                                     </Button>
                                 </motion.div>
                             )}

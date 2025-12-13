@@ -62,62 +62,62 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
         marginLeft: sidebarCollapsed ? 80 : 288 
       }}
       className="bg-white border-b border-gray-200 
-                 h-16 fixed top-0 right-0 left-0 z-30 flex items-center justify-between px-6 shadow-sm"
+                 h-12 fixed top-0 right-0 left-0 z-30 flex items-center justify-between px-4 shadow-sm"
     >
       {/* Left Section */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden p-2 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+          className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
                    transition-colors"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
         
         <div className="hidden md:block">
-          <h1 className="text-[#001941] font-semibold text-lg">
+          <h1 className="text-[#001941] font-semibold text-sm">
             Dashboard
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 text-[10px]">
             Bem-vindo de volta, Admin!
           </p>
         </div>
       </div>
 
       {/* Center - Search (hidden on mobile) */}
-      <div className="hidden lg:flex flex-1 max-w-md mx-8">
+      <div className="hidden lg:flex flex-1 max-w-sm mx-6">
         <div className="relative w-full">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-400" />
           <input
             type="text"
             placeholder="Pesquisar produtos, pedidos, clientes..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
+            className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg 
                      text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#001941] 
-                     focus:ring-2 focus:ring-blue-400/20 transition-all text-sm"
+                     focus:ring-2 focus:ring-blue-400/20 transition-all text-xs"
           />
         </div>
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         {/* Theme Toggle */}
-        <button className="p-2 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+        <button className="p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
                          transition-colors" 
                 title="Alternar tema">
-          <Sun className="w-5 h-5" />
+          <Sun className="w-4 h-4" />
         </button>
 
         {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+            className="relative p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
                      transition-colors"
             title="Notificações"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs 
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-[9px] 
                              rounded-full flex items-center justify-center">
                 {unreadCount}
               </span>
@@ -129,29 +129,29 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="absolute right-0 top-12 w-80 bg-white 
-                       border border-gray-200 rounded-xl shadow-xl py-2 z-50"
+              className="absolute right-0 top-10 w-72 bg-white 
+                       border border-gray-200 rounded-lg shadow-xl py-1.5 z-50"
             >
-              <div className="px-4 py-2 border-b border-gray-200">
-                <h3 className="text-[#001941] font-medium">Notificações</h3>
+              <div className="px-3 py-1.5 border-b border-gray-200">
+                <h3 className="text-[#001941] font-medium text-xs">Notificações</h3>
               </div>
-              <div className="max-h-64 overflow-y-auto">
+              <div className="max-h-56 overflow-y-auto">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`px-4 py-3 hover:bg-blue-50 transition-colors cursor-pointer
+                    className={`px-3 py-2 hover:bg-blue-50 transition-colors cursor-pointer
                               ${notification.unread ? 'bg-blue-50/50' : ''}`}
                   >
-                    <p className={`text-sm ${notification.unread ? 'text-[#001941]' : 'text-gray-600'}`}>
+                    <p className={`text-[10px] ${notification.unread ? 'text-[#001941]' : 'text-gray-600'}`}>
                       {notification.message}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5">{notification.time}</p>
                   </div>
                 ))}
               </div>
-              <div className="px-4 py-2 border-t border-gray-200">
-                <button className="text-blue-600 text-sm hover:text-[#001941] transition-colors">
-                  Ver todas as notificações
+              <div className="px-3 py-1.5 border-t border-gray-200">
+                <button className="text-blue-600 text-[10px] hover:text-[#001941] transition-colors">
+                  Ver todas
                 </button>
               </div>
             </motion.div>
@@ -159,26 +159,26 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
         </div>
 
         {/* Settings */}
-        <button className="p-2 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+        <button className="p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
                          transition-colors" 
                 title="Configurações">
-          <Settings className="w-5 h-5" />
+          <Settings className="w-4 h-4" />
         </button>
 
         {/* Profile */}
         <div className="relative">
           <button
             onClick={() => setShowProfile(!showProfile)}
-            className="flex items-center space-x-2 p-2 rounded-lg text-gray-500 hover:text-[#001941] 
+            className="flex items-center space-x-1.5 p-1.5 rounded-lg text-gray-500 hover:text-[#001941] 
                      hover:bg-blue-50 transition-colors"
           >
-            <div className="w-8 h-8 bg-[#001941] rounded-full 
+            <div className="w-6 h-6 bg-[#001941] rounded-full 
                           flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
+              <User className="w-3 h-3 text-white" />
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-[#001941] text-sm font-medium">Admin</p>
-              <p className="text-gray-500 text-xs">Administrador</p>
+              <p className="text-[#001941] text-[10px] font-medium">Admin</p>
+              <p className="text-gray-500 text-[9px]">Administrador</p>
             </div>
           </button>
 
@@ -187,30 +187,30 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="absolute right-0 top-12 w-48 bg-white 
-                       border border-gray-200 rounded-xl shadow-xl py-2 z-50"
+              className="absolute right-0 top-10 w-40 bg-white 
+                       border border-gray-200 rounded-lg shadow-xl py-1.5 z-50"
             >
-              <div className="px-4 py-2 border-b border-gray-200">
-                <p className="text-[#001941] font-medium">Admin User</p>
-                <p className="text-gray-500 text-sm">admin@ussbrasil.com</p>
+              <div className="px-3 py-1.5 border-b border-gray-200">
+                <p className="text-[#001941] font-medium text-[10px]">Admin User</p>
+                <p className="text-gray-500 text-[9px]">admin@ussbrasil.com</p>
               </div>
-              <div className="py-1">
-                <button className="w-full px-4 py-2 text-left text-gray-600 hover:text-[#001941] 
-                                 hover:bg-blue-50 transition-colors">
+              <div className="py-0.5">
+                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[#001941] 
+                                 hover:bg-blue-50 transition-colors text-[10px]">
                   Meu Perfil
                 </button>
-                <button className="w-full px-4 py-2 text-left text-gray-600 hover:text-[#001941] 
-                                 hover:bg-blue-50 transition-colors">
+                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[#001941] 
+                                 hover:bg-blue-50 transition-colors text-[10px]">
                   Configurações
                 </button>
-                <button className="w-full px-4 py-2 text-left text-gray-600 hover:text-[#001941] 
-                                 hover:bg-blue-50 transition-colors">
+                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[#001941] 
+                                 hover:bg-blue-50 transition-colors text-[10px]">
                   Ajuda
                 </button>
               </div>
-              <div className="border-t border-gray-200 py-1">
-                <button className="w-full px-4 py-2 text-left text-red-500 hover:text-red-600 
-                                 hover:bg-red-50 transition-colors">
+              <div className="border-t border-gray-200 py-0.5">
+                <button className="w-full px-3 py-1.5 text-left text-red-500 hover:text-red-600 
+                                 hover:bg-red-50 transition-colors text-[10px]">
                   Sair
                 </button>
               </div>

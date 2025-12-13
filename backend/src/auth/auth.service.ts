@@ -20,6 +20,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  permissions: string[];
 }
 
 interface PasswordResetToken {
@@ -63,10 +64,20 @@ export class AuthService {
     // Atualizar último login
     await this.usersService.updateLastLogin(user.id);
 
+    let permissions: string[] = [];
+    try {
+      if (user.permissions) {
+        permissions = JSON.parse(user.permissions as string);
+      }
+    } catch (e) {
+      console.error('Error parsing permissions', e);
+    }
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
+      permissions,
     };
 
     return {
@@ -77,6 +88,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         image: user.image,
+        permissions,
       },
     };
   }
@@ -95,6 +107,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      permissions: [],
     };
 
     return {
@@ -114,9 +127,10 @@ export class AuthService {
 
   async refreshToken(user: any) {
     const payload: JwtPayload = {
-      sub: user.id,
+      sub: user.id || user.sub,
       email: user.email,
       role: user.role,
+      permissions: user.permissions || [],
     };
 
     return {

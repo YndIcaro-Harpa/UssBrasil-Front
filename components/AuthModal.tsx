@@ -97,11 +97,15 @@ export default function AuthModal({
         throw new Error(data.message || 'Credenciais inválidas')
       }
 
-      localStorage.setItem('auth_token', data.access_token)
+      // Salvar em múltiplas chaves para garantir compatibilidade
+      const token = data.access_token || data.token
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('uss_auth_token', token)
       localStorage.setItem('user_data', JSON.stringify(data.user))
+      localStorage.setItem('uss_user_data', JSON.stringify(data.user))
 
       toast.success(`Bem-vindo de volta, ${data.user.name}!`)
-      onLoginSuccess?.(data.user, data.access_token)
+      onLoginSuccess?.(data.user, token)
       onClose()
       resetForm()
 
@@ -131,11 +135,15 @@ export default function AuthModal({
         throw new Error(data.message || 'Erro ao criar conta')
       }
 
-      localStorage.setItem('auth_token', data.access_token)
+      // Salvar em múltiplas chaves para garantir compatibilidade
+      const token = data.access_token || data.token
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('uss_auth_token', token)
       localStorage.setItem('user_data', JSON.stringify(data.user))
+      localStorage.setItem('uss_user_data', JSON.stringify(data.user))
 
       toast.success(`Conta criada com sucesso! Bem-vindo, ${data.user.name}!`)
-      onLoginSuccess?.(data.user, data.access_token)
+      onLoginSuccess?.(data.user, token)
       onClose()
       resetForm()
 
@@ -206,11 +214,11 @@ export default function AuthModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="bg-white w-full max-w-[420px] rounded-2xl overflow-hidden shadow-2xl"
+            className="bg-white w-full max-w-[420px] rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-hide"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header com gradiente USS Brasil */}
-            <div className="bg-gradient-to-r from-[#034a6e] to-[#065a84] px-6 py-5 relative">
+            <div className="bg-gradient-to-r from-[#034a6e] to-[#065a84] px-6 py-6 relative">
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
@@ -218,13 +226,13 @@ export default function AuthModal({
                 <X className="w-5 h-5" />
               </button>
               
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-[#034a6e] font-bold text-xl">U</span>
+              <div className="flex flex-col items-center justify-center gap-3 text-center pt-2">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
+                  <span className="text-[#034a6e] font-bold text-3xl">U</span>
                 </div>
                 <div>
-                  <h1 className="text-white font-bold text-lg tracking-wide">USS BRASIL</h1>
-                  <p className="text-white/70 text-xs">Tecnologia Premium</p>
+                  <h1 className="text-white font-bold text-2xl tracking-wide">USS BRASIL</h1>
+                  <p className="text-white/80 text-sm font-medium">Tecnologia Premium</p>
                 </div>
               </div>
             </div>

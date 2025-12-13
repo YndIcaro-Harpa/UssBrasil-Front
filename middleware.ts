@@ -101,8 +101,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url))
     }
     
-    // Verificar se o usuário é admin
-    const isAdmin = token.email === 'admin@ussbrasil.com' || token.role === 'admin'
+    // Verificar se o usuário é admin (role pode ser 'ADMIN' ou 'admin')
+    const userRole = (token.role as string)?.toUpperCase()
+    const isAdmin = token.email === 'admin@ussbrasil.com' || userRole === 'ADMIN'
     
     if (!isAdmin) {
       return NextResponse.redirect(new URL('/', request.url))

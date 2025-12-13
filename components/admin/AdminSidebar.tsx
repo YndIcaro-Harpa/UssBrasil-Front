@@ -22,7 +22,8 @@ import {
   ChevronLeft,
   HelpCircle,
   UserPlus,
-  Calculator
+  Calculator,
+  Layout
 } from 'lucide-react'
 import AdminNavigation from './AdminNavigation'
 import { useAdminAuth } from '@/hooks/useAdminAuth'
@@ -86,6 +87,12 @@ const getNavigation = (counts: BadgeCounts) => [
     href: '/admin/reports', 
     icon: FileText,
     description: 'Documentos e dados'
+  },
+  { 
+    name: 'CMS Home', 
+    href: '/admin/cms', 
+    icon: Layout,
+    description: 'Editar página inicial'
   },
   { 
     name: 'Configurações', 
@@ -163,11 +170,11 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
                  flex flex-col h-screen fixed left-0 top-0 z-40 shadow-lg"
     >
       {/* Header */}
-      <div className="p-6 border-b border-blue-900/50">
+      <div className="p-4 border-b border-blue-900/50">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <Link href="/admin" className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center">
+            <Link href="/admin" className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
                 <img 
                   src="/Empresa/02.png" 
                   alt="USS Brasil" 
@@ -175,18 +182,18 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
                 />
               </div>
               <div>
-                <h1 className="text-white font-bold text-lg">USS BRASIL</h1>
-                <p className="text-blue-300 text-xs">Admin Panel</p>
+                <h1 className="text-white font-bold text-sm">USS BRASIL</h1>
+                <p className="text-blue-300 text-[9px]">Admin Panel</p>
               </div>
             </Link>
           )}
           
           <button
             onClick={onToggleCollapse}
-            className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+            className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                      transition-colors"
           >
-            {collapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            {collapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
@@ -195,18 +202,18 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="mt-4"
+            className="mt-3"
           >
             <div className="relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-blue-400" />
+              <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-blue-400" />
               <input
                 type="text"
                 placeholder="Buscar no admin..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-blue-900/50 border border-blue-700 rounded-xl 
+                className="w-full pl-8 pr-3 py-1.5 bg-blue-900/50 border border-blue-700 rounded-lg 
                          text-white placeholder-blue-400 focus:outline-none focus:border-blue-500 
-                         focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                         focus:ring-2 focus:ring-blue-500/20 transition-all text-xs"
               />
             </div>
           </motion.div>
@@ -214,7 +221,7 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 py-6 overflow-y-auto">
+      <div className="flex-1 py-4 overflow-y-auto">
         <AdminNavigation items={navigation} collapsed={collapsed} />
         
         {/* Quick Actions */}
@@ -222,20 +229,20 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-8 px-4"
+            className="mt-6 px-3"
           >
-            <h3 className="text-blue-400 text-xs font-medium uppercase tracking-wider mb-3">
+            <h3 className="text-blue-400 text-[9px] font-medium uppercase tracking-wider mb-2">
               Ações Rápidas
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {quickActions.map((action) => (
                 <button
                   key={action.name}
                   onClick={() => handleQuickAction(action.action)}
-                  className="flex items-center w-full px-3 py-2 text-sm text-blue-200 rounded-lg
+                  className="flex items-center w-full px-2.5 py-1.5 text-[10px] text-blue-200 rounded-lg
                            hover:text-white hover:bg-blue-800 transition-colors"
                 >
-                  <action.icon className="w-4 h-4 mr-3" />
+                  <action.icon className="w-3.5 h-3.5 mr-2" />
                   {action.name}
                 </button>
               ))}
@@ -245,67 +252,67 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
       </div>
 
       {/* User Profile & Footer */}
-      <div className="p-4 border-t border-blue-900/50">
+      <div className="p-3 border-t border-blue-900/50">
         {!collapsed ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* User Profile */}
-            <div className="flex items-center px-3 py-2 rounded-lg bg-blue-900/50">
-              <div className="w-8 h-8 bg-blue-500 rounded-full 
+            <div className="flex items-center px-2 py-1.5 rounded-lg bg-blue-900/50">
+              <div className="w-6 h-6 bg-blue-500 rounded-full 
                             flex items-center justify-center overflow-hidden">
                 {user?.image ? (
                   <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-4 h-4 text-white" />
+                  <User className="w-3 h-3 text-white" />
                 )}
               </div>
-              <div className="ml-3 flex-1 overflow-hidden">
-                <p className="text-white text-sm font-medium truncate">{user?.name || 'Admin User'}</p>
-                <p className="text-blue-300 text-xs truncate">{user?.email || 'admin@ussbrasil.com'}</p>
+              <div className="ml-2 flex-1 overflow-hidden">
+                <p className="text-white text-[10px] font-medium truncate">{user?.name || 'Admin User'}</p>
+                <p className="text-blue-300 text-[9px] truncate">{user?.email || 'admin@ussbrasil.com'}</p>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between">
-              <button className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+              <button className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                                transition-colors" title="Notificações">
-                <Bell className="w-4 h-4" />
+                <Bell className="w-3.5 h-3.5" />
               </button>
-              <button className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+              <button className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                                transition-colors" title="Ajuda">
-                <HelpCircle className="w-4 h-4" />
+                <HelpCircle className="w-3.5 h-3.5" />
               </button>
-              <button className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+              <button className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                                transition-colors" title="Configurações">
-                <Settings className="w-4 h-4" />
+                <Settings className="w-3.5 h-3.5" />
               </button>
               <Link
                 href="/"
-                className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+                className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                          transition-colors" 
                 title="Sair"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center space-y-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full 
+          <div className="flex flex-col items-center space-y-2">
+            <div className="w-6 h-6 bg-blue-500 rounded-full 
                           flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
+              <User className="w-3 h-3 text-white" />
             </div>
-            <div className="flex flex-col items-center space-y-2">
-              <button className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+            <div className="flex flex-col items-center space-y-1">
+              <button className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                                transition-colors" title="Notificações">
-                <Bell className="w-4 h-4" />
+                <Bell className="w-3.5 h-3.5" />
               </button>
               <Link
                 href="/"
-                className="p-2 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
+                className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                          transition-colors" 
                 title="Sair"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>

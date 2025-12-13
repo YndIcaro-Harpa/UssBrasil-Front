@@ -39,13 +39,15 @@ export interface Category {
 }
 
 export interface Brand {
-  [x: string]: any
   id: string
   name: string
   slug: string
   logo?: string
   description?: string
   featured: boolean
+  color?: string
+  website?: string
+  _count?: { products: number }
 }
 
 export interface ProductFilters {
@@ -60,6 +62,54 @@ export interface ProductFilters {
   limit?: number
   sortBy?: string
   order?: 'asc' | 'desc'
+}
+
+// Interface para dados de pedido
+export interface OrderData {
+  items: Array<{
+    productId: string
+    variationId?: string
+    quantity: number
+    price: number
+  }>
+  shippingAddress: {
+    street: string
+    number: string
+    complement?: string
+    neighborhood: string
+    city: string
+    state: string
+    zipCode: string
+  }
+  paymentMethod: string
+  total: number
+  subtotal: number
+  shippingCost: number
+  discount?: number
+  couponCode?: string
+}
+
+// Interface para produto cru da API
+interface RawProduct {
+  id: string | number
+  name?: string
+  slug?: string
+  description?: string
+  price?: number
+  discountPrice?: number
+  images?: string | string[]
+  image?: string
+  category?: string | { id: string; name: string; slug: string }
+  categoryId?: string
+  brand?: string | { id: string; name: string; slug: string }
+  brandId?: string
+  stock?: number
+  featured?: boolean
+  specifications?: string | Record<string, unknown>
+  tags?: string | string[]
+  status?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 // API Client class
@@ -92,7 +142,7 @@ class ApiClient {
 
   // Retry logic com backoff exponencial e timeout
   private async fetchWithRetry(endpoint: string, options: RequestInit = {}, retries = 3) {
-    let lastError: any = null
+    let lastError: Error | null = null
     
     for (let i = 0; i < retries; i++) {
       try {
@@ -132,21 +182,22 @@ class ApiClient {
         const data = await response.json()
         console.log(`[API] Success: ${url}`)
         return data
-      } catch (error: any) {
-        lastError = error
+      } catch (error: unknown) {
+        const err = error as Error
+        lastError = err
         
         // Mensagem de erro mais clara
-        if (error.name === 'AbortError') {
+        if (err.name === 'AbortError') {
           console.error(`[API] Timeout: ${this.baseUrl}${endpoint}`)
           lastError = new Error(`Timeout: O servidor não respondeu em 30 segundos. Verifique se ${this.baseUrl} está acessível.`)
-        } else if (error.message.includes('fetch')) {
-          console.error(`[API] Network error: ${error.message}`)
+        } else if (err.message.includes('fetch')) {
+          console.error(`[API] Network error: ${err.message}`)
           lastError = new Error(`Erro de rede: Não foi possível conectar ao backend em ${this.baseUrl}. Verifique sua conexão.`)
         }
         
         if (i < retries - 1) {
           const waitTime = Math.pow(2, i) * 500
-          console.warn(`[API] Retry ${i + 1}/${retries - 1} after ${waitTime}ms - ${error.message}`)
+          console.warn(`[API] Retry ${i + 1}/${retries - 1} after ${waitTime}ms - ${err.message}`)
           await new Promise(resolve => setTimeout(resolve, waitTime))
         }
       }
@@ -155,6 +206,35 @@ class ApiClient {
     this.lastError = lastError?.message || 'Unknown error'
     console.error(`[API] Failed after ${retries} retries:`, lastError?.message)
     throw lastError
+  }
+
+  // Generic methods
+  async get(endpoint: string, options: RequestInit = {}) {
+    const data = await this.fetchWithRetry(endpoint, { ...options, method: 'GET' })
+    return { data }
+  }
+
+  async post(endpoint: string, body: any, options: RequestInit = {}) {
+    const data = await this.fetchWithRetry(endpoint, {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return { data }
+  }
+
+  async put(endpoint: string, body: any, options: RequestInit = {}) {
+    const data = await this.fetchWithRetry(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
+    return { data }
+  }
+
+  async delete(endpoint: string, options: RequestInit = {}) {
+    const data = await this.fetchWithRetry(endpoint, { ...options, method: 'DELETE' })
+    return { data }
   }
 
   private async fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -256,7 +336,7 @@ class ApiClient {
   }
 
   // Orders
-  async createOrder(orderData: any, token: string) {
+  async createOrder(orderData: OrderData, token: string) {
     return this.fetchApi('/orders', {
       method: 'POST',
       headers: {
@@ -315,14 +395,14 @@ export const generateSlug = (text: string): string => {
 }
 
 // Normaliza produtos vindos da API para o formato do frontend
-function normalizeProduct(raw: any): Product {
+function normalizeProduct(raw: RawProduct): Product {
   // Normalizar imagens - pode ser string, array, ou undefined
   const imagesRaw = raw.images ?? raw.image ?? ''
   let images: string[] = []
   
   if (Array.isArray(imagesRaw)) {
     images = imagesRaw
-      .map((s: any) => {
+      .map((s: string) => {
         const str = String(s || '').trim()
         return str || undefined
       })
@@ -340,7 +420,7 @@ function normalizeProduct(raw: any): Product {
     ? tagsRaw.map((t: string) => (t || '').trim()).filter(Boolean)
     : (typeof tagsRaw === 'string' ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [])
 
-  let specifications: Record<string, any> | undefined = undefined
+  let specifications: Record<string, unknown> | undefined = undefined
   if (raw.specifications) {
     if (typeof raw.specifications === 'string') {
       try {
@@ -353,16 +433,48 @@ function normalizeProduct(raw: any): Product {
     }
   }
 
+  // Normalizar category
+  let categoryObj: { id: string; name: string; slug: string }
+  if (typeof raw.category === 'object' && raw.category !== null) {
+    categoryObj = {
+      id: raw.category.id || raw.categoryId || '',
+      name: raw.category.name || 'Geral',
+      slug: raw.category.slug || ''
+    }
+  } else {
+    categoryObj = {
+      id: raw.categoryId || '',
+      name: typeof raw.category === 'string' ? raw.category : 'Geral',
+      slug: ''
+    }
+  }
+
+  // Normalizar brand
+  let brandObj: { id: string; name: string; slug: string }
+  if (typeof raw.brand === 'object' && raw.brand !== null) {
+    brandObj = {
+      id: raw.brand.id || raw.brandId || '',
+      name: raw.brand.name || 'Marca',
+      slug: raw.brand.slug || ''
+    }
+  } else {
+    brandObj = {
+      id: raw.brandId || '',
+      name: typeof raw.brand === 'string' ? raw.brand : 'Marca',
+      slug: ''
+    }
+  }
+
   const product: Product = {
     id: String(raw.id),
     name: raw.name || '',
-    slug: raw.slug || raw.id || '',
+    slug: raw.slug || String(raw.id) || '',
     description: raw.description || '',
     price: Number(raw.price || 0),
     discountPrice: raw.discountPrice !== undefined && raw.discountPrice !== null ? Number(raw.discountPrice) : undefined,
     images: images.length > 0 ? images : [],
-    category: raw.category || { id: raw.categoryId || '', name: raw.category?.name || raw.category || 'Geral', slug: raw.category?.slug || '' },
-    brand: raw.brand || { id: raw.brandId || '', name: raw.brand?.name || raw.brand || 'Marca', slug: raw.brand?.slug || '' },
+    category: categoryObj,
+    brand: brandObj,
     stock: Number(raw.stock || 0),
     featured: Boolean(raw.featured),
     specifications,

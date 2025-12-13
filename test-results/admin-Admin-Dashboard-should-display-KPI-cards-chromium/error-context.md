@@ -1,0 +1,196 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "UssBrasil UssBrasil Tecnologia" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "UssBrasil" [ref=e7]
+          - generic [ref=e8]:
+            - generic [ref=e9]: UssBrasil
+            - generic [ref=e10]: Tecnologia
+        - generic [ref=e11]:
+          - link "Home" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - button "Produtos" [ref=e14]:
+            - generic [ref=e15]: Produtos
+            - img [ref=e16]
+          - link "Categorias" [ref=e18] [cursor=pointer]:
+            - /url: /categorias
+          - link "Sobre" [ref=e19] [cursor=pointer]:
+            - /url: /sobre
+          - link "Contato" [ref=e20] [cursor=pointer]:
+            - /url: /contato
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - img [ref=e24]
+            - textbox "Buscar produtos..." [ref=e27]
+          - button [ref=e28]:
+            - img [ref=e29]
+        - generic [ref=e32]:
+          - button [ref=e33]:
+            - img [ref=e34]
+          - button [ref=e36]:
+            - img [ref=e37]
+          - button [ref=e41]:
+            - img [ref=e42]
+  - main [ref=e46]:
+    - generic [ref=e49]:
+      - paragraph [ref=e53]: Carregando experiência premium
+      - paragraph [ref=e54]: Preparando o melhor para você...
+  - contentinfo [ref=e55]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - img [ref=e64]
+        - heading "Compra Segura" [level=3] [ref=e66]
+        - paragraph [ref=e67]: Proteção SSL
+      - generic [ref=e68]:
+        - img [ref=e70]
+        - heading "Parcelamento" [level=3] [ref=e72]
+        - paragraph [ref=e73]: Até 12x sem juros
+      - generic [ref=e74]:
+        - img [ref=e76]
+        - heading "Produtos Originais" [level=3] [ref=e79]
+        - paragraph [ref=e80]: Garantia oficial
+    - generic [ref=e83]:
+      - generic [ref=e84]:
+        - link "USS Brasil" [ref=e85] [cursor=pointer]:
+          - /url: /
+          - img "USS Brasil" [ref=e86]
+        - paragraph [ref=e87]: USS Brasil é a sua loja de tecnologia premium. Oferecemos os melhores produtos Apple, JBL, DJI, Xiaomi e Geonav com garantia oficial e entrega expressa.
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - img [ref=e90]
+            - link "(48) 3411-6672" [ref=e92] [cursor=pointer]:
+              - /url: tel:+554834116672
+          - generic [ref=e93]:
+            - img [ref=e94]
+            - link "Comercial@UssBrasil.com.br" [ref=e97] [cursor=pointer]:
+              - /url: mailto:Comercial@UssBrasil.com.br
+          - generic [ref=e98]:
+            - img [ref=e99]
+            - generic [ref=e102]:
+              - text: Rua Dr. Padre Nereu Ramos - Centro
+              - text: Shopping Della, Sala 09 Térreo
+              - text: "Criciúma/SC - CEP: 88810-140"
+      - generic [ref=e103]:
+        - heading "Institucional" [level=3] [ref=e104]
+        - list [ref=e105]:
+          - listitem [ref=e106]:
+            - link "Sobre Nós" [ref=e107] [cursor=pointer]:
+              - /url: /sobre
+          - listitem [ref=e108]:
+            - link "Imprensa" [ref=e109] [cursor=pointer]:
+              - /url: /imprensa
+          - listitem [ref=e110]:
+            - link "Trabalhe Conosco" [ref=e111] [cursor=pointer]:
+              - /url: /trabalhe-conosco
+          - listitem [ref=e112]:
+            - link "Termos de Uso" [ref=e113] [cursor=pointer]:
+              - /url: /termos-de-uso
+          - listitem [ref=e114]:
+            - link "Privacidade" [ref=e115] [cursor=pointer]:
+              - /url: /politica-de-privacidade
+      - generic [ref=e116]:
+        - heading "Produtos" [level=3] [ref=e117]
+        - list [ref=e118]:
+          - listitem [ref=e119]:
+            - link "Apple" [ref=e120] [cursor=pointer]:
+              - /url: /produtos?brand=apple
+          - listitem [ref=e121]:
+            - link "JBL" [ref=e122] [cursor=pointer]:
+              - /url: /produtos?brand=jbl
+          - listitem [ref=e123]:
+            - link "DJI" [ref=e124] [cursor=pointer]:
+              - /url: /produtos?brand=dji
+          - listitem [ref=e125]:
+            - link "Xiaomi" [ref=e126] [cursor=pointer]:
+              - /url: /produtos?brand=xiaomi
+          - listitem [ref=e127]:
+            - link "Geonav" [ref=e128] [cursor=pointer]:
+              - /url: /produtos?brand=geonav
+      - generic [ref=e129]:
+        - heading "Atendimento" [level=3] [ref=e130]
+        - list [ref=e131]:
+          - listitem [ref=e132]:
+            - link "Central de Ajuda" [ref=e133] [cursor=pointer]:
+              - /url: /central-ajuda
+          - listitem [ref=e134]:
+            - link "Perguntas Frequentes" [ref=e135] [cursor=pointer]:
+              - /url: /faq
+          - listitem [ref=e136]:
+            - link "Como Comprar" [ref=e137] [cursor=pointer]:
+              - /url: /como-comprar
+          - listitem [ref=e138]:
+            - link "Trocas e Devoluções" [ref=e139] [cursor=pointer]:
+              - /url: /trocas-devolucoes
+          - listitem [ref=e140]:
+            - link "Garantia" [ref=e141] [cursor=pointer]:
+              - /url: /garantia
+          - listitem [ref=e142]:
+            - link "Rastrear Pedido" [ref=e143] [cursor=pointer]:
+              - /url: /rastreamento
+      - generic [ref=e144]:
+        - heading "Minha Conta" [level=3] [ref=e145]
+        - list [ref=e146]:
+          - listitem [ref=e147]:
+            - link "Entrar" [ref=e148] [cursor=pointer]:
+              - /url: /auth/login
+          - listitem [ref=e149]:
+            - link "Criar Conta" [ref=e150] [cursor=pointer]:
+              - /url: /auth/registrar
+          - listitem [ref=e151]:
+            - link "Recuperar Senha" [ref=e152] [cursor=pointer]:
+              - /url: /auth/recuperar
+          - listitem [ref=e153]:
+            - link "Meus Favoritos" [ref=e154] [cursor=pointer]:
+              - /url: /favoritos
+          - listitem [ref=e155]:
+            - link "Meus Pedidos" [ref=e156] [cursor=pointer]:
+              - /url: /meus-pedidos
+    - generic [ref=e159]:
+      - generic [ref=e160]:
+        - heading "Formas de Pagamento" [level=4] [ref=e161]
+        - generic [ref=e162]:
+          - generic "Visa" [ref=e163]:
+            - img "Visa" [ref=e164]
+          - generic "Mastercard" [ref=e165]:
+            - img "Mastercard" [ref=e166]
+          - generic "Pix" [ref=e167]:
+            - img "Pix" [ref=e168]
+      - generic [ref=e169]:
+        - heading "Segurança e Certificações" [level=4] [ref=e170]
+        - generic [ref=e172]:
+          - img [ref=e173]
+          - generic [ref=e175]: SSL Seguro
+    - generic [ref=e178]:
+      - generic [ref=e179]:
+        - paragraph [ref=e180]: © 2025 USS Brasil. Todos os direitos reservados.
+        - generic [ref=e181]:
+          - link "Política de Privacidade" [ref=e182] [cursor=pointer]:
+            - /url: /politica-de-privacidade
+          - generic [ref=e183]: •
+          - link "Termos de Uso" [ref=e184] [cursor=pointer]:
+            - /url: /termos-de-uso
+          - generic [ref=e185]: •
+          - link "FAQ" [ref=e186] [cursor=pointer]:
+            - /url: /faq
+      - generic [ref=e187]:
+        - generic [ref=e188]: "Siga-nos:"
+        - generic [ref=e189]:
+          - link "Instagram" [ref=e190] [cursor=pointer]:
+            - /url: https://instagram.com/ussbrasil
+            - img [ref=e191]
+          - link "Facebook" [ref=e194] [cursor=pointer]:
+            - /url: https://facebook.com/ussbrasil
+            - img [ref=e195]
+          - link "YouTube" [ref=e197] [cursor=pointer]:
+            - /url: https://youtube.com/ussbrasil
+            - img [ref=e198]
+          - link "Twitter" [ref=e201] [cursor=pointer]:
+            - /url: https://twitter.com/ussbrasil
+            - img [ref=e202]
+  - region "Notifications alt+T"
+```

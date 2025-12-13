@@ -127,6 +127,15 @@ export interface OrderItem {
   productId: string
   quantity: number
   price: number
+  subtotal?: number
+  selectedColor?: string
+  selectedColorCode?: string
+  selectedStorage?: string
+  selectedSize?: string
+  variationId?: string
+  productName?: string
+  productSku?: string
+  productImage?: string
   product?: Product
 }
 
@@ -369,6 +378,7 @@ export const productsApi = {
     brandId?: string
     featured?: boolean
     search?: string
+    status?: string
   }) {
     const queryParams = new URLSearchParams()
     if (params?.page) queryParams.append('page', params.page.toString())
@@ -377,6 +387,7 @@ export const productsApi = {
     if (params?.brandId) queryParams.append('brandId', params.brandId)
     if (params?.featured !== undefined) queryParams.append('featured', params.featured.toString())
     if (params?.search) queryParams.append('search', params.search)
+    if (params?.status) queryParams.append('status', params.status)
     
     const response = await fetch(`${API_URL}/products?${queryParams}`)
     const result = await handleResponse<{ products: Product[]; pagination: { total: number; page: number; pages: number; limit: number } }>(response)
@@ -604,8 +615,14 @@ export const ordersApi = {
     const result = await handleResponse<{ orders: Order[]; pagination: { total: number; page: number; pages: number } }>(response)
     
     // Normaliza para o formato esperado pelo frontend
+    const normalizedOrders = (result.orders || []).map(order => ({
+      ...order,
+      // Garantir que items sempre existe (API retorna orderItems)
+      items: order.items || order.orderItems || []
+    }));
+    
     return {
-      data: result.orders || [],
+      data: normalizedOrders,
       total: result.pagination?.total || 0,
       page: result.pagination?.page || 1,
       totalPages: result.pagination?.pages || 1,
@@ -944,6 +961,200 @@ export const analyticsApi = {
 }
 
 // ============================================
+// CART API
+// ============================================
+
+export interface CartItem {
+  id: string
+  productId: string
+  quantity: number
+  product: {
+    id: string
+    name: string
+    slug: string
+    price: number
+    originalPrice?: number | null
+    discountPrice?: number | null
+    images: string // String com URLs separadas por vírgula ou JSON
+    category: {
+      id: string
+      name: string
+      slug: string
+    } | null
+    brand: {
+      id: string
+      name: string
+      slug: string
+    } | null
+    stock: number
+  }
+}
+
+export interface CartResponse {
+  items: CartItem[]
+  totalItems: number
+  subtotal: number
+}
+
+const cartApi = {
+  // Buscar carrinho do usuário
+  getCart: async (token: string): Promise<CartResponse> => {
+    const response = await fetch(`${API_URL}/cart`, {
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<CartResponse>(response)
+  },
+
+  // Adicionar item ao carrinho
+  addToCart: async (token: string, productId: string, quantity: number = 1): Promise<CartItem> => {
+    const response = await fetch(`${API_URL}/cart/add`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ productId, quantity }),
+    })
+    return handleResponse<CartItem>(response)
+  },
+
+  // Atualizar quantidade de um item
+  updateQuantity: async (token: string, productId: string, quantity: number): Promise<CartItem> => {
+    const response = await fetch(`${API_URL}/cart/${productId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ quantity }),
+    })
+    return handleResponse<CartItem>(response)
+  },
+
+  // Remover item do carrinho
+  removeFromCart: async (token: string, productId: string): Promise<{ message: string }> => {
+    const response = await fetch(`${API_URL}/cart/${productId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+
+  // Limpar carrinho
+  clearCart: async (token: string): Promise<{ message: string }> => {
+    const response = await fetch(`${API_URL}/cart`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+
+  // Sincronizar carrinho local com o banco
+  syncCart: async (token: string, items: Array<{ productId: string; quantity: number }>): Promise<CartResponse> => {
+    const response = await fetch(`${API_URL}/cart/sync`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ items }),
+    })
+    return handleResponse<CartResponse>(response)
+  },
+}
+
+// ============================================
+// WISHLIST API
+// ============================================
+
+export interface WishlistItem {
+  id: string
+  productId: string
+  product: {
+    id: string
+    name: string
+    slug: string
+    price: number
+    originalPrice?: number | null
+    images: string // String JSON com array de imagens
+    category: {
+      id: string
+      name: string
+      slug: string
+    } | null
+    brand: {
+      id: string
+      name: string
+      slug: string
+    } | null
+    stock: number
+    status: string
+  }
+  createdAt: string
+}
+
+export interface WishlistResponse {
+  items: WishlistItem[]
+  totalItems: number
+}
+
+const wishlistApi = {
+  // Buscar wishlist do usuário
+  getWishlist: async (token: string): Promise<WishlistResponse> => {
+    const response = await fetch(`${API_URL}/wishlist`, {
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<WishlistResponse>(response)
+  },
+
+  // Adicionar item à wishlist
+  addToWishlist: async (token: string, productId: string): Promise<WishlistItem> => {
+    const response = await fetch(`${API_URL}/wishlist/add`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ productId }),
+    })
+    return handleResponse<WishlistItem>(response)
+  },
+
+  // Verificar se produto está na wishlist
+  checkInWishlist: async (token: string, productId: string): Promise<{ inWishlist: boolean }> => {
+    const response = await fetch(`${API_URL}/wishlist/check/${productId}`, {
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ inWishlist: boolean }>(response)
+  },
+
+  // Remover item da wishlist
+  removeFromWishlist: async (token: string, productId: string): Promise<{ message: string }> => {
+    const response = await fetch(`${API_URL}/wishlist/${productId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+
+  // Limpar wishlist
+  clearWishlist: async (token: string): Promise<{ message: string }> => {
+    const response = await fetch(`${API_URL}/wishlist`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+
+  // Sincronizar wishlist local com o banco
+  syncWishlist: async (token: string, productIds: string[]): Promise<WishlistResponse> => {
+    const response = await fetch(`${API_URL}/wishlist/sync`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ productIds }),
+    })
+    return handleResponse<WishlistResponse>(response)
+  },
+
+  // Mover item da wishlist para o carrinho
+  moveToCart: async (token: string, productId: string): Promise<{ message: string }> => {
+    const response = await fetch(`${API_URL}/wishlist/move-to-cart/${productId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+}
+
+// ============================================
 // EXPORT ALL
 // ============================================
 
@@ -956,6 +1167,8 @@ export const api = {
   orders: ordersApi,
   stripe: stripeApi,
   analytics: analyticsApi,
+  cart: cartApi,
+  wishlist: wishlistApi,
 }
 
 export default api

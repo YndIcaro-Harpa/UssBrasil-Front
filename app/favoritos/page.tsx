@@ -8,14 +8,47 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
-import data from '@/db.json'
+import { api, WishlistItem } from '@/services/api'
 
-interface Product {
+// Helper para extrair imagem principal
+const getPrimaryImage = (images?: Array<{ url: string; isPrimary?: boolean }> | string): string => {
+  if (!images) return '/placeholder.png'
+  
+  if (typeof images === 'string') {
+    // Primeiro, tentar parse como JSON
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const primary = parsed.find((img: any) => img.isPrimary)
+        return primary?.url || parsed[0]?.url || parsed[0] || '/placeholder.png'
+      }
+    } catch {
+      // Não é JSON - verificar se é lista separada por vírgula
+      if (images.includes(',')) {
+        const imageList = images.split(',').map(img => img.trim()).filter(Boolean)
+        if (imageList.length > 0) {
+          return imageList[0]
+        }
+      }
+      // String única - retornar diretamente
+      return images || '/placeholder.png'
+    }
+  }
+  
+  if (Array.isArray(images) && images.length > 0) {
+    const primary = images.find(img => img.isPrimary)
+    return primary?.url || images[0]?.url || '/placeholder.png'
+  }
+  
+  return '/placeholder.png'
+}
+
+interface FavoriteProduct {
   id: string
   name: string
   brand: string
   price: number
-  discountPrice: number | null
+  originalPrice: number | null
   image: string
   slug: string
   stock: number
@@ -23,52 +56,122 @@ interface Product {
 }
 
 export default function FavoritosPage() {
-  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([])
+  const [favoriteProducts, setFavoriteProducts] = useState<FavoriteProduct[]>([])
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
-  const { favorites, toggleFavorite } = useAuth()
+  const { favorites, favoriteItems, toggleFavorite, token, isAuthenticated, syncFavorites } = useAuth()
 
   useEffect(() => {
-    const loadFavorites = () => {
+    const loadFavorites = async () => {
+      setLoading(true)
+      
       try {
-        // Buscar produtos do db.json que estão nos favoritos
-        const products = data.products.filter((p: any) => 
-          favorites.includes(String(p.id))
-        ).map((p: any) => ({
-          id: String(p.id),
-          name: p.name,
-          brand: p.brand || 'USS Brasil',
-          price: p.price,
-          discountPrice: p.discountPrice || null,
-          image: p.image || p.images?.[0] || '/placeholder.png',
-          slug: p.slug || p.id,
-          stock: p.stock || 99,
-          status: p.status || 'active'
-        }))
-        
-        setFavoriteProducts(products)
+        if (isAuthenticated && token) {
+          // Usuário logado - usar dados da API (já sincronizados no contexto)
+          const products = favoriteItems.map((item: WishlistItem) => ({
+            id: item.productId,
+            name: item.product.name,
+            brand: item.product.brand?.name || 'USS Brasil',
+            price: item.product.originalPrice ?? item.product.price,
+            originalPrice: item.product.price < (item.product.originalPrice ?? item.product.price) 
+              ? (item.product.originalPrice ?? null)
+              : null,
+            image: getPrimaryImage(item.product.images),
+            slug: item.product.slug || item.productId,
+            stock: item.product.stock || 99,
+            status: item.product.status || 'ACTIVE'
+          }))
+          
+          setFavoriteProducts(products)
+        } else {
+          // Usuário não logado - buscar do localStorage/API pública
+          if (favorites.length > 0) {
+            // Buscar produtos individualmente da API pública
+            const productPromises = favorites.map(async (id) => {
+              try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/products/${id}`)
+                if (!response.ok) return null
+                const product = await response.json()
+                return {
+                  id: String(product.id),
+                  name: product.name,
+                  brand: product.brand?.name || product.brand || 'USS Brasil',
+                  price: product.originalPrice || product.price,
+                  originalPrice: product.discountPrice || (product.price < product.originalPrice ? product.originalPrice : null),
+                  image: getPrimaryImage(product.images) || product.image || '/placeholder.png',
+                  slug: product.slug || product.id,
+                  stock: product.stock || 99,
+                  status: product.status || 'ACTIVE'
+                }
+              } catch {
+                return null
+              }
+            })
+            
+            const products = (await Promise.all(productPromises)).filter(Boolean) as FavoriteProduct[]
+            setFavoriteProducts(products)
+          } else {
+            setFavoriteProducts([])
+          }
+        }
       } catch (error) {
         console.error('Erro ao carregar favoritos:', error)
+        setFavoriteProducts([])
       } finally {
         setLoading(false)
       }
     }
 
     loadFavorites()
-  }, [favorites])
+  }, [favorites, favoriteItems, isAuthenticated, token])
 
-  const handleRemoveFavorite = (productId: string) => {
-    toggleFavorite(productId)
+  const handleRemoveFavorite = async (productId: string) => {
+    await toggleFavorite(productId)
+    setFavoriteProducts(prev => prev.filter(p => p.id !== productId))
     toast.success('Removido dos favoritos')
   }
 
-  const handleAddToCart = (product: Product) => {
-    if (product.stock <= 0 || product.status !== 'active') {
+  const handleAddToCart = (product: FavoriteProduct) => {
+    if (product.stock <= 0 || (product.status !== 'ACTIVE' && product.status !== 'active')) {
       toast.error('Produto indisponível')
       return
     }
-    addToCart(product)
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.originalPrice || product.price,
+      discountPrice: product.price,
+      image: product.image,
+      stock: product.stock,
+      slug: product.slug,
+      brand: product.brand
+    })
     toast.success('Adicionado ao carrinho!')
+  }
+
+  const handleMoveToCart = async (product: FavoriteProduct) => {
+    if (product.stock <= 0 || (product.status !== 'ACTIVE' && product.status !== 'active')) {
+      toast.error('Produto indisponível')
+      return
+    }
+
+    // Se usuário estiver logado, usar a API de mover para carrinho
+    if (isAuthenticated && token) {
+      try {
+        await api.wishlist.moveToCart(token, product.id)
+        setFavoriteProducts(prev => prev.filter(p => p.id !== product.id))
+        toast.success('Produto movido para o carrinho!')
+        // Sincronizar favoritos após a operação
+        await syncFavorites()
+      } catch (error: any) {
+        console.error('Erro ao mover para carrinho:', error)
+        toast.error(error.message || 'Erro ao mover para carrinho')
+      }
+    } else {
+      // Não logado - adicionar ao carrinho e remover dos favoritos
+      handleAddToCart(product)
+      await handleRemoveFavorite(product.id)
+    }
   }
 
   if (loading) {
@@ -105,6 +208,11 @@ export default function FavoritosPage() {
               ? 'Você ainda não tem produtos favoritos'
               : `${favoriteProducts.length} ${favoriteProducts.length === 1 ? 'produto' : 'produtos'} salvos`}
           </p>
+          {!isAuthenticated && (
+            <p className="text-amber-600 text-sm mt-2">
+              💡 Faça login para sincronizar seus favoritos em todos os dispositivos
+            </p>
+          )}
         </div>
 
         {/* Empty State */}
@@ -135,10 +243,12 @@ export default function FavoritosPage() {
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {favoriteProducts.map((product) => {
-                const displayPrice = product.discountPrice || product.price
-                const hasDiscount = product.discountPrice && product.discountPrice < product.price
-                const discountPercent = hasDiscount && product.discountPrice !== null
-                  ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+                const displayPrice = product.originalPrice && product.originalPrice > product.price 
+                  ? product.price 
+                  : product.price
+                const hasDiscount = product.originalPrice && product.originalPrice > product.price
+                const discountPercent = hasDiscount && product.originalPrice
+                  ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
                   : 0
 
                 return (
@@ -161,7 +271,7 @@ export default function FavoritosPage() {
                         />
                         {/* Badges */}
                         <div className="absolute top-3 left-3 flex flex-col gap-2">
-                          {hasDiscount && (
+                          {hasDiscount && discountPercent > 0 && (
                             <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                               -{discountPercent}%
                             </span>
@@ -183,16 +293,16 @@ export default function FavoritosPage() {
 
                         {/* Price */}
                         <div className="mb-4">
-                          {hasDiscount && (
+                          {hasDiscount && product.originalPrice && (
                             <p className="text-sm text-gray-400 line-through">
-                              R$ {product.price.toFixed(2)}
+                              R$ {product.originalPrice.toFixed(2)}
                             </p>
                           )}
                           <p className="text-2xl font-black text-blue-400">
                             R$ {displayPrice.toFixed(2)}
                           </p>
                           <p className="text-xs text-gray-500">
-                            em at� 12x de R$ {(displayPrice / 12).toFixed(2)}
+                            em até 12x de R$ {(displayPrice / 12).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -213,9 +323,9 @@ export default function FavoritosPage() {
                       <button
                         onClick={(e) => {
                           e.preventDefault()
-                          handleAddToCart(product)
+                          handleMoveToCart(product)
                         }}
-                        disabled={product.stock <= 0 || product.status !== 'active'}
+                        disabled={product.stock <= 0 || (product.status !== 'ACTIVE' && product.status !== 'active')}
                         className="flex-1 bg-blue-400 text-white px-4 py-2 rounded-full font-bold hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         <ShoppingCart className="w-4 h-4" />

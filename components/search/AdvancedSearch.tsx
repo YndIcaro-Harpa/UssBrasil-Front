@@ -11,8 +11,22 @@ import {
   Tag,
   ChevronRight,
   Sparkles,
-  Zap
+  Zap,
+  Smartphone,
+  Headphones,
+  Laptop,
+  Watch,
+  Plane
 } from 'lucide-react'
+
+// Icon map for categories
+const categoryIconMap: Record<string, React.ReactNode> = {
+  smartphone: <Smartphone className="w-4 h-4" />,
+  headphones: <Headphones className="w-4 h-4" />,
+  laptop: <Laptop className="w-4 h-4" />,
+  watch: <Watch className="w-4 h-4" />,
+  plane: <Plane className="w-4 h-4" />,
+}
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
@@ -50,11 +64,11 @@ const popularSearches = [
 
 // Categorias para sugestões
 const categories = [
-  { name: 'Smartphones', slug: 'smartphones', icon: '📱' },
-  { name: 'Áudio', slug: 'audio', icon: '🎧' },
-  { name: 'Notebooks', slug: 'notebooks', icon: '💻' },
-  { name: 'Smartwatches', slug: 'smartwatches', icon: '⌚' },
-  { name: 'Drones', slug: 'drones', icon: '🛸' },
+  { name: 'Smartphones', slug: 'smartphones', icon: 'smartphone' },
+  { name: 'Áudio', slug: 'audio', icon: 'headphones' },
+  { name: 'Notebooks', slug: 'notebooks', icon: 'laptop' },
+  { name: 'Smartwatches', slug: 'smartwatches', icon: 'watch' },
+  { name: 'Drones', slug: 'drones', icon: 'plane' },
 ]
 
 // Marcas
@@ -153,7 +167,7 @@ export default function AdvancedSearch() {
       .filter(c => c.name.toLowerCase().includes(q))
       .slice(0, 2)
       .forEach(cat => {
-        newSuggestions.push({ type: 'category', text: cat.name, icon: <span>{cat.icon}</span> })
+        newSuggestions.push({ type: 'category', text: cat.name, icon: categoryIconMap[cat.icon] || <Tag className="w-4 h-4" /> })
       })
 
     brands
@@ -343,7 +357,7 @@ export default function AdvancedSearch() {
                           onClick={() => setIsOpen(false)}
                           className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl"
                         >
-                          <span className="text-lg">{cat.icon}</span>
+                          <span className="text-gray-600">{categoryIconMap[cat.icon]}</span>
                           <span className="text-sm font-medium text-gray-700">{cat.name}</span>
                         </Link>
                       ))}

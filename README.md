@@ -1,234 +1,438 @@
-# 🛍️ USS Brasil E-commerce
+# USS Brasil E-commerce
 
-Uma plataforma de e-commerce moderna e responsiva desenvolvida com Next.js 15, focada na venda de produtos Apple.
+<div align="center">
 
-## 🚀 Deploy Rápido (5 minutos)
+![USS Brasil](https://via.placeholder.com/200x80/001941/FFFFFF?text=USS+BRASIL)
 
-### **🥇 Opção 1: Netlify (Mais Recomendado)**
-```bash
-# Execute o script automático:
-.\setup-deploy.ps1
+**Plataforma E-commerce de Produtos Importados Premium**
 
-# Ou siga o guia manual:
-# 1. https://netlify.com > New site from Git
-# 2. Configure: npm run build | .next
-# 3. Adicione variáveis (veja .env.example)
+[![Next.js](https://img.shields.io/badge/Next.js-15.4.3-black?logo=next.js)](https://nextjs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-11.x-red?logo=nestjs)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748?logo=prisma)](https://www.prisma.io/)
+
+</div>
+
+## 📋 Índice
+
+- [Visão Geral](#-visão-geral)
+- [Arquitetura](#-arquitetura)
+- [Tecnologias](#-tecnologias)
+- [Instalação](#-instalação)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Features](#-features)
+- [API Documentation](#-api-documentation)
+- [Testes](#-testes)
+- [Deploy](#-deploy)
+- [Contribuição](#-contribuição)
+
+---
+
+## 🎯 Visão Geral
+
+USS Brasil é uma plataforma e-commerce completa para venda de produtos importados premium, incluindo smartphones, acessórios, drones e equipamentos eletrônicos.
+
+### Principais Características
+
+- 🛒 **Carrinho Inteligente** - Suporte a variações de produtos (cor, tamanho, armazenamento)
+- 💳 **Multi-Pagamentos** - PIX, Cartão de Crédito, Boleto
+- 📦 **Gestão de Estoque** - Alertas automáticos de estoque baixo
+- 📧 **E-mails Transacionais** - Templates branded para confirmações e notificações
+- 📊 **Dashboard Admin** - Interface compacta e responsiva para gestão
+- 🔐 **Autenticação** - JWT com suporte a 2FA
+
+---
+
+## 🏗 Arquitetura
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND (Next.js 15)                     │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │
+│  │  Pages  │  │Components│  │ Contexts │  │  Hooks  │            │
+│  │ (App    │  │ (React) │  │ (State) │  │(Custom) │            │
+│  │ Router) │  │         │  │         │  │         │            │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘            │
+│       └────────────┴────────────┴────────────┘                  │
+│                           │                                      │
+│                    ┌──────┴──────┐                              │
+│                    │  Services   │                              │
+│                    │   (API)     │                              │
+│                    └──────┬──────┘                              │
+└───────────────────────────┼─────────────────────────────────────┘
+                            │ HTTP/REST
+┌───────────────────────────┼─────────────────────────────────────┐
+│                        BACKEND (NestJS)                          │
+│                            │                                     │
+│  ┌─────────────────────────┴─────────────────────────────────┐  │
+│  │                     API Gateway                            │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │  │
+│  │  │ Products │  │  Orders  │  │   Auth   │  │  Email   │  │  │
+│  │  │ Module   │  │  Module  │  │  Module  │  │  Module  │  │  │
+│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  │  │
+│  │       │             │             │             │         │  │
+│  │       └─────────────┴─────────────┴─────────────┘         │  │
+│  │                           │                               │  │
+│  └───────────────────────────┼───────────────────────────────┘  │
+│                              │                                   │
+│                    ┌─────────┴─────────┐                        │
+│                    │   Prisma ORM     │                        │
+│                    └─────────┬─────────┘                        │
+└──────────────────────────────┼──────────────────────────────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │    SQLite/Postgres  │
+                    │     (Database)      │
+                    └─────────────────────┘
 ```
 
-### **📚 Documentação Completa de Deploy**
-- 📖 **[Guia Netlify Completo](./NETLIFY_COMPLETE_GUIDE.md)** - Passo a passo detalhado
-- 🌐 **[Todas as Opções](./DEPLOYMENT_OPTIONS.md)** - Netlify, Vercel, Railway, Render
-- 🗄️ **[Setup Database](./DATABASE_SETUP.md)** - Supabase, PlanetScale, Railway
+### Fluxo de Dados
 
-### **⚡ Deploy Automático**
-```bash
-# Windows PowerShell
-.\setup-deploy.ps1
-
-# Bash/Linux/Mac
-./setup-deploy.sh
+```
+Cliente → Next.js (SSR/CSR) → API Service → NestJS → Prisma → Database
+                                   ↓
+                            Email Service (Nodemailer)
+                                   ↓
+                              SMTP Server
 ```
 
-## ✨ Características
+---
 
-- 🎨 **Design Moderno**: Interface limpa e responsiva com animações suaves
-- 📱 **Responsivo**: Otimizado para desktop, tablet e mobile
-- 🔐 **Autenticação**: Sistema completo com NextAuth.js
-- 🛒 **Carrinho**: Funcionalidade completa de carrinho de compras
-- 👑 **Admin Dashboard**: Painel administrativo para gestão de produtos, pedidos e clientes
-- 🔍 **Busca e Filtros**: Sistema avançado de busca e filtros por categoria
-- 🌟 **Favoritos**: Sistema de produtos favoritos
-- 📊 **Analytics**: Dashboard com métricas e estatísticas
-- ⚡ **Performance**: Otimizado para carregamento rápido
+## 🛠 Tecnologias
 
-## 🚀 Tecnologias
+### Frontend
+| Tecnologia | Versão | Descrição |
+|------------|--------|-----------|
+| Next.js | 15.4.3 | Framework React com App Router |
+| React | 19.x | Biblioteca UI |
+| TypeScript | 5.x | Tipagem estática |
+| Tailwind CSS | 3.x | Framework CSS utility-first |
+| Framer Motion | 12.x | Animações |
+| Zustand | 5.x | Gerenciamento de estado |
+| React Hook Form | 7.x | Formulários |
+| Zod | 3.x | Validação de schemas |
 
-- **Frontend**: Next.js 15, React 18, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui
-- **Animations**: Framer Motion
-- **Database**: Prisma + SQLite
-- **Authentication**: NextAuth.js
-- **State Management**: Zustand
-- **Icons**: Lucide React
+### Backend
+| Tecnologia | Versão | Descrição |
+|------------|--------|-----------|
+| NestJS | 11.x | Framework Node.js |
+| Prisma | 6.x | ORM |
+| Winston | 3.x | Logging estruturado |
+| Passport | 0.7.x | Autenticação |
+| Nodemailer | 6.x | Envio de emails |
+| Stripe | 17.x | Pagamentos |
+| bcrypt | 5.x | Criptografia |
 
-## 📦 Instalação
+### Testes
+| Tecnologia | Descrição |
+|------------|-----------|
+| Jest | Testes unitários |
+| Playwright | Testes E2E |
 
-1. Clone o repositório:
+---
+
+## 🚀 Instalação
+
+### Pré-requisitos
+
+- Node.js 20+
+- npm ou yarn
+- Git
+
+### Clone o repositório
+
 ```bash
-git clone https://github.com/Ynd-Icaro/Ecommerce-UssBrasil.git
-cd Ecommerce-UssBrasil
+git clone https://github.com/Ynd-Icaro/Uss.git
+cd Uss/Ecommerce-UssBrasil
 ```
 
-2. Instale as dependências:
+### Frontend
+
 ```bash
+# Instalar dependências
 npm install
-```
 
-3. Configure as variáveis de ambiente:
-```bash
+# Configurar variáveis de ambiente
 cp .env.example .env.local
-```
 
-Edite o arquivo `.env.local` com suas configurações:
-```env
-NEXTAUTH_SECRET=seu_secret_super_seguro
-NEXTAUTH_URL=http://localhost:3000
-DATABASE_URL="file:./dev.db"
-```
-
-4. Execute as migrações do banco:
-```bash
-npx prisma migrate dev
-npx prisma db seed
-```
-
-5. Inicie o servidor de desenvolvimento:
-```bash
+# Iniciar desenvolvimento
 npm run dev
 ```
 
-## 🌐 Deploy em Produção
-
-### 🚀 **Deploy Automático (Recomendado)**
-
-**Windows PowerShell:**
-```bash
-.\setup-deploy.ps1
-```
-
-**Mac/Linux:**
-```bash
-./setup-deploy.sh
-```
-
-### 🥇 **Netlify (Mais Fácil)**
-- ✅ **500GB** bandwidth/mês gratuito
-- ✅ **CDN global** automático  
-- ✅ **SSL** certificado gratuito
-- ✅ **Deploy automático** via Git
-- ✅ **Preview** de pull requests
-
-**Setup em 3 passos:**
-1. [netlify.com](https://netlify.com) → New site from Git
-2. Configure: `npm run build` | `.next`
-3. Adicione variáveis de ambiente (veja `.env.example`)
-
-### 🥈 **Vercel (Criadores do Next.js)**
-- ✅ **100GB** bandwidth/mês
-- ✅ **Edge functions**
-- ✅ **Analytics** incluído
-- ✅ **Otimizado** para Next.js
+### Backend
 
 ```bash
-npm i -g vercel
-vercel --prod
+cd backend
+
+# Instalar dependências
+npm install
+
+# Configurar banco de dados
+npx prisma generate
+npx prisma db push
+
+# Seed (dados iniciais)
+npm run db:seed
+
+# Iniciar desenvolvimento
+npm run start:dev
 ```
 
-### 🥉 **Railway (Banco Incluído)**
-- ✅ **$5 crédito** inicial
-- ✅ **PostgreSQL** incluído
-- ✅ **Monitoring** completo
+### Variáveis de Ambiente
 
-1. [railway.app](https://railway.app) → New Project
-2. Deploy from GitHub repo
-3. Add PostgreSQL service
+#### Frontend (.env.local)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_xxx
+```
 
-### 🛠️ **Render**
-- ✅ **PostgreSQL** gratuito (90 dias)
-- ✅ **SSL** automático
-- ✅ **Logs** detalhados
+#### Backend (.env)
+```env
+DATABASE_URL="file:./dev.db"
+JWT_SECRET=your-secret-key
+STRIPE_SECRET_KEY=sk_test_xxx
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+```
 
-**📖 Documentação Completa**: Veja `DEPLOYMENT_OPTIONS.md` para comparação detalhada de todas as plataformas.
-
-### 🗄️ **Banco de Dados Gratuitos**
-
-**Para produção, recomendamos:**
-- 🟢 **Supabase**: 500MB PostgreSQL (recomendado)
-- 🟢 **PlanetScale**: 1GB MySQL
-- 🟢 **Railway**: PostgreSQL completo ($5 crédito)
-
-**Veja configuração completa em:** `DATABASE_SETUP.md`
+---
 
 ## 📁 Estrutura do Projeto
 
 ```
-├── app/
-│   ├── admin/              # Painel administrativo
-│   ├── api/               # API Routes
-│   ├── cart/              # Carrinho de compras
-│   ├── products/          # Catálogo de produtos
-│   └── ...
-├── components/
-│   ├── ui/                # Componentes reutilizáveis
-│   ├── animated-components.tsx
-│   └── ...
-├── lib/                   # Utilitários e configurações
-├── prisma/               # Schema e migrações do banco
-├── public/               # Arquivos estáticos
-└── store/                # Estado global (Zustand)
+Ecommerce-UssBrasil/
+├── app/                      # Next.js App Router
+│   ├── admin/               # Painel administrativo
+│   │   ├── page.tsx        # Dashboard
+│   │   ├── products/       # CRUD produtos
+│   │   ├── orders/         # Gestão pedidos
+│   │   ├── customers/      # Clientes
+│   │   └── settings/       # Configurações
+│   ├── produto/[slug]/     # Página produto
+│   ├── produtos/           # Listagem produtos
+│   ├── carrinho/           # Carrinho
+│   ├── checkout/           # Finalização compra
+│   └── meus-pedidos/       # Histórico pedidos
+│
+├── components/              # Componentes React
+│   ├── admin/              # Componentes admin
+│   ├── ui/                 # Componentes UI base
+│   └── *.tsx              # Componentes gerais
+│
+├── contexts/               # Contextos React
+│   ├── CartContext.tsx    # Carrinho (com variações)
+│   └── AuthContext.tsx    # Autenticação
+│
+├── services/               # Serviços API
+│   └── api.ts             # Cliente HTTP
+│
+├── e2e/                    # Testes E2E (Playwright)
+│   ├── basic.spec.ts
+│   ├── product-variations.spec.ts
+│   └── admin.spec.ts
+│
+├── backend/                # API NestJS
+│   ├── src/
+│   │   ├── auth/          # Autenticação JWT
+│   │   ├── products/      # CRUD produtos
+│   │   ├── orders/        # Gestão pedidos
+│   │   ├── email/         # Templates e envio
+│   │   ├── users/         # Gestão usuários
+│   │   └── common/        # Shared (logger, etc)
+│   │       └── logger/    # Winston logger
+│   └── prisma/
+│       └── schema.prisma  # Schema do banco
+│
+└── __tests__/              # Testes unitários (Jest)
 ```
 
-## 🛠️ Scripts Disponíveis
+---
+
+## ✨ Features
+
+### E-commerce
+- [x] Catálogo de produtos com filtros
+- [x] Página de produto com variações (cor, storage, tamanho)
+- [x] Carrinho persistente com IDs únicos por variação
+- [x] Checkout multi-step
+- [x] Múltiplos métodos de pagamento
+- [x] Cálculo de frete
+- [x] Cupons de desconto
+
+### Admin
+- [x] Dashboard compacto com KPIs
+- [x] CRUD de produtos
+- [x] Gestão de pedidos com atualização de status
+- [x] Gestão de clientes
+- [x] Configurações (loja, frete, pagamentos, alertas)
+- [x] Relatórios e exportação
+
+### Sistema
+- [x] Autenticação JWT
+- [x] E-mails transacionais branded
+- [x] Logging estruturado (Winston)
+- [x] Testes E2E (Playwright)
+- [x] Testes unitários (Jest)
+
+---
+
+## 📚 API Documentation
+
+A documentação completa da API está disponível via Swagger:
+
+```
+http://localhost:3001/api/docs
+```
+
+### Principais Endpoints
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/products` | Listar produtos |
+| GET | `/products/:id` | Detalhes do produto |
+| POST | `/orders` | Criar pedido |
+| GET | `/orders` | Listar pedidos |
+| PATCH | `/orders/:id/status` | Atualizar status |
+| POST | `/auth/login` | Login |
+| POST | `/auth/register` | Registro |
+
+---
+
+## 🧪 Testes
+
+### Testes Unitários (Jest)
 
 ```bash
-npm run dev        # Inicia desenvolvimento
-npm run build      # Build de produção
-npm run start      # Inicia servidor de produção
-npm run lint       # Executa ESLint
-npm run type-check # Verifica tipos TypeScript
+# Rodar todos os testes
+npm test
+
+# Modo watch
+npm run test:watch
+
+# Cobertura
+npm run test:coverage
 ```
 
-## 🎨 Componentes
+### Testes E2E (Playwright)
 
-O projeto utiliza uma biblioteca de componentes customizada baseada em shadcn/ui:
+```bash
+# Rodar todos os testes E2E
+npm run test:e2e
 
-- **Cards de Produto**: Cards responsivos com animações
-- **Filtros**: Sistema avançado de filtros
-- **Modal de Visualização Rápida**: Preview de produtos
-- **Dashboard Admin**: Interface administrativa completa
+# Modo UI interativo
+npm run test:e2e:ui
 
-## 📱 Páginas Principais
+# Com navegador visível
+npm run test:e2e:headed
 
-- **Home** (`/`): Página inicial com produtos em destaque
-- **Produtos** (`/products`): Catálogo completo com filtros
-- **Produto Individual** (`/product/[id]`): Página detalhada do produto
-- **Carrinho** (`/cart`): Carrinho de compras
-- **Checkout** (`/checkout`): Finalização da compra
-- **Admin** (`/admin`): Dashboard administrativo
+# Ver relatório
+npm run test:e2e:report
+```
 
-## 🔐 Autenticação
+---
 
-O sistema utiliza NextAuth.js com:
-- Login/Registro com email
-- Proteção de rotas
-- Diferentes níveis de acesso (user/admin)
+## 🚢 Deploy
 
-## 📊 Admin Dashboard
+### Frontend (Vercel/Netlify)
 
-Funcionalidades administrativas:
-- **Produtos**: CRUD completo de produtos
-- **Pedidos**: Gestão de pedidos e status
-- **Clientes**: Visualização e gestão de clientes
-- **Configurações**: Configurações gerais da loja
+```bash
+# Build de produção
+npm run build
+
+# Vercel
+vercel deploy --prod
+
+# Netlify
+netlify deploy --prod
+```
+
+### Backend (Render/Railway)
+
+```bash
+cd backend
+
+# Build
+npm run build
+
+# Start produção
+npm run start:prod
+```
+
+### Docker
+
+```dockerfile
+# Frontend
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+CMD ["npm", "start"]
+```
+
+---
+
+## 🔒 Segurança
+
+- Validação de inputs com class-validator
+- Sanitização de dados
+- Rate limiting
+- CORS configurado
+- Helmet para headers HTTP
+- Senhas hasheadas com bcrypt
+- JWT com expiração
+
+---
+
+## 📈 Monitoramento
+
+### Logs
+
+Os logs são salvos em `backend/logs/`:
+- `app-YYYY-MM-DD.log` - Todos os logs
+- `error-YYYY-MM-DD.log` - Apenas erros
+
+### Formato de Log
+
+```json
+{
+  "timestamp": "2025-12-09T10:30:00.000Z",
+  "level": "INFO",
+  "context": "Orders",
+  "message": "Order created",
+  "meta": {
+    "orderId": "abc123",
+    "total": 1999.99
+  }
+}
+```
+
+---
 
 ## 🤝 Contribuição
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Add nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
 5. Abra um Pull Request
+
+---
 
 ## 📄 Licença
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 👨‍💻 Desenvolvedor
-
-Desenvolvido por **Icaro de Oliveira**
-
-- GitHub: [@Ynd-Icaro](https://github.com/Ynd-Icaro)
-
 ---
 
-⭐ Se este projeto te ajudou, considere dar uma estrela!
+<div align="center">
+
+**Feito com ❤️ pela equipe USS Brasil**
+
+[🌐 Site](https://ussbrasil.com.br) · [📧 Contato](mailto:contato@ussbrasil.com) · [📱 Instagram](https://instagram.com/ussbrasil)
+
+</div>

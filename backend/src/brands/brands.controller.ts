@@ -8,10 +8,13 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
-import { BrandsService, CreateBrandDto, UpdateBrandDto } from './brands.service';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
+import { BrandsService } from './brands.service';
+import { CreateBrandDto, UpdateBrandDto } from './dto/brand.dto';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('brands')
 @Controller('brands')
@@ -19,6 +22,8 @@ export class BrandsController {
   constructor(private readonly brandsService: BrandsService) {}
 
   @Post()
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar nova marca' })
   @ApiResponse({ status: 201, description: 'Marca criada com sucesso' })
   create(@Body() createBrandDto: CreateBrandDto) {
@@ -44,18 +49,24 @@ export class BrandsController {
   }
 
   @Patch(':id')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar marca' })
   update(@Param('id') id: string, @Body() updateBrandDto: UpdateBrandDto) {
     return this.brandsService.update(id, updateBrandDto);
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Deletar marca' })
   remove(@Param('id') id: string) {
     return this.brandsService.remove(id);
   }
 
   @Post(':id/logo')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Upload do logo da marca' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('logo'))
@@ -67,6 +78,8 @@ export class BrandsController {
   }
 
   @Post('seed')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar marcas padrão' })
   seedBrands() {
     return this.brandsService.seedDefaultBrands();

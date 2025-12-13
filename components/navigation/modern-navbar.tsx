@@ -18,7 +18,12 @@ import {
   Heart,
   Moon,
   Sun,
-  Monitor
+  Monitor,
+  Smartphone,
+  Laptop,
+  Headphones,
+  Plane,
+  Plug
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
@@ -145,13 +150,22 @@ const ModernNavbar = () => {
     }
   ]
 
+  // Mapeamento de ícones para categorias
+  const iconMap: Record<string, React.ReactNode> = {
+    smartphone: <Smartphone className="h-4 w-4" />,
+    laptop: <Laptop className="h-4 w-4" />,
+    headphones: <Headphones className="h-4 w-4" />,
+    plane: <Plane className="h-4 w-4" />,
+    plug: <Plug className="h-4 w-4" />,
+  }
+
   // Categorias principais
   const mainCategories = [
-    { name: 'Smartphones', slug: 'smartphones', icon: '📱' },
-    { name: 'Computadores', slug: 'computadores', icon: '💻' },
-    { name: 'Áudio', slug: 'audio', icon: '🎧' },
-    { name: 'Drones', slug: 'drones', icon: '🛸' },
-    { name: 'Acessórios', slug: 'acessorios', icon: '🔌' },
+    { name: 'Smartphones', slug: 'smartphones', icon: 'smartphone' },
+    { name: 'Computadores', slug: 'computadores', icon: 'laptop' },
+    { name: 'Áudio', slug: 'audio', icon: 'headphones' },
+    { name: 'Drones', slug: 'drones', icon: 'plane' },
+    { name: 'Acessórios', slug: 'acessorios', icon: 'plug' },
   ]
 
   // Buscar produtos com debounce via API
@@ -201,44 +215,44 @@ const ModernNavbar = () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-background backdrop-blur-none border-b border-border shadow-md">
+    <header className="sticky top-0 z-50 bg-background backdrop-blur-none border-b border-border shadow-sm">
       {/* Primeira camada: Logo, Busca, Ícones */}
       <div className="bg-uss-primary text-white">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20 md:h-24">
+          <div className="flex items-center justify-between h-12 md:h-14">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="relative w-14 h-14 md:w-16 md:h-16 bg-white rounded-xl shadow-lg p-1.5 group-hover:shadow-xl transition-all duration-300">
+            <Link href="/" className="flex items-center space-x-2 group">
+              <div className="relative w-9 h-9 md:w-10 md:h-10 bg-white rounded-lg shadow-md p-1 group-hover:shadow-lg transition-all duration-300">
                 <Image
                   src="/Empresa/02.png"
                   alt="USS Brasil"
                   fill
-                  className="object-contain p-1"
+                  className="object-contain p-0.5"
                   priority
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                <span className="text-base md:text-lg font-bold text-white tracking-tight leading-tight">
                   USS<span className="text-uss-secondary">Brasil</span>
                 </span>
-                <span className="text-[10px] md:text-xs text-white/70 font-medium -mt-1 hidden sm:block">
+                <span className="text-[8px] md:text-[9px] text-white/70 font-medium -mt-0.5 hidden sm:block">
                   Tecnologia Premium
                 </span>
               </div>
             </Link>
 
             {/* Barra de Pesquisa - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-2xl mx-8" ref={searchRef}>
+            <div className="hidden md:flex flex-1 max-w-xl mx-6" ref={searchRef}>
               <div className="relative w-full">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-uss-gray-500 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-uss-gray-500 h-3.5 w-3.5" />
                   <input
                     type="text"
                     placeholder="Buscar produtos, marcas..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onFocus={() => setIsSearchOpen(true)}
-                    className="w-full h-10 pl-10 pr-4 bg-white text-uss-gray-900 rounded-md border-0 focus:ring-2 focus:ring-uss-secondary placeholder:text-uss-gray-500"
+                    className="w-full h-8 pl-9 pr-3 text-sm bg-white text-uss-gray-900 rounded-md border-0 focus:ring-2 focus:ring-uss-secondary placeholder:text-uss-gray-500"
                   />
                 </div>
 
@@ -421,24 +435,24 @@ const ModernNavbar = () => {
             </div>
 
             {/* Ícones da Direita */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {/* Busca Mobile */}
               <button
-                className="md:hidden p-2 hover:bg-uss-primary-light rounded-md transition-colors"
+                className="md:hidden p-1.5 hover:bg-uss-primary-light rounded-md transition-colors"
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-4 w-4" />
               </button>
 
               {/* Favoritos - Apenas quando logado */}
               {isLoggedIn && (
                 <Link
                   href="/favorites"
-                  className="relative p-2 hover:bg-uss-primary-light rounded-md transition-colors hidden sm:block"
+                  className="relative p-1.5 hover:bg-uss-primary-light rounded-md transition-colors hidden sm:block"
                 >
-                  <Heart className="h-5 w-5" />
+                  <Heart className="h-4 w-4" />
                   {favoriteCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-uss-secondary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="absolute -top-0.5 -right-0.5 bg-uss-secondary text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
                       {favoriteCount}
                     </span>
                   )}
@@ -448,10 +462,10 @@ const ModernNavbar = () => {
               {/* Perfil/Login */}
               <div className="relative" ref={dropdownRef}>
                 <button
-                  className="p-2 hover:bg-uss-primary-light rounded-md transition-colors"
+                  className="p-1.5 hover:bg-uss-primary-light rounded-md transition-colors"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 >
-                  <User className="h-5 w-5" />
+                  <User className="h-4 w-4" />
                 </button>
 
                 <AnimatePresence>
@@ -507,11 +521,11 @@ const ModernNavbar = () => {
               {/* Carrinho */}
               <Link
                 href="/cart"
-                className="relative p-2 hover:bg-uss-primary-light rounded-md transition-colors"
+                className="relative p-1.5 hover:bg-uss-primary-light rounded-md transition-colors"
               >
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="h-4 w-4" />
                 {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-uss-secondary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-uss-secondary text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
                     {cartItemCount}
                   </span>
                 )}
@@ -520,17 +534,17 @@ const ModernNavbar = () => {
               {/* Theme Toggle */}
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2 hover:bg-uss-primary-light rounded-md transition-colors"
+                className="p-1.5 hover:bg-uss-primary-light rounded-md transition-colors"
               >
-                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
 
               {/* Menu Mobile */}
               <button
-                className="md:hidden p-2 hover:bg-uss-primary-light rounded-md transition-colors"
+                className="md:hidden p-1.5 hover:bg-uss-primary-light rounded-md transition-colors"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
-                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -542,16 +556,16 @@ const ModernNavbar = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="md:hidden pb-4"
+                className="md:hidden pb-2"
               >
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-uss-gray-500 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-uss-gray-500 h-3.5 w-3.5" />
                   <input
                     type="text"
                     placeholder="Buscar produtos, marcas..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full h-10 pl-10 pr-4 bg-white text-uss-gray-900 rounded-md border-0 focus:ring-2 focus:ring-uss-secondary placeholder:text-uss-gray-500"
+                    className="w-full h-8 pl-9 pr-3 text-sm bg-white text-uss-gray-900 rounded-md border-0 focus:ring-2 focus:ring-uss-secondary placeholder:text-uss-gray-500"
                   />
                 </div>
               </motion.div>
@@ -563,7 +577,7 @@ const ModernNavbar = () => {
       {/* Segunda camada: Navegação Principal */}
       <div className="bg-white dark:bg-uss-gray-900">
         <div className="container mx-auto px-4">
-          <nav className="hidden md:flex items-center justify-center space-x-8 h-12">
+          <nav className="hidden md:flex items-center justify-center space-x-6 h-9">
             {/* Produtos */}
             <div
               className="relative"
@@ -572,9 +586,9 @@ const ModernNavbar = () => {
             >
               <Link
                 href="/products"
-                className="flex items-center space-x-1 text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
+                className="flex items-center space-x-1 text-sm text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
               >
-                <Package className="h-4 w-4" />
+                <Package className="h-3.5 w-3.5" />
                 <span>Produtos</span>
                 <ChevronDown className="h-3 w-3" />
               </Link>
@@ -628,9 +642,9 @@ const ModernNavbar = () => {
             >
               <Link
                 href="/categories"
-                className="flex items-center space-x-1 text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
+                className="flex items-center space-x-1 text-sm text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
               >
-                <Package className="h-4 w-4" />
+                <Package className="h-3.5 w-3.5" />
                 <span>Categorias</span>
                 <ChevronDown className="h-3 w-3" />
               </Link>
@@ -650,7 +664,7 @@ const ModernNavbar = () => {
                           href={`/categories/${category.slug}`}
                           className="flex items-center space-x-3 p-2 rounded-md hover:bg-uss-off-white dark:hover:bg-uss-gray-700 transition-colors"
                         >
-                          <span className="text-lg">{category.icon}</span>
+                          <span className="text-uss-primary">{iconMap[category.icon]}</span>
                           <span className="text-uss-gray-700 dark:text-uss-gray-300">
                             {category.name}
                           </span>
@@ -665,18 +679,18 @@ const ModernNavbar = () => {
             {/* Ofertas */}
             <Link
               href="/ofertas"
-              className="flex items-center space-x-1 text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
+              className="flex items-center space-x-1 text-sm text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
             >
-              <Percent className="h-4 w-4" />
+              <Percent className="h-3.5 w-3.5" />
               <span>Ofertas</span>
             </Link>
 
             {/* Contato */}
             <Link
               href="/contato"
-              className="flex items-center space-x-1 text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
+              className="flex items-center space-x-1 text-sm text-uss-gray-700 dark:text-uss-gray-300 hover:text-uss-primary dark:hover:text-uss-secondary transition-colors font-medium"
             >
-              <Phone className="h-4 w-4" />
+              <Phone className="h-3.5 w-3.5" />
               <span>Contato</span>
             </Link>
           </nav>

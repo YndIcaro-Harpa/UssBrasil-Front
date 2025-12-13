@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Account {
@@ -55,6 +56,7 @@ model User {
   birthDate     DateTime?
   gender        String?
   preferences   String?   // User preferences as JSON string
+  permissions   String?   // JSON string for granular permissions e.g. ["edit_price", "view_reports"]
   isActive      Boolean   @default(true)
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
@@ -141,8 +143,8 @@ model Product {
   isFeatured    Boolean       @default(false) // Destaque especial
   isPreOrder    Boolean       @default(false) // Produto sob encomenda
   images        String        // Comma-separated URLs
-  categoryId    String
-  brandId       String
+  categoryId    String?
+  brandId       String?
   rating        Float?        @default(0)
   totalReviews  Int          @default(0)
   specifications String?      // JSON string
@@ -160,8 +162,8 @@ model Product {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  category    Category     @relation(fields: [categoryId], references: [id])
-  brand       Brand        @relation(fields: [brandId], references: [id])
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  brand       Brand?       @relation(fields: [brandId], references: [id])
   supplier    Supplier?    @relation(fields: [supplierId], references: [id])
   variations  ProductVariation[]
   orderItems  OrderItem[]
@@ -181,7 +183,8 @@ model ProductVariation {
   // Atributos da variação
   colorName     String?  // Nome da cor
   colorCode     String?  // Código hex da cor
-  colorImage    String?  // Imagem específica da cor
+  colorImage    String?  // Imagem específica da cor (DEPRECATED - use colorImages)
+  colorImages   String?  // JSON array de imagens da cor (Cloudinary URLs)
   storage       String?  // Armazenamento (ex: "256GB")
   size          String?  // Tamanho (ex: "6.7 polegadas")
   
@@ -196,6 +199,7 @@ model ProductVariation {
   // Status
   status        String   @default("ACTIVE") // ACTIVE, INACTIVE, OUT_OF_STOCK
   isActive      Boolean  @default(true)
+  condition     String?  @default("new") // new, semi_new, used
   
   // Imagem principal da variação
   image         String?
@@ -274,13 +278,21 @@ model Order {
 }
 
 model OrderItem {
-  id        String @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
-  subtotal  Float  @default(0) // Subtotal do item (price * quantity)
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  orderId        String
+  productId      String
+  quantity       Int
+  price          Float
+  subtotal       Float    @default(0) // Subtotal do item (price * quantity)
+  selectedColor  String?  // Cor selecionada (nome)
+  selectedColorCode String? // Código hex da cor
+  selectedStorage String? // Armazenamento selecionado (ex: "256GB")
+  selectedSize   String?  // Tamanho selecionado
+  variationId    String?  // ID da variação se aplicável
+  productName    String?  // Nome do produto no momento da compra
+  productSku     String?  // SKU do produto/variação
+  productImage   String?  // Imagem do produto
+  createdAt      DateTime @default(now())
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
@@ -363,6 +375,15 @@ model Address {
   updatedAt    DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SiteConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "home_banner_main", "home_video_hero"
+  value       String   // The content (URL, text, JSON)
+  type        String   // "image", "video", "text", "json"
+  description String?
+  updatedAt   DateTime @updatedAt
 }
 
 model Analytics {

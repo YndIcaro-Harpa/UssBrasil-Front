@@ -44,6 +44,7 @@ import PremiumButton from '@/components/ui/PremiumButton'
 import { OrderTableRowSkeleton, StatsCardSkeleton } from '@/components/ui/SkeletonLoaders'
 import { FadeInUp, AnimatedCard, StaggeredContainer } from '@/components/admin/PageTransition'
 import { OrderModal } from '@/components/admin/OrderModal'
+import { OrderDetailsModal } from '@/components/admin/OrderDetailsModal'
 import { api, Order } from '@/services/api'
 import { toast } from 'sonner'
 import { exportOrders } from '@/services/export'
@@ -78,6 +79,7 @@ export default function AdminOrdersPage() {
   const [sendingNotification, setSendingNotification] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
   const handleSaveOrder = async (orderData: any) => {
     try {
@@ -288,11 +290,14 @@ export default function AdminOrdersPage() {
   // Sort and filter
   const filteredAndSortedOrders = useMemo(() => {
     let filtered = orders.filter(order => {
+      // Normalizar items (API retorna orderItems)
+      const items = order.items || order.orderItems || [];
+      
       const matchesSearch = 
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.items?.some(item => item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+        items.some((item: any) => item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()))
       
       let matchesDate = true
       if (dateFrom) {
@@ -786,14 +791,39 @@ export default function AdminOrdersPage() {
                       </div>
                     </td>
                     <td className="p-3 lg:p-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600 text-sm">
-                          {order.items?.length || 0} {(order.items?.length || 0) === 1 ? 'item' : 'itens'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-400 max-w-[150px] truncate">
-                        {order.items?.map(i => i.product?.name).filter(Boolean).join(', ')}
-                      </p>
+                      {(() => {
+                        // Normalizar items
+                        const items = order.items || order.orderItems || [];
+                        const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+                        
+                        return (
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600 text-sm font-medium">
+                                {totalQuantity} {totalQuantity === 1 ? 'item' : 'itens'}
+                              </span>
+                            </div>
+                            <div className="mt-1 space-y-0.5 max-w-[200px]">
+                              {items.slice(0, 2).map((item: any, idx: number) => {
+                                const itemName = item.productName || item.product?.name || 'Produto';
+                                const variations = [item.selectedColor, item.selectedStorage].filter(Boolean);
+                                return (
+                                  <p key={idx} className="text-xs text-gray-500 truncate">
+                                    {itemName}
+                                    {variations.length > 0 && (
+                                      <span className="text-gray-400"> ({variations.join(' / ')})</span>
+                                    )}
+                                    <span className="text-gray-400"> x{item.quantity}</span>
+                                  </p>
+                                );
+                              })}
+                              {items.length > 2 && (
+                                <p className="text-xs text-blue-500">+{items.length - 2} mais</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 lg:p-4">
                       <span className="text-gray-900 font-bold text-sm">{formatCurrency(order.total)}</span>
@@ -842,7 +872,10 @@ export default function AdminOrdersPage() {
                     <td className="p-3 lg:p-4">
                       <div className="flex items-center gap-1">
                         <button 
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setIsDetailsModalOpen(true)
+                          }}
                           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                           title="Ver detalhes"
                         >
@@ -889,297 +922,6 @@ export default function AdminOrdersPage() {
           )}
         </div>
       </motion.div>
-
-      {/* Order Detail Modal */}
-      <AnimatePresence>
-        {selectedOrder && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setSelectedOrder(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex items-center justify-between z-10">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold text-gray-900">
-                      Pedido #{selectedOrder.id.slice(0, 8)}
-                    </h2>
-                    <button
-                      onClick={() => copyToClipboard(selectedOrder.id, 'ID completo')}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Criado em {formatDate(selectedOrder.createdAt)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-              
-              <div className="p-6 space-y-6">
-                {/* Status and Payment Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-medium text-gray-500 mb-3">Status do Pedido</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(statusConfig).map(([status, config]) => {
-                        const isActive = selectedOrder.status === status
-                        return (
-                          <button
-                            key={status}
-                            onClick={() => handleUpdateStatus(selectedOrder.id, status as OrderStatus)}
-                            disabled={updatingStatus === selectedOrder.id}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                              isActive
-                                ? `${config.bgColor} ${config.color} border-2`
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <config.icon className="w-4 h-4" />
-                            {config.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-medium text-gray-500 mb-3">Status do Pagamento</h3>
-                    <div className="flex items-center justify-between">
-                      <span className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        paymentStatusConfig[selectedOrder.paymentStatus as PaymentStatus]?.bgColor
-                      } ${paymentStatusConfig[selectedOrder.paymentStatus as PaymentStatus]?.color}`}>
-                        {paymentStatusConfig[selectedOrder.paymentStatus as PaymentStatus]?.label || selectedOrder.paymentStatus}
-                      </span>
-                      
-                      {selectedOrder.paymentStatus === 'PAID' && (
-                        <button
-                          onClick={() => setShowRefundModal(true)}
-                          className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-                        >
-                          <Undo2 className="w-4 h-4" />
-                          Reembolsar
-                        </button>
-                      )}
-                    </div>
-                    {selectedOrder.paymentMethod && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        <CreditCard className="w-4 h-4 inline mr-1" />
-                        {selectedOrder.paymentMethod}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Informações do Cliente
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-gray-900 font-medium">{selectedOrder.user?.name || 'Cliente'}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 text-sm">{selectedOrder.user?.email || '-'}</span>
-                        {selectedOrder.user?.email && (
-                          <button
-                            onClick={() => copyToClipboard(selectedOrder.user!.email!, 'Email')}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      {(selectedOrder.user as any)?.phone && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-600 text-sm">{(selectedOrder.user as any).phone}</span>
-                          <a
-                            href={`https://wa.me/55${(selectedOrder.user as any).phone?.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-green-500 hover:text-green-600"
-                            title="Abrir WhatsApp"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">ID do Cliente</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600 font-mono text-sm">{selectedOrder.userId}</span>
-                        <button
-                          onClick={() => copyToClipboard(selectedOrder.userId, 'ID do cliente')}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Order Items */}
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    Itens do Pedido
-                  </h3>
-                  <div className="space-y-2">
-                    {selectedOrder.items?.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden">
-                            {item.product?.images && (
-                              <img 
-                                src={item.product.images.split(',')[0]} 
-                                alt={item.product.name}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-gray-900 font-medium">{item.product?.name || 'Produto'}</p>
-                            <p className="text-gray-500 text-sm">
-                              {formatCurrency(item.price)} x {item.quantity}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-gray-900 font-bold">{formatCurrency(item.price * item.quantity)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Totals */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Subtotal</span>
-                      <span className="text-gray-900">{formatCurrency(selectedOrder.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Frete</span>
-                      <span className="text-gray-900">{formatCurrency(selectedOrder.shipping)}</span>
-                    </div>
-                    {selectedOrder.discount > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Desconto</span>
-                        <span className="text-green-600">-{formatCurrency(selectedOrder.discount)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
-                      <span className="text-gray-900">Total</span>
-                      <span className="text-blue-600">{formatCurrency(selectedOrder.total)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Shipping Address */}
-                {selectedOrder.shippingAddress && (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Endereço de Entrega
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      {typeof selectedOrder.shippingAddress === 'string' 
-                        ? selectedOrder.shippingAddress
-                        : Object.values(selectedOrder.shippingAddress).filter(Boolean).join(', ')}
-                    </p>
-                  </div>
-                )}
-
-                {/* Tracking */}
-                {selectedOrder.trackingCode && (
-                  <div className="bg-purple-50 rounded-xl p-4">
-                    <h3 className="text-sm font-medium text-purple-700 mb-2 flex items-center gap-2">
-                      <Truck className="w-4 h-4" />
-                      Código de Rastreamento
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-purple-900 font-mono bg-white px-3 py-1 rounded-lg">
-                        {selectedOrder.trackingCode}
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(selectedOrder.trackingCode!, 'Código de rastreio')}
-                        className="text-purple-600 hover:text-purple-800"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <a
-                        href={`https://rastreamento.correios.com.br/app/index.php?objeto=${selectedOrder.trackingCode}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-purple-600 hover:text-purple-800"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => sendOrderNotification(selectedOrder.id, selectedOrder.status)}
-                    disabled={sendingNotification}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-white rounded-lg font-medium hover:bg-blue-500 transition-colors disabled:opacity-50"
-                  >
-                    {sendingNotification ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                    Enviar Notificação
-                  </button>
-                  
-                  <a
-                    href={`https://wa.me/55${(selectedOrder.user as any)?.phone?.replace(/\D/g, '') || ''}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    WhatsApp
-                  </a>
-                  
-                  {selectedOrder.paymentStatus === 'PAID' && selectedOrder.status !== 'CANCELLED' && (
-                    <button
-                      onClick={() => setShowRefundModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-                    >
-                      <Undo2 className="w-4 h-4" />
-                      Processar Reembolso
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Refund Modal */}
       <AnimatePresence>
@@ -1257,6 +999,23 @@ export default function AdminOrdersPage() {
         order={selectedOrder || undefined}
         onSave={handleSaveOrder}
         mode={modalMode}
+      />
+
+      {/* Modal de Detalhes do Pedido com informações financeiras completas */}
+      <OrderDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false)
+          setSelectedOrder(null)
+        }}
+        order={selectedOrder}
+        onStatusChange={async (orderId, status) => {
+          await handleUpdateStatus(orderId, status as OrderStatus)
+        }}
+        onSendNotification={async (orderId, type, status) => {
+          await sendOrderNotification(orderId, status)
+        }}
+        token={token || undefined}
       />
     </div>
   )

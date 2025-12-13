@@ -12,19 +12,19 @@ describe('Product Utilities', () => {
     };
 
     it('should format whole numbers', () => {
-      expect(formatCurrency(100)).toBe('R$ 100,00');
+      expect(formatCurrency(100)).toMatch(/R\$\s*100,00/);
     });
 
     it('should format decimal numbers', () => {
-      expect(formatCurrency(99.99)).toBe('R$ 99,99');
+      expect(formatCurrency(99.99)).toMatch(/R\$\s*99,99/);
     });
 
     it('should format large numbers with thousand separators', () => {
-      expect(formatCurrency(1999.90)).toBe('R$ 1.999,90');
+      expect(formatCurrency(1999.90)).toMatch(/R\$\s*1\.999,90/);
     });
 
     it('should format zero', () => {
-      expect(formatCurrency(0)).toBe('R$ 0,00');
+      expect(formatCurrency(0)).toMatch(/R\$\s*0,00/);
     });
   });
 

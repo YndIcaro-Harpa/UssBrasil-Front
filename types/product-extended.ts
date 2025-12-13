@@ -17,8 +17,27 @@ export interface ExtendedProduct {
   stock?: number
 }
 
+// Interface para produto parcial (entrada)
+interface PartialProduct {
+  id: string
+  name: string
+  price: number
+  image: string
+  images?: string[]
+  brand?: string
+  description?: string
+  rating?: number
+  reviews?: number
+  totalReviews?: number
+  originalPrice?: number
+  discountPrice?: number
+  featured?: boolean
+  category?: string
+  stock?: number
+}
+
 // Função para converter Product para ExtendedProduct
-export function extendProduct(product: any): ExtendedProduct {
+export function extendProduct(product: PartialProduct): ExtendedProduct {
   return {
     id: product.id,
     name: product.name,

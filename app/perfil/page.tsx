@@ -212,7 +212,10 @@ function PerfilContent() {
               </div>
               <button 
                 className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-secondary transition-colors shadow-lg"
-                onClick={() => toast.info('Upload de foto em breve!')}
+                onClick={() => {
+                  setActiveTab('info')
+                  toast.info('Edite seu perfil para alterar a foto')
+                }}
               >
                 <Camera className="h-4 w-4" />
               </button>
@@ -280,7 +283,7 @@ function PerfilContent() {
             className="lg:col-span-1"
           >
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
-              <nav className="p-2">
+              <nav className="p-2 flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 lg:gap-0 scrollbar-hide">
                 {tabs.map((tab) => {
                   const Icon = tab.icon
                   const isActive = activeTab === tab.id
@@ -289,7 +292,7 @@ function PerfilContent() {
                     <button
                       key={tab.id}
                       onClick={() => handleTabChange(tab.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 mb-1 ${
+                      className={`flex-shrink-0 lg:w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 lg:mb-1 ${
                         isActive
                           ? 'bg-blue-400 text-white shadow-md'
                           : 'text-gray-600 hover:bg-gray-100'
@@ -297,9 +300,9 @@ function PerfilContent() {
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="h-5 w-5" />
-                        <span className="font-medium">{tab.label}</span>
+                        <span className="font-medium whitespace-nowrap">{tab.label}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="hidden lg:flex items-center gap-2">
                         {tab.badge !== undefined && tab.badge > 0 && (
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                             isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'

@@ -183,7 +183,7 @@ const mockCategory: Category = {
     '/categories/smartphones-video-1.mp4',
     '/categories/smartphones-video-2.mp4'
   ],
-  icon: '📱',
+  icon: '',
   productCount: 142,
   tags: ['Premium', 'Tecnologia', 'Inovação'],
   featured: true
@@ -1254,7 +1254,9 @@ const CategoryPageContent = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-20"
             >
-              <div className="text-6xl mb-4">🔍</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 Nenhum produto encontrado
               </h3>

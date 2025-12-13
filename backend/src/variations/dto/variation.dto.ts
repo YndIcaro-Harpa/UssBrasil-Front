@@ -28,11 +28,19 @@ export class CreateVariationDto {
 
   @IsOptional()
   @IsString()
+  colorImages?: string;
+
+  @IsOptional()
+  @IsString()
   storage?: string;
 
   @IsOptional()
   @IsString()
   size?: string;
+
+  @IsOptional()
+  @IsString()
+  condition?: string;
 
   @IsOptional()
   @IsNumber()
@@ -99,11 +107,19 @@ export class UpdateVariationDto {
 
   @IsOptional()
   @IsString()
+  colorImages?: string;
+
+  @IsOptional()
+  @IsString()
   storage?: string;
 
   @IsOptional()
   @IsString()
   size?: string;
+
+  @IsOptional()
+  @IsString()
+  condition?: string;
 
   @IsOptional()
   @IsNumber()

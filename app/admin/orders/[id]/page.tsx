@@ -48,13 +48,19 @@ import { useAdminAuth } from '@/hooks/useAdminAuth'
 type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
 type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
 
-// Extended Order type with Stripe fields
+// Extended Order type with Stripe fields and financial data
 interface ExtendedOrder extends Order {
   stripePaymentIntentId?: string
   stripeCustomerId?: string
   installments?: number
   orderItems?: any[]
   deliveredAt?: string
+  // Financial fields
+  originalTotal?: number
+  interestAmount?: number
+  stripeFee?: number
+  invoiceFee?: number
+  netAmount?: number
 }
 
 export default function OrderDetailPage() {
@@ -239,24 +245,82 @@ export default function OrderDetailPage() {
     }
   }
 
-  const parseAddress = (address: any): string => {
-    if (!address) return 'Endereço não informado'
+  // Parse and format address for display
+  const parseAddress = (address: any): {
+    formatted: string;
+    lines: string[];
+    raw: any;
+    googleMapsUrl: string;
+  } => {
+    if (!address) {
+      return {
+        formatted: 'Endereço não informado',
+        lines: ['Endereço não informado'],
+        raw: null,
+        googleMapsUrl: ''
+      }
+    }
     
     try {
       const parsed = typeof address === 'string' ? JSON.parse(address) : address
-      return [
-        parsed.street,
-        parsed.number,
-        parsed.complement,
-        parsed.neighborhood,
-        parsed.city,
-        parsed.state,
-        parsed.zipCode,
-        parsed.country
+      
+      // Suporte para ambos formatos (português e inglês)
+      const street = parsed.street || parsed.rua || ''
+      const number = parsed.number || parsed.numero || ''
+      const complement = parsed.complement || parsed.complemento || ''
+      const neighborhood = parsed.neighborhood || parsed.bairro || ''
+      const city = parsed.city || parsed.cidade || ''
+      const state = parsed.state || parsed.estado || ''
+      const zipCode = parsed.zipCode || parsed.cep || ''
+      const country = parsed.country || 'Brasil'
+      const name = parsed.name || parsed.nome || ''
+      
+      // Build address lines for better display
+      const line0 = name ? `📦 ${name}` : ''
+      const line1 = [street, number].filter(Boolean).join(', ')
+      const line2 = complement || ''
+      const line3 = neighborhood || ''
+      const line4 = [city, state].filter(Boolean).join(' - ')
+      const line5 = zipCode ? `CEP: ${zipCode}` : ''
+      const line6 = country && country !== 'Brasil' ? country : ''
+      
+      const lines = [line0, line1, line2, line3, line4, line5, line6].filter(Boolean)
+      const formatted = lines.join('\n')
+      
+      // Build Google Maps URL
+      const fullAddress = [
+        street,
+        number,
+        neighborhood,
+        city,
+        state,
+        zipCode,
+        'Brasil'
       ].filter(Boolean).join(', ')
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`
+      
+      return {
+        formatted,
+        lines,
+        raw: parsed,
+        googleMapsUrl
+      }
     } catch {
-      return String(address)
+      return {
+        formatted: String(address),
+        lines: [String(address)],
+        raw: null,
+        googleMapsUrl: ''
+      }
     }
+  }
+  
+  // Copy full address to clipboard
+  const copyAddressToClipboard = () => {
+    if (!order) return
+    const addressData = parseAddress(order.shippingAddress)
+    navigator.clipboard.writeText(addressData.formatted.replace(/\n/g, ', '))
+    toast.success('Endereço copiado!')
   }
 
   if (loading) {
@@ -429,7 +493,7 @@ export default function OrderDetailPage() {
             </motion.div>
           </div>
 
-          {/* Order Items */}
+          {/* Order Items - Detalhado */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -449,31 +513,95 @@ export default function OrderDetailPage() {
                 const images = product.images ? (typeof product.images === 'string' ? product.images.split(',') : product.images) : []
                 
                 return (
-                  <div key={i} className="p-5 flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                      {images[0] ? (
-                        <img 
-                          src={images[0]} 
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-6 h-6 text-gray-400" />
+                  <div key={i} className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                        {images[0] ? (
+                          <img 
+                            src={images[0]} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-gray-900 font-semibold">{product.name || 'Produto'}</p>
+                            
+                            {/* Variações selecionadas */}
+                            {(item.selectedColor || item.selectedSize || item.selectedStorage) && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.selectedColor && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                    Cor: {item.selectedColor}
+                                  </span>
+                                )}
+                                {item.selectedSize && (
+                                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                    Tamanho: {item.selectedSize}
+                                  </span>
+                                )}
+                                {item.selectedStorage && (
+                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                    Armazenamento: {item.selectedStorage}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-900 font-bold">{formatCurrency(item.price * item.quantity)}</p>
+                            <p className="text-xs text-gray-500">
+                              {formatCurrency(item.price)} × {item.quantity}
+                            </p>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-900 font-semibold truncate">{product.name || 'Produto'}</p>
-                      <p className="text-gray-500 text-sm">
-                        {formatCurrency(item.price)} × {item.quantity}
-                      </p>
-                      {product.sku && (
-                        <p className="text-gray-400 text-xs mt-1">SKU: {product.sku}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-gray-900 font-bold">{formatCurrency(item.price * item.quantity)}</p>
+                        
+                        {/* Detalhes do produto */}
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          {product.sku && (
+                            <div className="bg-gray-50 px-2 py-1.5 rounded">
+                              <span className="text-gray-500">SKU:</span>
+                              <span className="ml-1 text-gray-700 font-medium">{product.sku}</span>
+                            </div>
+                          )}
+                          {product.ncm && (
+                            <div className="bg-gray-50 px-2 py-1.5 rounded">
+                              <span className="text-gray-500">NCM:</span>
+                              <span className="ml-1 text-gray-700 font-medium">{product.ncm}</span>
+                            </div>
+                          )}
+                          {(product.category?.name || product.categoryId) && (
+                            <div className="bg-gray-50 px-2 py-1.5 rounded">
+                              <span className="text-gray-500">Categoria:</span>
+                              <span className="ml-1 text-gray-700 font-medium">{product.category?.name || 'N/A'}</span>
+                            </div>
+                          )}
+                          {(product.brand?.name || product.brandId) && (
+                            <div className="bg-gray-50 px-2 py-1.5 rounded">
+                              <span className="text-gray-500">Marca:</span>
+                              <span className="ml-1 text-gray-700 font-medium">{product.brand?.name || 'N/A'}</span>
+                            </div>
+                          )}
+                          {product.costPrice && (
+                            <div className="bg-emerald-50 px-2 py-1.5 rounded">
+                              <span className="text-emerald-600">Custo:</span>
+                              <span className="ml-1 text-emerald-700 font-medium">{formatCurrency(product.costPrice)}</span>
+                            </div>
+                          )}
+                          {product.weight && (
+                            <div className="bg-gray-50 px-2 py-1.5 rounded">
+                              <span className="text-gray-500">Peso:</span>
+                              <span className="ml-1 text-gray-700 font-medium">{product.weight}kg</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )
@@ -496,9 +624,125 @@ export default function OrderDetailPage() {
                   <span className="text-green-600">-{formatCurrency(order.discount)}</span>
                 </div>
               )}
+              {order.interestAmount && order.interestAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Juros Parcelamento</span>
+                  <span className="text-amber-600">+{formatCurrency(order.interestAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-xl font-bold pt-3 border-t border-gray-200">
-                <span className="text-gray-900">Total</span>
+                <span className="text-gray-900">Total Cobrado</span>
                 <span className="text-uss-primary">{formatCurrency(order.total)}</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Análise Financeira */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 p-5"
+          >
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              Análise Financeira
+            </h3>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white/60 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase font-medium">Valor Cobrado</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">{formatCurrency(order.total)}</p>
+              </div>
+              
+              <div className="bg-white/60 rounded-xl p-4">
+                <p className="text-xs text-red-500 uppercase font-medium">Taxa Stripe (3.99% + R$0.39)</p>
+                <p className="text-xl font-bold text-red-600 mt-1">
+                  -{formatCurrency(order.stripeFee || (order.total * 0.0399 + 0.39))}
+                </p>
+              </div>
+              
+              <div className="bg-white/60 rounded-xl p-4">
+                <p className="text-xs text-amber-500 uppercase font-medium">Taxa NF (7%)</p>
+                <p className="text-xl font-bold text-amber-600 mt-1">
+                  -{formatCurrency(order.invoiceFee || order.total * 0.07)}
+                </p>
+              </div>
+              
+              <div className="bg-white/60 rounded-xl p-4">
+                <p className="text-xs text-emerald-500 uppercase font-medium">Valor Líquido</p>
+                <p className="text-xl font-bold text-emerald-600 mt-1">
+                  {formatCurrency(order.netAmount || (order.total - (order.total * 0.0399 + 0.39) - order.total * 0.07))}
+                </p>
+              </div>
+            </div>
+
+            {/* Detalhamento de custos */}
+            <div className="mt-4 pt-4 border-t border-emerald-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Custos dos Produtos</h4>
+                  {(order.items || order.orderItems || []).map((item: any, i: number) => {
+                    const product = item.product || {}
+                    const costPrice = product.costPrice || 0
+                    const totalCost = costPrice * item.quantity
+                    const salePrice = item.price * item.quantity
+                    const profit = salePrice - totalCost
+                    
+                    return (
+                      <div key={i} className="flex justify-between text-sm py-1 border-b border-emerald-100 last:border-0">
+                        <span className="text-gray-600 truncate">{product.name || 'Produto'}</span>
+                        <div className="flex gap-3 text-xs">
+                          <span className="text-gray-500">Custo: {formatCurrency(totalCost)}</span>
+                          <span className={profit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                            Lucro: {formatCurrency(profit)}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Resumo de Margem</h4>
+                  <div className="space-y-2">
+                    {(() => {
+                      const items = order.items || order.orderItems || []
+                      const totalCost = items.reduce((acc: number, item: any) => {
+                        const cost = item.product?.costPrice || 0
+                        return acc + (cost * item.quantity)
+                      }, 0)
+                      const grossProfit = order.subtotal - totalCost
+                      const stripeFee = order.stripeFee || order.total * 0.04
+                      const invoiceFee = order.invoiceFee || order.total * 0.07
+                      const netProfit = grossProfit - stripeFee - invoiceFee - order.shipping
+                      const margin = order.subtotal > 0 ? (netProfit / order.subtotal * 100) : 0
+                      
+                      return (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Custo Total Produtos</span>
+                            <span className="text-gray-900">{formatCurrency(totalCost)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Lucro Bruto</span>
+                            <span className="text-emerald-600">{formatCurrency(grossProfit)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Taxas (Stripe + NF)</span>
+                            <span className="text-red-600">-{formatCurrency(stripeFee + invoiceFee)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm font-bold pt-2 border-t border-emerald-200">
+                            <span className="text-gray-900">Lucro Líquido</span>
+                            <span className={netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                              {formatCurrency(netProfit)} ({margin.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -652,15 +896,55 @@ export default function OrderDetailPage() {
             transition={{ delay: 0.3 }}
             className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
           >
-            <div className="p-5 border-b border-gray-100">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-uss-primary" />
                 Endereço de Entrega
               </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copyAddressToClipboard}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Copiar endereço"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copiar
+                </button>
+                {(() => {
+                  const addressData = parseAddress(order.shippingAddress)
+                  return addressData.googleMapsUrl ? (
+                    <a
+                      href={addressData.googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Ver no Google Maps"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Maps
+                    </a>
+                  ) : null
+                })()}
+              </div>
             </div>
             
             <div className="p-5">
-              <p className="text-gray-700 leading-relaxed">{parseAddress(order.shippingAddress)}</p>
+              {/* Formatted Address Display */}
+              {(() => {
+                const addressData = parseAddress(order.shippingAddress)
+                return (
+                  <div className="space-y-1">
+                    {addressData.lines.map((line, index) => (
+                      <p 
+                        key={index} 
+                        className={`text-gray-700 ${index === 0 ? 'font-semibold text-gray-900' : ''} ${line.startsWith('CEP:') ? 'text-sm text-gray-500 mt-2' : ''}`}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                )
+              })()}
               
               {order.trackingCode && (
                 <div className="mt-4 p-4 bg-violet-50 rounded-xl">
@@ -704,37 +988,140 @@ export default function OrderDetailPage() {
             <div className="p-5 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-uss-primary" />
-                Histórico
+                Histórico e Etapas
               </h3>
             </div>
             
             <div className="p-5">
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-3 h-3 bg-uss-primary rounded-full mt-1.5" />
+              {/* Current Stage Indicator */}
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-uss-primary/10 to-uss-accent/10 border border-uss-primary/20">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-900 font-medium">Pedido criado</p>
-                    <p className="text-sm text-gray-500">{formatDate(order.createdAt)}</p>
+                    <p className="text-xs text-gray-500 uppercase font-medium">Etapa Atual</p>
+                    <p className={`text-lg font-bold ${statusConfig[order.status as OrderStatus]?.color || 'text-gray-900'}`}>
+                      {statusConfig[order.status as OrderStatus]?.label || order.status}
+                    </p>
                   </div>
+                  {(() => {
+                    const StatusIcon = statusConfig[order.status as OrderStatus]?.icon
+                    return StatusIcon ? <StatusIcon className={`w-8 h-8 ${statusConfig[order.status as OrderStatus]?.color}`} /> : null
+                  })()}
                 </div>
-                {order.updatedAt !== order.createdAt && (
-                  <div className="flex gap-3">
-                    <div className="w-3 h-3 bg-gray-300 rounded-full mt-1.5" />
-                    <div>
-                      <p className="text-gray-900 font-medium">Última atualização</p>
-                      <p className="text-sm text-gray-500">{formatDate(order.updatedAt)}</p>
+                {statusConfig[order.status as OrderStatus]?.nextStatus && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Próxima etapa: <span className="font-medium text-gray-700">{statusConfig[statusConfig[order.status as OrderStatus].nextStatus!]?.label}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Timeline */}
+              <div className="relative">
+                {/* Timeline line */}
+                <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200" />
+                
+                <div className="space-y-4">
+                  {/* Order Created */}
+                  <div className="flex gap-3 relative">
+                    <div className="w-4 h-4 bg-uss-primary rounded-full mt-0.5 ring-4 ring-white z-10 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-gray-900 font-medium">Pedido Criado</p>
+                        <span className="text-xs text-gray-500">{formatDate(order.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">Pedido recebido com sucesso</p>
                     </div>
                   </div>
-                )}
-                {order.deliveredAt && (
-                  <div className="flex gap-3">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full mt-1.5" />
-                    <div>
-                      <p className="text-gray-900 font-medium">Entregue</p>
-                      <p className="text-sm text-gray-500">{formatDate(order.deliveredAt)}</p>
+
+                  {/* Payment Status */}
+                  {order.paymentStatus && (
+                    <div className="flex gap-3 relative">
+                      <div className={`w-4 h-4 rounded-full mt-0.5 ring-4 ring-white z-10 ${
+                        order.paymentStatus === 'PAID' ? 'bg-emerald-500' : 
+                        order.paymentStatus === 'FAILED' ? 'bg-red-500' : 
+                        order.paymentStatus === 'REFUNDED' ? 'bg-gray-500' : 'bg-amber-500'
+                      }`} />
+                      <div className="flex-1">
+                        <p className="text-gray-900 font-medium">
+                          {order.paymentStatus === 'PAID' ? 'Pagamento Confirmado' : 
+                           order.paymentStatus === 'FAILED' ? 'Pagamento Falhou' : 
+                           order.paymentStatus === 'REFUNDED' ? 'Pagamento Reembolsado' : 'Aguardando Pagamento'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {order.paymentMethod ? `Via ${order.paymentMethod}` : 'Cartão de Crédito'}
+                          {order.installments && order.installments > 1 ? ` em ${order.installments}x` : ''}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* Processing */}
+                  {(['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(order.status)) && (
+                    <div className="flex gap-3 relative">
+                      <div className="w-4 h-4 bg-sky-500 rounded-full mt-0.5 ring-4 ring-white z-10" />
+                      <div className="flex-1">
+                        <p className="text-gray-900 font-medium">Em Preparação</p>
+                        <p className="text-sm text-gray-500">Pedido sendo empacotado</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Shipped */}
+                  {(['SHIPPED', 'DELIVERED'].includes(order.status)) && (
+                    <div className="flex gap-3 relative">
+                      <div className="w-4 h-4 bg-violet-500 rounded-full mt-0.5 ring-4 ring-white z-10" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-gray-900 font-medium">Pedido Enviado</p>
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {order.trackingCode ? `Rastreio: ${order.trackingCode}` : 'Enviado para transportadora'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delivered */}
+                  {order.status === 'DELIVERED' && (
+                    <div className="flex gap-3 relative">
+                      <div className="w-4 h-4 bg-emerald-500 rounded-full mt-0.5 ring-4 ring-white z-10" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-gray-900 font-medium">Entregue</p>
+                          {order.deliveredAt && <span className="text-xs text-gray-500">{formatDate(order.deliveredAt)}</span>}
+                        </div>
+                        <p className="text-sm text-gray-500">Pedido entregue ao destinatário</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cancelled */}
+                  {order.status === 'CANCELLED' && (
+                    <div className="flex gap-3 relative">
+                      <div className="w-4 h-4 bg-red-500 rounded-full mt-0.5 ring-4 ring-white z-10" />
+                      <div className="flex-1">
+                        <p className="text-gray-900 font-medium">Pedido Cancelado</p>
+                        <p className="text-sm text-gray-500">
+                          {order.paymentStatus === 'REFUNDED' ? 'Reembolso processado' : 'Cancelado pelo sistema'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Last Update */}
+                  {order.updatedAt !== order.createdAt && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                    <div className="flex gap-3 relative">
+                      <div className="w-4 h-4 bg-gray-300 rounded-full mt-0.5 ring-4 ring-white z-10" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-gray-900 font-medium">Última Atualização</p>
+                          <span className="text-xs text-gray-500">{formatDate(order.updatedAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -803,7 +1190,7 @@ export default function OrderDetailPage() {
               Você está prestes a reembolsar <strong>{formatCurrency(order.total)}</strong> para o cliente.
               {order.stripePaymentIntentId && (
                 <span className="block text-sm text-violet-600 mt-1">
-                  💳 O reembolso será processado no Stripe automaticamente.
+                  O reembolso será processado no Stripe automaticamente.
                 </span>
               )}
             </p>

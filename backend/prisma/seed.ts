@@ -4,554 +4,369 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed do banco de dados...');
+  console.log(' Starting database seed...');
 
-  // 1. Criar Brands
-  await createBrands();
-  
-  // 2. Criar Categories
-  await createCategories();
-  
-  // 3. Criar Produtos
-  await createProducts();
-  
-  // 4. Criar usuário admin
-  await createAdminUser();
+  // 1. Create Users with Roles and Permissions
+  const password = await bcrypt.hash('password123', 10);
 
-  // 5. Criar cupons de teste
-  await createCoupons();
-
-  console.log('✅ Seed concluído com sucesso!');
-}
-
-async function createBrands() {
-  console.log('📦 Criando marcas...');
-  
-  const brands = [
-    {
-      name: 'Apple',
-      slug: 'apple',
-      description: 'Inovação e tecnologia premium',
-      color: '#000000',
-      logo: '/logos/Apple_logo_black.svg',
-    },
-    {
-      name: 'JBL',
-      slug: 'jbl',
-      description: 'Audio de qualidade profissional',
-      color: '#FF6900',
-      logo: '/logos/JBL Logo.png',
-    },
-    {
-      name: 'Xiaomi',
-      slug: 'xiaomi',
-      description: 'Tecnologia acessível e inovadora',
-      color: '#FF6900',
-      logo: '/logos/Xiaomi_logo.svg.png',
-    },
-    {
-      name: 'DJI',
-      slug: 'dji',
-      description: 'Líderes em tecnologia de drones',
-      color: '#131313',
-      logo: '/logos/Dji logo.jpg',
-    },
-    {
-      name: 'Geonav',
-      slug: 'geonav',
-      description: 'Eletrônicos automotivos',
-      color: '#1976d2',
-      logo: '/logos/goenav.jpg',
-    },
-  ];
-
-  for (const brandData of brands) {
-    await prisma.brand.upsert({
-      where: { slug: brandData.slug },
-      update: brandData,
-      create: brandData,
-    });
-  }
-  
-  console.log('✅ Marcas criadas!');
-}
-
-async function createCategories() {
-  console.log('📂 Criando categorias...');
-  
-  // Buscar brands para associar
-  const apple = await prisma.brand.findUnique({ where: { slug: 'apple' } });
-  const jbl = await prisma.brand.findUnique({ where: { slug: 'jbl' } });
-  const xiaomi = await prisma.brand.findUnique({ where: { slug: 'xiaomi' } });
-  const dji = await prisma.brand.findUnique({ where: { slug: 'dji' } });
-
-  const categories = [
-    {
-      name: 'Fones de Ouvido',
-      slug: 'fones-de-ouvido',
-      description: 'Fones de ouvido premium e acessórios de áudio',
-      icon: 'Headphones',
-      color: '#3B82F6',
-      sortOrder: 1,
-      brandId: jbl?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/fones-de-ouvido/image.png',
-    },
-    {
-      name: 'Celulares',
-      slug: 'celulares',
-      description: 'Smartphones e dispositivos móveis',
-      icon: 'Smartphone',
-      color: '#10B981',
-      sortOrder: 2,
-      brandId: apple?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/celulares/image.png',
-    },
-    {
-      name: 'Acessórios',
-      slug: 'acessorios',
-      description: 'Capas, carregadores e acessórios móveis',
-      icon: 'Cable',
-      color: '#8B5CF6',
-      sortOrder: 3,
-      brandId: xiaomi?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/acessorios/image.png',
-    },
-    {
-      name: 'Drones',
-      slug: 'drones',
-      description: 'Drones profissionais e recreativos',
-      icon: 'Plane',
-      color: '#F59E0B',
-      sortOrder: 4,
-      brandId: dji?.id,
-      image: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/categories/drones/image.png',
-    },
-  ];
-
-  for (const categoryData of categories) {
-    await prisma.category.upsert({
-      where: { slug: categoryData.slug },
-      update: categoryData,
-      create: categoryData,
-    });
-  }
-  
-  console.log('✅ Categorias criadas!');
-}
-
-async function createProducts() {
-  console.log('📱 Criando produtos...');
-
-  // Buscar brands e categories
-  const brands = await prisma.brand.findMany();
-  const categories = await prisma.category.findMany();
-
-  const brandMap = new Map(brands.map(b => [b.slug, b.id]));
-  const categoryMap = new Map(categories.map(c => [c.slug, c.id]));
-
-  const products = [
-    // Apple iPhone 17 Products (Featured)
-    {
-      name: 'iPhone 17',
-      slug: 'iphone-17',
-      description: 'O novo iPhone 17 com chip A18 e câmera revolucionária de 48MP.',
-      price: 5499.99,
-      discountPrice: 4999.99,
-      stock: 80,
-      featured: true,
-      categoryId: categoryMap.get('celulares')!,
-      brandId: brandMap.get('apple')!,
-      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17/back.png',
-      specifications: JSON.stringify({
-        processor: 'A18',
-        storage: '256GB',
-        display: '6.1" Super Retina XDR',
-        camera: '48MP principal + 12MP ultra angular',
-        battery: 'Até 22 horas de reprodução de vídeo',
-        os: 'iOS 18'
-      }),
-      weight: 0.174,
-      dimensions: JSON.stringify({ width: 71.6, height: 147.6, depth: 7.8 }),
-      warranty: 12,
-      tags: 'smartphone,premium,apple,ios,5g,iphone17'
-    },
-    {
-      name: 'iPhone 17 Pro',
-      slug: 'iphone-17-pro',
-      description: 'iPhone 17 Pro com acabamento em titânio, chip A18 Pro e câmera profissional.',
-      price: 7999.99,
-      discountPrice: 7499.99,
-      stock: 60,
-      featured: true,
-      categoryId: categoryMap.get('celulares')!,
-      brandId: brandMap.get('apple')!,
-      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro/back.png',
-      specifications: JSON.stringify({
-        processor: 'A18 Pro',
-        storage: '256GB',
-        display: '6.3" ProMotion Super Retina XDR',
-        camera: '48MP principal + 48MP ultra angular + 12MP telephoto 5x',
-        battery: 'Até 27 horas de reprodução de vídeo',
-        os: 'iOS 18'
-      }),
-      weight: 0.199,
-      dimensions: JSON.stringify({ width: 73.6, height: 149.6, depth: 8.25 }),
-      warranty: 12,
-      tags: 'smartphone,premium,apple,ios,5g,iphone17,pro'
-    },
-    {
-      name: 'iPhone 17 Pro Max',
-      slug: 'iphone-17-pro-max',
-      description: 'O iPhone definitivo com tela de 6.9", chip A18 Pro e sistema de câmera profissional avançado.',
-      price: 9999.99,
-      discountPrice: 9499.99,
-      stock: 40,
-      featured: true,
-      categoryId: categoryMap.get('celulares')!,
-      brandId: brandMap.get('apple')!,
-      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro-max/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro-max/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-17-pro-max/back.png',
-      specifications: JSON.stringify({
-        processor: 'A18 Pro',
-        storage: '512GB',
-        display: '6.9" ProMotion Super Retina XDR',
-        camera: '48MP principal + 48MP ultra angular + 12MP telephoto 5x',
-        battery: 'Até 33 horas de reprodução de vídeo',
-        os: 'iOS 18'
-      }),
-      weight: 0.225,
-      dimensions: JSON.stringify({ width: 77.6, height: 163.0, depth: 8.25 }),
-      warranty: 12,
-      tags: 'smartphone,premium,apple,ios,5g,iphone17,promax'
-    },
-    {
-      name: 'iPhone 15 Pro Max',
-      slug: 'iphone-15-pro-max',
-      description: 'O iPhone mais avançado já criado, com chip A17 Pro e câmeras profissionais.',
-      price: 7999.99,
-      discountPrice: 6999.99,
-      stock: 50,
-      featured: false,
-      categoryId: categoryMap.get('celulares')!,
-      brandId: brandMap.get('apple')!,
-      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/main.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/side.png,https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-15-pro-max/back.png',
-      specifications: JSON.stringify({
-        processor: 'A17 Pro',
-        storage: '256GB',
-        display: '6.7" Super Retina XDR',
-        camera: '48MP principal + 12MP ultra angular',
-        battery: 'Até 29 horas de reprodução de vídeo',
-        os: 'iOS 17'
-      }),
-      weight: 0.221,
-      dimensions: JSON.stringify({ width: 77.6, height: 159.9, depth: 8.25 }),
-      warranty: 12,
-      tags: 'smartphone,premium,apple,ios,5g'
-    },
-    {
-      name: 'iPhone 14',
-      slug: 'iphone-14',
-      description: 'iPhone 14 com câmera dupla avançada e Modo Ação.',
-      price: 4999.99,
-      discountPrice: 4499.99,
-      stock: 75,
-      featured: false,
-      categoryId: categoryMap.get('celulares')!,
-      brandId: brandMap.get('apple')!,
-      images: 'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/iphone-14/main.png',
-      specifications: JSON.stringify({
-        processor: 'A15 Bionic',
-        storage: '128GB',
-        display: '6.1" Super Retina XDR',
-        camera: '12MP principal + 12MP ultra angular'
-      }),
-      weight: 0.172,
-      warranty: 12,
-      tags: 'smartphone,apple,ios'
-    },
-
-    // JBL Products
-    {
-      name: 'JBL Tune 760NC',
-      slug: 'jbl-tune-760nc',
-      description: 'Fones de ouvido com cancelamento ativo de ruído e 50 horas de bateria.',
-      price: 599.99,
-      discountPrice: 449.99,
-      stock: 100,
-      featured: true,
-      categoryId: categoryMap.get('fones-de-ouvido')!,
-      brandId: brandMap.get('jbl')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/jbl-tune-760nc/main.png'
-      ],
-      specifications: {
-        type: 'Over-ear',
-        connectivity: 'Bluetooth 5.0',
-        battery: '50 horas',
-        anc: 'Cancelamento ativo de ruído',
-        driver: '40mm'
-      },
-      weight: 0.22,
-      warranty: 12,
-      tags: ['fones', 'bluetooth', 'anc', 'jbl']
-    },
-    {
-      name: 'JBL Flip 6',
-      slug: 'jbl-flip-6',
-      description: 'Caixa de som Bluetooth portátil à prova d\'água com som JBL Pro.',
-      price: 799.99,
-      discountPrice: 699.99,
-      stock: 80,
-      featured: false,
-      categoryId: categoryMap.get('fones-de-ouvido')!,
-      brandId: brandMap.get('jbl')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/jbl-flip-6/main.png'
-      ],
-      specifications: {
-        type: 'Caixa de som portátil',
-        connectivity: 'Bluetooth 5.1',
-        battery: '12 horas',
-        waterproof: 'IP67',
-        power: '20W RMS'
-      },
-      weight: 0.55,
-      warranty: 12,
-      tags: ['caixa-som', 'bluetooth', 'portátil', 'à-prova-dagua']
-    },
-
-    // Xiaomi Products
-    {
-      name: 'Redmi Note 13 Pro',
-      slug: 'redmi-note-13-pro',
-      description: 'Smartphone com câmera de 200MP e carregamento super rápido.',
-      price: 1699.99,
-      discountPrice: 1499.99,
-      stock: 120,
-      featured: true,
-      categoryId: categoryMap.get('celulares')!,
-      brandId: brandMap.get('xiaomi')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/redmi-note-13-pro/main.png'
-      ],
-      specifications: {
-        processor: 'Snapdragon 7s Gen 2',
-        storage: '256GB',
-        ram: '8GB',
-        display: '6.67" AMOLED 120Hz',
-        camera: '200MP principal'
-      },
-      weight: 0.187,
-      warranty: 12,
-      tags: ['smartphone', 'xiaomi', 'android', '5g', 'camera']
-    },
-    {
-      name: 'Xiaomi Power Bank 20000mAh',
-      slug: 'xiaomi-power-bank-20000',
-      description: 'Carregador portátil de alta capacidade com carregamento rápido.',
-      price: 199.99,
-      discountPrice: 149.99,
-      stock: 200,
-      featured: false,
-      categoryId: categoryMap.get('acessorios')!,
-      brandId: brandMap.get('xiaomi')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/xiaomi-power-bank-20000/main.png'
-      ],
-      specifications: {
-        capacity: '20000mAh',
-        input: 'USB-C 18W',
-        output: 'Dual USB-A + USB-C',
-        fastCharge: 'Quick Charge 3.0'
-      },
-      weight: 0.434,
-      warranty: 6,
-      tags: ['powerbank', 'carregador', 'portátil', 'xiaomi']
-    },
-
-    // DJI Products
-    {
-      name: 'DJI Mini 4 Pro',
-      slug: 'dji-mini-4-pro',
-      description: 'Drone compacto com câmera 4K e detecção omnidirecional de obstáculos.',
-      price: 4999.99,
-      discountPrice: 4499.99,
-      stock: 30,
-      featured: true,
-      categoryId: categoryMap.get('drones')!,
-      brandId: brandMap.get('dji')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/dji-mini-4-pro/main.png'
-      ],
-      specifications: {
-        camera: '4K/60fps HDR',
-        flightTime: '34 minutos',
-        transmission: 'O4 20km',
-        weight: '249g',
-        obstacles: 'Detecção omnidirecional'
-      },
-      weight: 0.249,
-      warranty: 12,
-      tags: ['drone', 'camera', '4k', 'dji', 'mini']
-    },
-    {
-      name: 'DJI Air 3',
-      slug: 'dji-air-3',
-      description: 'Drone com câmera dupla e transmissão O4 de longo alcance.',
-      price: 7999.99,
-      discountPrice: 7499.99,
-      stock: 20,
-      featured: false,
-      categoryId: categoryMap.get('drones')!,
-      brandId: brandMap.get('dji')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/dji-air-3/main.png'
-      ],
-      specifications: {
-        camera: 'Dual 4K HDR',
-        flightTime: '46 minutos',
-        transmission: 'O4 20km',
-        weight: '720g'
-      },
-      weight: 0.72,
-      warranty: 12,
-      tags: ['drone', 'camera', '4k', 'dji', 'pro']
-    },
-
-    // Geonav Products
-    {
-      name: 'Geonav G550',
-      slug: 'geonav-g550',
-      description: 'Central multimídia com GPS, Android Auto e CarPlay.',
-      price: 1299.99,
-      discountPrice: 999.99,
-      stock: 40,
-      featured: false,
-      categoryId: categoryMap.get('acessorios')!,
-      brandId: brandMap.get('geonav')!,
-      images: [
-        'https://res.cloudinary.com/dnmazlvs6/image/upload/v1/uss-brasil/products/geonav-g550/main.png'
-      ],
-      specifications: {
-        display: '7" touchscreen',
-        os: 'Android 11',
-        connectivity: 'Android Auto, CarPlay',
-        gps: 'GPS integrado',
-        bluetooth: 'Bluetooth 5.0'
-      },
-      weight: 1.2,
-      warranty: 12,
-      tags: ['central-multimidia', 'gps', 'android-auto', 'carplay']
-    }
-  ];
-
-  for (const productData of products) {
-    // Converter arrays e objetos para strings
-    const normalizedData = {
-      ...productData,
-      images: Array.isArray(productData.images) ? productData.images.join(',') : productData.images,
-      tags: Array.isArray(productData.tags) ? productData.tags.join(',') : productData.tags,
-      specifications: typeof productData.specifications === 'string' ? productData.specifications : JSON.stringify(productData.specifications),
-      dimensions: typeof productData.dimensions === 'string' ? productData.dimensions : JSON.stringify(productData.dimensions),
-    };
-
-    await prisma.product.upsert({
-      where: { slug: normalizedData.slug },
-      update: normalizedData,
-      create: normalizedData,
-    });
-  }
-
-  console.log('✅ Produtos criados!');
-}
-
-async function createAdminUser() {
-  console.log('👤 Criando usuário admin...');
-
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-
-  await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: 'admin@ussbrasil.com' },
     update: {},
     create: {
-      name: 'Admin USS Brasil',
       email: 'admin@ussbrasil.com',
-      password: hashedPassword,
+      name: 'Administrador Geral',
+      password,
       role: 'ADMIN',
-      phone: '(11) 99999-9999',
-      isActive: true,
+      permissions: JSON.stringify(['*']),
+      cpf: '000.000.000-01',
     },
   });
 
-  console.log('✅ Usuário admin criado! Email: admin@ussbrasil.com | Senha: admin123');
-}
+  const manager = await prisma.user.upsert({
+    where: { email: 'gerente@ussbrasil.com' },
+    update: {},
+    create: {
+      email: 'gerente@ussbrasil.com',
+      name: 'Gerente de Loja',
+      password,
+      role: 'MANAGER',
+      permissions: JSON.stringify([
+        'manage_products',
+        'view_reports',
+        'manage_orders',
+        'manage_inventory'
+      ]),
+      cpf: '000.000.000-02',
+    },
+  });
 
-async function createCoupons() {
-  console.log('🎟️ Criando cupons de teste...');
-  
-  const now = new Date();
-  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  const seller = await prisma.user.upsert({
+    where: { email: 'vendedor@ussbrasil.com' },
+    update: {},
+    create: {
+      email: 'vendedor@ussbrasil.com',
+      name: 'Vendedor Padr�o',
+      password,
+      role: 'SELLER',
+      permissions: JSON.stringify([
+        'create_order',
+        'view_own_reports',
+        'view_products'
+      ]),
+      cpf: '000.000.000-03',
+    },
+  });
 
-  const coupons = [
+  const seniorSeller = await prisma.user.upsert({
+    where: { email: 'vendedor.senior@ussbrasil.com' },
+    update: {},
+    create: {
+      email: 'vendedor.senior@ussbrasil.com',
+      name: 'Vendedor Senior',
+      password,
+      role: 'SELLER',
+      permissions: JSON.stringify([
+        'create_order',
+        'view_own_reports',
+        'view_products',
+        'edit_price',
+        'apply_discount'
+      ]),
+      cpf: '000.000.000-04',
+    },
+  });
+
+  console.log(' Users seeded');
+
+  // 2. Site Config (CMS)
+  const siteConfigs = [
     {
-      code: 'BEMVINDO10',
-      description: '10% de desconto na primeira compra',
-      type: 'PERCENTAGE',
-      value: 10,
-      minAmount: 100,
-      maxAmount: 50,
-      usageLimit: 1000,
-      startDate: now,
-      endDate: oneYearFromNow,
-      isActive: true,
+      key: 'hero_videos',
+      value: JSON.stringify([
+        {
+            src: '/Videos/IphoneVideo.mp4',
+            poster: '/Videos/IphoneVideoPoster.jpg',
+            title: 'iPhone 16',
+            subtitle: 'Titânio. Precisão. Performance.',
+            description: 'O futuro da tecnologia móvel',
+            cta: 'Descubra Agora',
+            link: '/iphone17'
+        },
+        {
+            src: '/Videos/AirPods Video.webm',
+            poster: '/fallback-product.png',
+            title: 'AirPods',
+            subtitle: 'Som que envolve. Silêncio que liberta.',
+            description: 'Experiência auditiva premium',
+            cta: 'Explore AirPods',
+            link: '/produtos'
+        },
+        {
+            src: '/Videos/Apple Watch.mp4',
+            poster: '/fallback-product.png',
+            title: 'Apple Watch',
+            subtitle: 'Seu aliado na saúde e fitness.',
+            description: 'Tecnologia no seu pulso',
+            cta: 'Conheça Apple Watch',
+            link: '/produtos'
+        },
+        {
+            src: '/Videos/IpadVideo.mp4',
+            poster: '/fallback-product.png',
+            title: 'iPad',
+            subtitle: 'Potência. Criatividade. Portabilidade.',
+            description: 'Seu estúdio criativo portátil',
+            cta: 'Descubra iPad',
+            link: '/produtos'
+        },
+        {
+            src: '/Videos/Macs Video.mp4',
+            poster: '/fallback-product.png',
+            title: 'Mac',
+            subtitle: 'Performance profissional.',
+            description: 'Poder para criar o extraordinário',
+            cta: 'Ver Macs',
+            link: '/produtos'
+        }
+      ]),
+      type: 'json',
+      description: 'Lista de vídeos do banner principal (JSON)',
     },
     {
-      code: 'FRETEGRATIS',
-      description: 'Frete grátis em compras acima de R$ 200',
-      type: 'FREE_SHIPPING',
-      value: 0,
-      minAmount: 200,
-      startDate: now,
-      endDate: oneYearFromNow,
-      isActive: true,
+      key: 'home_hero_title',
+      value: 'Tecnologia que Transforma',
+      type: 'text',
+      description: 'Título principal do banner da home',
     },
     {
-      code: 'DESCONTO50',
-      description: 'R$ 50 de desconto em compras acima de R$ 500',
-      type: 'FIXED_AMOUNT',
-      value: 50,
-      minAmount: 500,
-      startDate: now,
-      endDate: oneYearFromNow,
-      isActive: true,
+      key: 'home_hero_subtitle',
+      value: 'Os melhores produtos Apple, Xiaomi e JBL com garantia e procedência.',
+      type: 'text',
+      description: 'Subtítulo do banner da home',
     },
     {
-      code: 'USS20',
-      description: '20% de desconto exclusivo USS',
-      type: 'PERCENTAGE',
-      value: 20,
-      minAmount: 150,
-      maxAmount: 100,
-      usageLimit: 500,
-      startDate: now,
-      endDate: oneYearFromNow,
-      isActive: true,
+      key: 'home_featured_tags',
+      value: JSON.stringify(['Lançamentos', 'Ofertas', 'Mais Vendidos']),
+      type: 'json',
+      description: 'Tags de destaque na home',
     },
   ];
 
-  for (const couponData of coupons) {
-    await prisma.coupon.upsert({
-      where: { code: couponData.code },
-      update: couponData,
-      create: couponData,
+  for (const config of siteConfigs) {
+    await prisma.siteConfig.upsert({
+      where: { key: config.key },
+      update: {},
+      create: config,
     });
   }
+  console.log(' Site Config seeded');
+
+  // 3. Suppliers
+  const suppliers = [
+    { name: 'Apple Distributor Inc.', email: 'contact@apple-dist.com', cnpj: '12.345.678/0001-01' },
+    { name: 'Samsung Official BR', email: 'b2b@samsung.com.br', cnpj: '98.765.432/0001-02' },
+    { name: 'Xiaomi Global', email: 'sales@xiaomi.com', cnpj: '11.222.333/0001-03' },
+  ];
+
+  const dbSuppliers = [];
+  for (const s of suppliers) {
+    const supplier = await prisma.supplier.upsert({
+      where: { cnpj: s.cnpj },
+      update: {},
+      create: s,
+    });
+    dbSuppliers.push(supplier);
+  }
+  console.log(' Suppliers seeded');
+
+  // 4. Brands & Categories
+  const brandsData = [
+    { name: 'Apple', slug: 'apple', color: '#000000' },
+    { name: 'Samsung', slug: 'samsung', color: '#1428A0' },
+    { name: 'Xiaomi', slug: 'xiaomi', color: '#FF6900' },
+    { name: 'JBL', slug: 'jbl', color: '#FF4500' },
+  ];
+
+  const dbBrands = [];
+  for (const b of brandsData) {
+    const brand = await prisma.brand.upsert({
+      where: { slug: b.slug },
+      update: {},
+      create: b,
+    });
+    dbBrands.push(brand);
+  }
+
+  const categoriesData = [
+    { name: 'Smartphones', slug: 'smartphones', icon: 'smartphone' },
+    { name: 'Tablets', slug: 'tablets', icon: 'tablet' },
+    { name: 'Smartwatches', slug: 'smartwatches', icon: 'watch' },
+    { name: '�udio', slug: 'audio', icon: 'headphones' },
+  ];
+
+  const dbCategories = [];
+  for (const c of categoriesData) {
+    const category = await prisma.category.upsert({
+      where: { slug: c.slug },
+      update: {},
+      create: c,
+    });
+    dbCategories.push(category);
+  }
+  console.log(' Brands & Categories seeded');
+
+  // 5. Products & Variations
+  const productsData = [
+    {
+      name: 'iPhone 15 Pro Max',
+      slug: 'iphone-15-pro-max',
+      description: 'O iPhone mais poderoso j� feito, com tit�nio aeroespacial.',
+      brandSlug: 'apple',
+      categorySlug: 'smartphones',
+      price: 8999.00,
+      images: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-natural-titanium-select-202309?wid=940&hei=1112&fmt=png-alpha&.v=1693510915188',
+      variations: [
+        { name: 'iPhone 15 Pro Max 256GB Tit�nio Natural', sku: 'IP15PM-256-NAT', color: 'Natural', colorCode: '#Beb7b0', storage: '256GB', price: 8999.00, stock: 10 },
+        { name: 'iPhone 15 Pro Max 512GB Tit�nio Azul', sku: 'IP15PM-512-BLU', color: 'Azul', colorCode: '#2f3846', storage: '512GB', price: 10499.00, stock: 5 },
+        { name: 'iPhone 15 Pro Max 256GB Tit�nio Preto (Semi Novo)', sku: 'IP15PM-256-BLK-USED', color: 'Preto', colorCode: '#181819', storage: '256GB', price: 7500.00, stock: 2, condition: 'semi_new' },
+      ]
+    },
+    {
+      name: 'Samsung Galaxy S24 Ultra',
+      slug: 'galaxy-s24-ultra',
+      description: 'Galaxy AI chegou. Bem-vindo � era da intelig�ncia m�vel.',
+      brandSlug: 'samsung',
+      categorySlug: 'smartphones',
+      price: 8500.00,
+      images: 'https://images.samsung.com/is/image/samsung/p6pim/br/sm-s928bzkqzto/gallery/br-galaxy-s24-s928-sm-s928bzkqzto-539294649?$',
+      variations: [
+        { name: 'S24 Ultra 512GB Tit�nio Cinza', sku: 'S24U-512-GRY', color: 'Cinza', colorCode: '#808080', storage: '512GB', price: 8500.00, stock: 15 },
+      ]
+    },
+    {
+      name: 'JBL Boombox 3',
+      slug: 'jbl-boombox-3',
+      description: 'Som massivo. O dia todo.',
+      brandSlug: 'jbl',
+      categorySlug: 'audio',
+      price: 2499.00,
+      images: 'https://www.jbl.com.br/dw/image/v2/AAUJ_PRD/on/demandware.static/-/Sites-masterCatalog_Harman/default/dw123456/JBL_Boombox_3_Black_Hero_1605x1605px.png',
+      variations: [
+        { name: 'JBL Boombox 3 Preta', sku: 'JBL-BB3-BLK', color: 'Preta', colorCode: '#000000', price: 2499.00, stock: 20 },
+        { name: 'JBL Boombox 3 Camuflada', sku: 'JBL-BB3-CAM', color: 'Camuflada', colorCode: '#4b5320', price: 2599.00, stock: 8 },
+      ]
+    }
+  ];
+
+  for (const p of productsData) {
+    const brand = dbBrands.find(b => b.slug === p.brandSlug);
+    const category = dbCategories.find(c => c.slug === p.categorySlug);
+    const supplier = dbSuppliers[0];
+
+    const product = await prisma.product.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: {
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        price: p.price,
+        stock: p.variations.reduce((acc, v) => acc + v.stock, 0),
+        images: p.images,
+        brandId: brand?.id,
+        categoryId: category?.id,
+        supplierId: supplier?.id,
+        isActive: true,
+        status: 'ACTIVE',
+      },
+    });
+
+    for (const v of p.variations) {
+      const variation: any = v;
+      await prisma.productVariation.upsert({
+        where: { sku: variation.sku },
+        update: {},
+        create: {
+          productId: product.id,
+          name: variation.name,
+          sku: variation.sku,
+          price: variation.price,
+          stock: variation.stock,
+          colorName: variation.color,
+          colorCode: variation.colorCode,
+          storage: variation.storage,
+          condition: variation.condition || 'new',
+          status: 'ACTIVE',
+          supplierId: supplier?.id,
+        },
+      });
+    }
+  }
+  console.log(' Products & Variations seeded');
+
+  // 6. Orders
+  const iphone = await prisma.product.findUnique({ where: { slug: 'iphone-15-pro-max' }, include: { variations: true } });
   
-  console.log('✅ Cupons de teste criados!');
+  if (iphone && iphone.variations.length > 0) {
+    const variation = iphone.variations[0];
+    
+    await prisma.order.create({
+      data: {
+        userId: admin.id,
+        status: 'DELIVERED',
+        paymentStatus: 'PAID',
+        paymentMethod: 'PIX',
+        subtotal: variation.price,
+        shipping: 0,
+        total: variation.price,
+        shippingAddress: JSON.stringify({ street: 'Rua Teste', number: '123', city: 'S�o Paulo', state: 'SP' }),
+        orderItems: {
+          create: {
+            productId: iphone.id,
+            variationId: variation.id,
+            quantity: 1,
+            price: variation.price,
+            productName: variation.name,
+            selectedColor: variation.colorName,
+            selectedStorage: variation.storage,
+          }
+        }
+      }
+    });
+
+    await prisma.order.create({
+      data: {
+        userId: seller.id,
+        status: 'PENDING',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'CREDIT_CARD',
+        saleType: 'presencial',
+        subtotal: variation.price,
+        shipping: 0,
+        total: variation.price,
+        shippingAddress: JSON.stringify({ street: 'Loja F�sica', number: '1', city: 'S�o Paulo', state: 'SP' }),
+        orderItems: {
+          create: {
+            productId: iphone.id,
+            variationId: variation.id,
+            quantity: 1,
+            price: variation.price,
+            productName: variation.name,
+            selectedColor: variation.colorName,
+            selectedStorage: variation.storage,
+          }
+        }
+      }
+    });
+  }
+  console.log(' Orders seeded');
+
+  console.log(' Database seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erro no seed:', e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {

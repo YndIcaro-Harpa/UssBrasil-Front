@@ -38,7 +38,7 @@ export default function ComparacaoPage() {
     { key: 'brand', label: 'Marca', format: (v: string) => v || '-' },
     { key: 'category', label: 'Categoria', format: (v: string) => v || '-' },
     { key: 'stock', label: 'Estoque', format: (v: number) => v !== undefined ? (v > 0 ? `${v} unidades` : 'Indisponível') : '-' },
-    { key: 'rating', label: 'Avaliação', format: (v: number) => v ? `${v.toFixed(1)} ⭐` : '-' },
+    { key: 'rating', label: 'Avaliação', format: (v: number) => v ? `${v.toFixed(1)}★` : '-' },
     { key: 'reviews', label: 'Avaliações', format: (v: number) => v ? `${v} avaliações` : '-' },
   ]
 

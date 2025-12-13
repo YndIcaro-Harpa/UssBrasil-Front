@@ -739,7 +739,7 @@ export default function NewProductPage() {
             {/* Linha 3: Preço Final e Margens */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="md:col-span-1">
-                <FormLabel label="💰 PREÇO FINAL (R$)" required />
+                <FormLabel label="PREÇO FINAL (R$)" required />
                 <Input
                   type="number"
                   step="0.01"
@@ -773,7 +773,7 @@ export default function NewProductPage() {
                   className={`mt-1 ${formData.profitMargin >= 20 ? 'bg-green-50 text-green-700' : formData.profitMargin >= 10 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}
                 />
                 <p className={`text-xs mt-1 ${formData.profitMargin >= 20 ? 'text-green-600' : formData.profitMargin >= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {formData.profitMargin >= 20 ? '✓ Margem saudável' : formData.profitMargin >= 10 ? '⚠ Margem baixa' : '✗ Margem crítica'}
+                  {formData.profitMargin >= 20 ? 'Margem saudável' : formData.profitMargin >= 10 ? 'Margem baixa' : 'Margem crítica'}
                 </p>
               </div>
 
@@ -793,7 +793,7 @@ export default function NewProductPage() {
             {/* Resumo Visual */}
             {formData.price > 0 && (
               <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 border border-blue-200">
-                <h4 className="font-semibold text-gray-800 mb-3">📊 Resumo de Precificação</h4>
+                <h4 className="font-semibold text-gray-800 mb-3">Resumo de Precificação</h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                   <div>
                     <p className="text-xs text-gray-500">Custo</p>

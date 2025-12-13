@@ -13,19 +13,37 @@ export class ProductsService {
   async create(createProductDto: CreateProductDto) {
     const slug = this.generateSlug(createProductDto.name);
     
-    return this.prisma.product.create({
-      data: {
-        ...createProductDto,
-        slug,
-        images: createProductDto.images || '',
-        tags: createProductDto.tags || '',
-        specifications: createProductDto.specifications || '',
-        dimensions: createProductDto.dimensions || '',
-      },
+    // Extrair categoryId e brandId do DTO
+    const { categoryId, brandId, ...restDto } = createProductDto;
+    
+    // Construir dados base
+    const data: any = {
+      ...restDto,
+      slug,
+      images: createProductDto.images || '',
+      tags: createProductDto.tags || '',
+      specifications: createProductDto.specifications || '',
+      dimensions: createProductDto.dimensions || '',
+    };
+    
+    // Só adicionar categoryId se for válido
+    if (categoryId) {
+      data.categoryId = categoryId;
+    }
+    
+    // Só adicionar brandId se for válido
+    if (brandId) {
+      data.brandId = brandId;
+    }
+    
+    const product = await this.prisma.product.create({
+      data,
       include: {
         category: true,
       },
     });
+    
+    return product;
   }
 
   async findAll(
@@ -35,9 +53,17 @@ export class ProductsService {
     brandId?: string,
     featured?: boolean,
     search?: string,
+    status?: string,
   ) {
     const skip = (page - 1) * limit;
     const where: any = {};
+
+    // Filter by status if provided, otherwise exclude INACTIVE
+    if (status && status !== 'all') {
+      where.status = status;
+    } else if (!status) {
+      where.status = { not: 'INACTIVE' };
+    }
 
     if (categoryId) where.categoryId = categoryId;
     if (brandId) where.brandId = brandId;
@@ -181,23 +207,44 @@ export class ProductsService {
   async remove(id: string) {
     await this.findOne(id); // Check if exists
 
-    return this.prisma.product.update({
-      where: { id },
-      data: { status: 'INACTIVE' },
-    });
+    try {
+      return await this.prisma.product.delete({
+        where: { id },
+      });
+    } catch (error) {
+      // If delete fails (likely due to foreign key constraints), fallback to soft delete
+      return this.prisma.product.update({
+        where: { id },
+        data: { status: 'INACTIVE', isActive: false },
+      });
+    }
   }
 
   async bulkDelete(ids: string[]) {
-    const result = await this.prisma.product.updateMany({
-      where: { id: { in: ids } },
-      data: { status: 'INACTIVE' },
-    });
+    // Try to delete first
+    try {
+      const result = await this.prisma.product.deleteMany({
+        where: { id: { in: ids } },
+      });
+      
+      return {
+        success: true,
+        deletedCount: result.count,
+        ids,
+      };
+    } catch (error) {
+      // Fallback to soft delete
+      const result = await this.prisma.product.updateMany({
+        where: { id: { in: ids } },
+        data: { status: 'INACTIVE', isActive: false },
+      });
 
-    return {
-      success: true,
-      deletedCount: result.count,
-      ids,
-    };
+      return {
+        success: true,
+        deletedCount: result.count,
+        ids,
+      };
+    }
   }
 
   async bulkUpdateStatus(ids: string[], status: string) {
@@ -286,7 +333,7 @@ export class ProductsService {
       }
     }
 
-    const existingImages = product.images ? product.images.split(',').filter(img => img) : [];
+    const existingImages = product.images ? product.images.split(',').filter((img: string) => img) : [];
     const allImages = [...existingImages, ...imageUrls];
 
     return this.prisma.product.update({

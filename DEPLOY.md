@@ -1,104 +1,358 @@
 # Deploy USS Brasil E-commerce
 
-Este documento contém instruções para deploy do projeto em produção.
+Este documento contém instruções completas para deploy do projeto em produção.
 
-## Arquitetura
+## 🏗️ Arquitetura de Produção
 
-- **Frontend**: Next.js 15 (Vercel/Netlify)
-- **Backend**: NestJS + Prisma (Railway/Render)
-- **Banco de Dados**: SQLite (dev) / PostgreSQL (prod)
+| Componente | Plataforma | Tier | URL |
+|------------|-----------|------|-----|
+| **Frontend** | Cloudflare Pages | Grátis | https://ussbrasil.pages.dev |
+| **Backend** | Render | Grátis | https://ussbrasil-api.onrender.com |
+| **Database** | Supabase PostgreSQL | Grátis | *.supabase.com |
 
 ---
 
-## 1. Variáveis de Ambiente
+## 📋 Pré-requisitos
 
-### Frontend (.env.local)
+- Conta no [Cloudflare](https://dash.cloudflare.com)
+- Conta no [Render](https://render.com)
+- Conta no [Supabase](https://supabase.com)
+- Git instalado
+- Node.js 20+
 
-```bash
-# Autenticação
-NEXTAUTH_SECRET=seu-secret-super-seguro-aqui
-NEXTAUTH_URL=https://seu-dominio.com
+---
 
-# Backend API
-NEXT_PUBLIC_API_URL=https://api.seu-dominio.com
-NEXT_PUBLIC_BACKEND_URL=https://api.seu-dominio.com
+## 1. 🗄️ Configurar Supabase (Banco de Dados)
 
-# Banco de Dados (se usar Prisma no frontend)
-DATABASE_URL=file:./prisma/dev.db
+### 1.1 Criar Projeto
 
-# Opcional - Cloudinary para imagens
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=seu-cloud-name
+1. Acesse [supabase.com/dashboard](https://supabase.com/dashboard)
+2. Clique em "New Project"
+3. Configure:
+   - **Name**: `ussbrasil`
+   - **Database Password**: (guarde essa senha!)
+   - **Region**: `South America (São Paulo)` ou mais próximo
+4. Aguarde a criação (~2 min)
 
-# Opcional - Google Auth
-GOOGLE_CLIENT_ID=seu-client-id
-GOOGLE_CLIENT_SECRET=seu-client-secret
+### 1.2 Obter Connection Strings
 
-# Opcional - Apple Auth
-APPLE_ID=seu-apple-id
-APPLE_SECRET=seu-apple-secret
+1. Vá em **Settings** → **Database**
+2. Role até "Connection string"
+3. Copie duas URLs:
+
+**Connection Pooler (para aplicação):**
+```
+postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
-### Backend (.env)
+**Direct Connection (para migrações):**
+```
+postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+```
+
+⚠️ **Importante**: Substitua `[PASSWORD]` pela senha do projeto!
+
+---
+
+## 2. 🚀 Deploy Backend no Render
+
+### 2.1 Criar Web Service
+
+1. Acesse [render.com/dashboard](https://render.com/dashboard)
+2. Clique em "New +" → "Web Service"
+3. Conecte seu repositório GitHub
+4. Configure:
+
+| Campo | Valor |
+|-------|-------|
+| **Name** | ussbrasil-api |
+| **Region** | South America (São Paulo) ou mais próximo |
+| **Branch** | main |
+| **Root Directory** | backend |
+| **Runtime** | Node |
+| **Build Command** | `npm install && npx prisma generate && npx prisma db push && npm run build` |
+| **Start Command** | `npm run start:prod` |
+| **Instance Type** | Free |
+
+### 2.2 Variáveis de Ambiente (Render)
+
+No painel do Render, adicione em **Environment**:
 
 ```bash
-# Porta do servidor
-PORT=3001
+# Database (Supabase)
+DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+DIRECT_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
 
-# Banco de Dados
-DATABASE_URL=postgresql://user:password@host:5432/database?sslmode=require
+# Server
+PORT=3001
+NODE_ENV=production
 
 # JWT
-JWT_SECRET=seu-jwt-secret-super-seguro
+JWT_SECRET=seu-jwt-secret-muito-seguro-aqui
 JWT_EXPIRATION=7d
 
 # CORS
-CORS_ORIGIN=https://seu-dominio.com
+FRONTEND_URL=https://ussbrasil.pages.dev
+```
 
-# Email (opcional)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=seu-email@gmail.com
-SMTP_PASS=sua-senha-app
+### 2.3 Deploy
+
+- Clique em "Create Web Service"
+- Aguarde o build (~5 min no tier gratuito)
+- Teste: `https://ussbrasil-api.onrender.com/health`
+
+⚠️ **Nota**: No tier gratuito, o serviço "adormece" após 15 min de inatividade. O primeiro request após dormir leva ~30s.
+
+---
+
+## 3. ☁️ Deploy Frontend no Cloudflare Pages
+
+### 3.1 Preparar Projeto
+
+O projeto já está configurado com OpenNext para Cloudflare. Arquivos importantes:
+- `wrangler.toml` - Configuração do Cloudflare
+- `open-next.config.ts` - Configuração do OpenNext
+
+### 3.2 Criar Pages Project
+
+1. Acesse [dash.cloudflare.com](https://dash.cloudflare.com)
+2. Vá em **Workers & Pages** → **Create**
+3. Selecione **Pages** → **Connect to Git**
+4. Conecte seu repositório GitHub
+5. Configure:
+
+| Campo | Valor |
+|-------|-------|
+| **Project name** | ussbrasil |
+| **Production branch** | main |
+| **Build command** | `npx @opennextjs/cloudflare build` |
+| **Build output directory** | `.open-next` |
+| **Root directory** | `/` (raiz) |
+
+### 3.3 Variáveis de Ambiente (Cloudflare)
+
+No painel Pages, vá em **Settings** → **Environment variables**:
+
+```bash
+# Backend API
+NEXT_PUBLIC_BACKEND_URL=https://ussbrasil-api.onrender.com
+NEXT_PUBLIC_API_URL=https://ussbrasil-api.onrender.com
+
+# NextAuth
+NEXTAUTH_URL=https://ussbrasil.pages.dev
+NEXTAUTH_SECRET=seu-nextauth-secret-muito-seguro
+
+# Cloudinary (se usar)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dnmazlvs6
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=uss-brasil
+
+# Stripe (se usar)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+```
+
+### 3.4 Secrets via Wrangler CLI (Alternativo)
+
+```bash
+# Instalar Wrangler
+npm install -g wrangler
+
+# Login
+wrangler login
+
+# Adicionar secrets
+wrangler pages secret put NEXTAUTH_SECRET --project-name ussbrasil
+wrangler pages secret put STRIPE_SECRET_KEY --project-name ussbrasil
+```
+
+### 3.5 Deploy
+
+- Clique em "Save and Deploy"
+- Aguarde o build (~3 min)
+- Acesse: `https://ussbrasil.pages.dev`
+
+---
+
+## 4. 📊 Migração do Banco de Dados
+
+### 4.1 Local (antes do deploy)
+
+```bash
+cd backend
+
+# Criar arquivo .env com DATABASE_URL e DIRECT_URL do Supabase
+# Depois executar:
+
+# Gerar client do Prisma
+npx prisma generate
+
+# Aplicar schema no banco
+npx prisma db push
+
+# (Opcional) Seed inicial
+npm run seed
+```
+
+### 4.2 Verificar no Supabase
+
+1. Vá em **Table Editor** no dashboard do Supabase
+2. Verifique se as tabelas foram criadas
+3. Confira a estrutura: User, Product, Order, etc.
+
+---
+
+## 5. ✅ Checklist de Verificação
+
+### Backend (Render)
+- [ ] `https://ussbrasil-api.onrender.com/health` retorna status "ok"
+- [ ] `https://ussbrasil-api.onrender.com/api/products` retorna produtos
+- [ ] Logs no Render não mostram erros de conexão
+
+### Database (Supabase)
+- [ ] Tabelas criadas no Table Editor
+- [ ] Conexão funcionando (testar via Render logs)
+
+### Frontend (Cloudflare)
+- [ ] `https://ussbrasil.pages.dev` carrega corretamente
+- [ ] Produtos aparecem na página inicial
+- [ ] Login/Cadastro funcionam
+- [ ] Carrinho funciona
+
+---
+
+## 6. 🔧 Troubleshooting
+
+### Erro: "Database connection failed"
+
+**Causa**: URL do banco incorreta ou senha errada
+
+**Solução**:
+1. Verifique a senha no Supabase
+2. Confirme que está usando a URL com `?pgbouncer=true` para conexão pooler
+3. Verifique se a região do Supabase permite conexões externas
+
+### Erro: "CORS policy blocked"
+
+**Causa**: Frontend URL não está na lista de origens permitidas
+
+**Solução**:
+1. Verifique `FRONTEND_URL` no Render
+2. Confirme que `https://ussbrasil.pages.dev` está no arquivo `main.ts`
+
+### Erro: "Build failed" no Cloudflare
+
+**Causa**: Geralmente dependências ou configuração
+
+**Solução**:
+```bash
+# Limpar cache local
+rm -rf node_modules .next .open-next
+npm install
+npx @opennextjs/cloudflare build
+```
+
+### Serviço lento no Render
+
+**Causa**: Tier gratuito adormece após 15 min
+
+**Soluções**:
+1. Usar serviço de ping como [UptimeRobot](https://uptimerobot.com) para manter acordado
+2. Ou aceitar o delay inicial (~30s no primeiro request)
+
+---
+
+## 7. 📝 Scripts Úteis
+
+### package.json (Frontend)
+
+```json
+{
+  "scripts": {
+    "build:cloudflare": "npx @opennextjs/cloudflare build",
+    "preview:cloudflare": "wrangler pages dev",
+    "deploy:cloudflare": "wrangler pages deploy"
+  }
+}
+```
+
+### Comandos de Deploy
+
+```bash
+# Frontend - Cloudflare Pages
+npm run build:cloudflare
+wrangler pages deploy .open-next --project-name ussbrasil
+
+# Backend - Render (automático via Git push)
+git push origin main
 ```
 
 ---
 
-## 2. Deploy Frontend no Vercel
+## 8. 🔐 Segurança
 
-### Passo a Passo
+### Variáveis Sensíveis
 
-1. **Conectar Repositório**
-   - Acesse [vercel.com](https://vercel.com)
-   - Importe o projeto do GitHub
+**NUNCA** commite no Git:
+- `NEXTAUTH_SECRET`
+- `JWT_SECRET`
+- `DATABASE_URL` com senha
+- Chaves do Stripe
 
-2. **Configurar Build**
-   - Framework Preset: Next.js
-   - Build Command: `npm run build:vercel`
-   - Output Directory: `.next`
-
-3. **Variáveis de Ambiente**
-   - Adicione todas as variáveis do `.env.local`
-   - Use secrets para valores sensíveis
-
-4. **Domínio**
-   - Configure seu domínio customizado
-   - SSL é automático
-
-### Comandos Vercel CLI
+### Gerar Secrets Seguros
 
 ```bash
-# Instalar CLI
-npm i -g vercel
+# Gerar secret aleatório
+openssl rand -base64 32
 
-# Login
-vercel login
-
-# Deploy preview
-vercel
-
-# Deploy produção
-vercel --prod
+# Ou usando Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+---
+
+## 9. 🌐 Domínio Customizado (Opcional)
+
+### Cloudflare Pages
+
+1. Vá em **Custom domains** no projeto Pages
+2. Adicione seu domínio (ex: `ussbrasil.com.br`)
+3. Configure DNS:
+   - **Type**: CNAME
+   - **Name**: @ ou www
+   - **Target**: ussbrasil.pages.dev
+
+### Render
+
+1. Vá em **Settings** → **Custom Domain**
+2. Adicione `api.ussbrasil.com.br`
+3. Configure DNS conforme instruções
+
+---
+
+## 10. 📈 Próximos Passos
+
+Após o deploy bem-sucedido:
+
+1. **Monitoramento**
+   - Configure alertas no Render
+   - Use Sentry para error tracking
+
+2. **Performance**
+   - Configure Cloudflare CDN/Cache
+   - Otimize imagens
+
+3. **Backup**
+   - Configure backup automático no Supabase
+   - Mantenha migrações versionadas
+
+---
+
+## Referências
+
+- [Cloudflare Pages Docs](https://developers.cloudflare.com/pages)
+- [OpenNext Cloudflare](https://opennext.js.org/cloudflare)
+- [Render Docs](https://render.com/docs)
+- [Supabase Docs](https://supabase.com/docs)
+- [Prisma with Supabase](https://www.prisma.io/docs/guides/database/supabase)
 
 ---
 

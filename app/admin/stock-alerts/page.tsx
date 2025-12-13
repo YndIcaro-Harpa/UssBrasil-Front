@@ -363,7 +363,7 @@ export default function StockAlertsPage() {
                 <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">
                   {alerts.length === 0 
-                    ? 'Nenhum produto com estoque baixo! 🎉' 
+                    ? 'Nenhum produto com estoque baixo!' 
                     : 'Nenhum alerta encontrado com os filtros aplicados'
                   }
                 </p>
@@ -513,7 +513,7 @@ export default function StockAlertsPage() {
                   if (stats.critical > 0) {
                     toast.error(`ATENÇÃO: ${stats.critical} produtos com estoque crítico!`, { duration: 5000 })
                   } else if (stats.low > 0) {
-                    toast(`${stats.low} produtos com estoque baixo`, { icon: '⚠️' })
+                    toast(`${stats.low} produtos com estoque baixo`)
                   } else {
                     toast.success('Todos os estoques estão OK!')
                   }

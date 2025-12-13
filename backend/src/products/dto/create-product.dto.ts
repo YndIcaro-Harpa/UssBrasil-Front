@@ -38,13 +38,15 @@ export class CreateProductDto {
   @IsNumber()
   stock!: number;
 
-  @ApiProperty({ example: 'cluid-category-id' })
+  @ApiProperty({ example: 'cluid-category-id', required: false })
   @IsString()
-  categoryId!: string;
+  @IsOptional()
+  categoryId?: string;
 
-  @ApiProperty({ example: 'cluid-brand-id' })
+  @ApiProperty({ example: 'cluid-brand-id', required: false })
   @IsString()
-  brandId!: string;
+  @IsOptional()
+  brandId?: string;
 
   @ApiProperty({ example: 'url1.jpg,url2.jpg' })
   @IsString()

@@ -21,9 +21,10 @@ describe('Cart Store', () => {
         }).format(price);
       };
 
-      expect(formatPrice(100)).toBe('R$ 100,00');
-      expect(formatPrice(1999.99)).toBe('R$ 1.999,99');
-      expect(formatPrice(0)).toBe('R$ 0,00');
+      // Usa regex para lidar com diferentes caracteres de espaço
+      expect(formatPrice(100)).toMatch(/R\$\s*100,00/);
+      expect(formatPrice(1999.99)).toMatch(/R\$\s*1\.999,99/);
+      expect(formatPrice(0)).toMatch(/R\$\s*0,00/);
     });
 
     it('should calculate total correctly', () => {

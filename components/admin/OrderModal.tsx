@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, Package, User, MapPin, Truck, Search, Check, Plus, Minus, Trash2, Loader2, CreditCard, Wallet, QrCode, Banknote } from 'lucide-react';
+import { X, Package, User, MapPin, Truck, Search, Check, Plus, Minus, Trash2, Loader2, CreditCard, Wallet, QrCode, Banknote, ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react';
 import { Order as CrudOrder } from '@/hooks/use-admin-crud';
 import { Order as ApiOrder, Product } from '@/services/api';
 import { api } from '@/services/api';
@@ -123,9 +123,20 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
       street: '',
       city: '',
       state: '',
-      zipCode: ''
+      zipCode: '',
+      number: '',
+      complement: '',
+      neighborhood: ''
     }
   });
+
+  // Stepper state for create mode
+  const [currentStep, setCurrentStep] = useState(1);
+  const steps = [
+    { number: 1, title: 'Cliente', description: 'Dados do cliente', icon: User },
+    { number: 2, title: 'Produtos', description: 'Itens do pedido', icon: Package },
+    { number: 3, title: 'Pagamento', description: 'Forma de pagamento', icon: CreditCard }
+  ];
 
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,6 +168,35 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
     state: '',
     zipCode: ''
   });
+
+  // Validation functions for steps
+  const canProceedToStep2 = () => {
+    return formData.customer.id && formData.customer.name && formData.shippingAddress.street && formData.shippingAddress.city;
+  };
+
+  const canProceedToStep3 = () => {
+    return formData.items.length > 0;
+  };
+
+  const canSubmit = () => {
+    return formData.paymentMethod && formData.customer.id && formData.items.length > 0;
+  };
+
+  const nextStep = () => {
+    if (currentStep === 1 && !canProceedToStep2()) {
+      toast.error('Preencha os dados do cliente e endereço');
+      return;
+    }
+    if (currentStep === 2 && !canProceedToStep3()) {
+      toast.error('Adicione pelo menos um produto');
+      return;
+    }
+    setCurrentStep(prev => Math.min(prev + 1, 3));
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
   // Função para validar CPF
   const validateCPF = (cpf: string): boolean => {
@@ -683,11 +723,16 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit()) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
     setLoading(true);
     
     try {
       await onSave(formData);
       onClose();
+      setCurrentStep(1); // Reset step on close
     } catch (error) {
       console.error('Erro ao salvar pedido:', error);
     } finally {
@@ -711,8 +756,45 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
     }).format(value);
   };
 
+  // Stepper Component
+  const StepperHeader = () => (
+    <div className="flex items-center justify-center gap-2 py-4 px-6 bg-gray-50 border-b">
+      {steps.map((step, index) => {
+        const StepIcon = step.icon;
+        const isActive = currentStep === step.number;
+        const isCompleted = currentStep > step.number;
+        
+        return (
+          <div key={step.number} className="flex items-center">
+            <div 
+              className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
+                isActive 
+                  ? 'bg-[#001941] text-white' 
+                  : isCompleted 
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-200 text-gray-500'
+              }`}
+            >
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                isActive ? 'bg-white/20' : isCompleted ? 'bg-white/20' : 'bg-gray-300'
+              }`}>
+                {isCompleted ? <Check className="w-4 h-4" /> : step.number}
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-sm font-medium">{step.title}</p>
+              </div>
+            </div>
+            {index < steps.length - 1 && (
+              <ChevronRight className="w-5 h-5 text-gray-400 mx-1" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={() => { onClose(); setCurrentStep(1); }}>
       <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] p-0 gap-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-6 py-4 border-b shrink-0 bg-[#001941] text-white">
           <DialogTitle className="flex items-center gap-2 text-white text-lg">
@@ -723,63 +805,872 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
           </DialogTitle>
         </DialogHeader>
 
+        {/* Stepper for create mode */}
+        {mode === 'create' && <StepperHeader />}
+
         <form onSubmit={handleSubmit} className="flex flex-1 overflow-hidden">
-          {/* Left Side - Customer & Info */}
-          <div className="flex-[2] overflow-y-auto p-6 border-r space-y-5 bg-white">
-            {/* Basic Info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="number" className="text-black">Número do Pedido</Label>
-                <Input
-                  id="number"
-                  value={formData.number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, number: e.target.value }))}
-                  disabled={mode === 'view'}
-                  required
-                  className="text-black"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-black">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as OrderStatus }))}
-                  disabled={mode === 'view'}
-                >
-                  <SelectTrigger className="text-black">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${option.color}`} />
-                          {option.label}
+          {/* Content Area */}
+          {mode === 'create' ? (
+            // Stepper Content for Create Mode
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto">
+                <AnimatePresence mode="wait">
+                  {/* Step 1: Customer Data */}
+                  {currentStep === 1 && (
+                    <motion.div
+                      key="step1"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="p-6 space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[#001941] flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Dados do Cliente</h3>
+                          <p className="text-sm text-gray-500">Selecione ou cadastre um cliente</p>
+                        </div>
+                      </div>
+
+                      {/* Sale Type */}
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, saleType: 'online' }))}
+                          className={`p-4 rounded-xl border-2 transition-all ${
+                            formData.saleType === 'online'
+                              ? 'border-[#001941] bg-[#001941]/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <Package className={`w-6 h-6 mx-auto mb-2 ${formData.saleType === 'online' ? 'text-[#001941]' : 'text-gray-400'}`} />
+                          <p className={`text-sm font-medium ${formData.saleType === 'online' ? 'text-[#001941]' : 'text-gray-600'}`}>Venda Online</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, saleType: 'presencial' }))}
+                          className={`p-4 rounded-xl border-2 transition-all ${
+                            formData.saleType === 'presencial'
+                              ? 'border-[#001941] bg-[#001941]/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <User className={`w-6 h-6 mx-auto mb-2 ${formData.saleType === 'presencial' ? 'text-[#001941]' : 'text-gray-400'}`} />
+                          <p className={`text-sm font-medium ${formData.saleType === 'presencial' ? 'text-[#001941]' : 'text-gray-600'}`}>Venda Presencial</p>
+                        </button>
+                      </div>
+
+                      {/* Customer Search */}
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <User className="h-5 w-5 text-gray-700" />
+                            <h3 className="font-semibold text-gray-900">Informações do Cliente</h3>
+                          </div>
+                          
+                          {!formData.customer.id && (
+                            <div className="mb-4 relative">
+                              <Label className="text-gray-900">Buscar Cliente</Label>
+                              <div className="relative mt-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <Input 
+                                  placeholder="Buscar por nome, CPF ou email..." 
+                                  className="pl-9"
+                                  value={searchTerm}
+                                  onChange={(e) => handleSearchCustomer(e.target.value)}
+                                />
+                                {isSearching && (
+                                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                                )}
+                              </div>
+                              {searchResults.length > 0 && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                                  {searchResults.map(customer => (
+                                    <div 
+                                      key={customer.id}
+                                      className="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b last:border-0"
+                                      onClick={() => selectCustomer(customer)}
+                                    >
+                                      <Avatar className="h-8 w-8">
+                                        <AvatarImage src={customer.image} />
+                                        <AvatarFallback>{customer.name?.charAt(0) || '?'}</AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-sm text-gray-900">{customer.name || 'Sem nome'}</p>
+                                        <p className="text-xs text-gray-500">{customer.email}</p>
+                                        {customer.phone && (
+                                          <p className="text-xs text-gray-400">{customer.phone}</p>
+                                        )}
+                                      </div>
+                                      <Check className="w-4 h-4 text-gray-400" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {searchTerm.length >= 3 && searchResults.length === 0 && !isSearching && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg p-4 text-center">
+                                  <p className="text-gray-500 text-sm mb-3">Nenhum cliente encontrado</p>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => {
+                                      setNewCustomerData(prev => ({ ...prev, name: searchTerm }));
+                                      setShowCustomerModal(true);
+                                    }}
+                                    className="bg-[#001941] hover:bg-[#001941]/90 text-white"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Criar Novo Cliente
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {formData.customer.id && (
+                            <div className="flex items-center gap-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                              <Avatar className="h-12 w-12">
+                                <AvatarImage src={formData.customer.avatar} />
+                                <AvatarFallback className="bg-green-600 text-white">
+                                  {formData.customer.name ? formData.customer.name.split(' ').map(n => n[0]).join('') : '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900">{formData.customer.name}</p>
+                                <p className="text-sm text-gray-600">{formData.customer.email}</p>
+                              </div>
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setFormData(prev => ({ ...prev, customer: { id: '', name: '', email: '', avatar: '' } }))}
+                                className="text-red-600 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Remover
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Shipping Address */}
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <MapPin className="h-5 w-5 text-gray-700" />
+                            <h3 className="font-semibold text-gray-900">Endereço de Entrega</h3>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="zipCode" className="text-gray-900">CEP *</Label>
+                              <Input
+                                id="zipCode"
+                                value={formData.shippingAddress.zipCode}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  let formatted = value;
+                                  if (value.length > 5) formatted = value.slice(0, 5) + '-' + value.slice(5, 8);
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    shippingAddress: { ...prev.shippingAddress, zipCode: formatted }
+                                  }));
+                                }}
+                                onBlur={async (e) => {
+                                  const cep = e.target.value.replace(/\D/g, '');
+                                  if (cep.length === 8) {
+                                    try {
+                                      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                                      const data = await response.json();
+                                      if (!data.erro) {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          shippingAddress: {
+                                            ...prev.shippingAddress,
+                                            street: data.logradouro || prev.shippingAddress.street,
+                                            neighborhood: data.bairro || '',
+                                            city: data.localidade || prev.shippingAddress.city,
+                                            state: data.uf || prev.shippingAddress.state
+                                          }
+                                        }));
+                                        toast.success('Endereço encontrado!');
+                                      } else {
+                                        toast.error('CEP não encontrado');
+                                      }
+                                    } catch (error) {
+                                      console.error('Erro ao buscar CEP:', error);
+                                    }
+                                  }
+                                }}
+                                placeholder="00000-000"
+                                maxLength={9}
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="street" className="text-gray-900">Logradouro *</Label>
+                              <Input
+                                id="street"
+                                value={formData.shippingAddress.street}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: { ...prev.shippingAddress, street: e.target.value }
+                                }))}
+                                placeholder="Rua, Avenida, etc."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="number" className="text-gray-900">Número</Label>
+                              <Input
+                                id="number"
+                                value={(formData.shippingAddress as any).number || ''}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: { ...prev.shippingAddress, number: e.target.value }
+                                }))}
+                                placeholder="123"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="complement" className="text-gray-900">Complemento</Label>
+                              <Input
+                                id="complement"
+                                value={(formData.shippingAddress as any).complement || ''}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: { ...prev.shippingAddress, complement: e.target.value }
+                                }))}
+                                placeholder="Apto, Bloco, etc."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="neighborhood" className="text-gray-900">Bairro</Label>
+                              <Input
+                                id="neighborhood"
+                                value={(formData.shippingAddress as any).neighborhood || ''}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: { ...prev.shippingAddress, neighborhood: e.target.value }
+                                }))}
+                                placeholder="Bairro"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="city" className="text-gray-900">Cidade *</Label>
+                              <Input
+                                id="city"
+                                value={formData.shippingAddress.city}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: { ...prev.shippingAddress, city: e.target.value }
+                                }))}
+                                placeholder="Cidade"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="state" className="text-gray-900">Estado *</Label>
+                              <Input
+                                id="state"
+                                value={formData.shippingAddress.state}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: { ...prev.shippingAddress, state: e.target.value }
+                                }))}
+                                placeholder="UF"
+                                maxLength={2}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+
+                  {/* Step 2: Products */}
+                  {currentStep === 2 && (
+                    <motion.div
+                      key="step2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="p-6 space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[#001941] flex items-center justify-center">
+                          <Package className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Produtos do Pedido</h3>
+                          <p className="text-sm text-gray-500">Adicione os produtos ao pedido</p>
+                        </div>
+                      </div>
+
+                      {/* Product Search */}
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="relative mb-4">
+                            <Label className="text-gray-900 mb-2 block">Buscar Produto</Label>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                              <Input 
+                                placeholder="Buscar produto (nome, SKU, marca)..." 
+                                className="pl-9"
+                                value={productSearchTerm}
+                                onChange={(e) => handleSearchProduct(e.target.value)}
+                              />
+                              {isSearchingProducts && (
+                                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                              )}
+                            </div>
+                            {productSearchResults.length > 0 && (
+                              <div className="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                                {productSearchResults.map(product => {
+                                  let imageUrl = '';
+                                  try {
+                                    if (product.images) {
+                                      if (product.images.startsWith('[')) {
+                                        const images = JSON.parse(product.images);
+                                        imageUrl = images[0] || '';
+                                      } else if (product.images.includes(',')) {
+                                        imageUrl = product.images.split(',')[0].trim();
+                                      } else {
+                                        imageUrl = product.images;
+                                      }
+                                    }
+                                  } catch (e) {
+                                    imageUrl = product.images || '';
+                                  }
+                                  
+                                  return (
+                                    <div 
+                                      key={product.id}
+                                      className="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b last:border-0"
+                                      onClick={() => handleProductSelect(product)}
+                                    >
+                                      <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                                        {imageUrl ? (
+                                          <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center">
+                                            <Package className="w-5 h-5 text-gray-400" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                          <span>{product.category?.name || 'Sem categoria'}</span>
+                                          <span>•</span>
+                                          <span className="font-medium text-blue-600">{formatCurrency(product.discountPrice || product.price)}</span>
+                                        </div>
+                                      </div>
+                                      <Plus className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Variation Selection Panel */}
+                            {selectedProductForVariation && (
+                              <div className="absolute z-30 w-full mt-1 bg-white border rounded-lg shadow-xl p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="font-semibold text-sm text-gray-900">Selecionar Variação</h4>
+                                  <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6"
+                                    onClick={cancelVariationSelection}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                
+                                <div className="flex items-center gap-3 mb-3 pb-3 border-b">
+                                  <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                                    {(() => {
+                                      let imgUrl = '';
+                                      try {
+                                        if (selectedProductForVariation.images) {
+                                          if (selectedProductForVariation.images.startsWith('[')) {
+                                            imgUrl = JSON.parse(selectedProductForVariation.images)[0] || '';
+                                          } else {
+                                            imgUrl = selectedProductForVariation.images.split(',')[0].trim();
+                                          }
+                                        }
+                                      } catch { }
+                                      return imgUrl ? (
+                                        <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                          <Package className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm text-gray-900">{selectedProductForVariation.name}</p>
+                                    <p className="text-xs text-gray-500">{formatCurrency(selectedProductForVariation.discountPrice || selectedProductForVariation.price)}</p>
+                                  </div>
+                                </div>
+                                
+                                {/* Color Selection */}
+                                {(() => {
+                                  const { colors, storage } = getProductVariations(selectedProductForVariation);
+                                  return (
+                                    <>
+                                      {colors.length > 0 && (
+                                        <div className="mb-3">
+                                          <Label className="text-gray-900 text-xs mb-2 block">Cor</Label>
+                                          <div className="flex flex-wrap gap-2">
+                                            {colors.map((color: any) => (
+                                              <button
+                                                key={color.name}
+                                                type="button"
+                                                onClick={() => setSelectedColor(color.name)}
+                                                className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs ${
+                                                  selectedColor === color.name 
+                                                    ? 'border-[#001941] bg-[#001941]/5' 
+                                                    : 'border-gray-200'
+                                                }`}
+                                              >
+                                                <span 
+                                                  className="w-3 h-3 rounded-full border"
+                                                  style={{ backgroundColor: color.code || '#ccc' }}
+                                                />
+                                                {color.name}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {storage.length > 0 && (
+                                        <div className="mb-3">
+                                          <Label className="text-gray-900 text-xs mb-2 block">Armazenamento</Label>
+                                          <div className="flex flex-wrap gap-2">
+                                            {storage.map((s: string) => (
+                                              <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => setSelectedStorage(s)}
+                                                className={`px-3 py-1 rounded-full border text-xs ${
+                                                  selectedStorage === s 
+                                                    ? 'border-[#001941] bg-[#001941]/5 text-[#001941]' 
+                                                    : 'border-gray-200 text-gray-600'
+                                                }`}
+                                              >
+                                                {s}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                                
+                                <Button
+                                  type="button"
+                                  className="w-full bg-[#001941] hover:bg-[#001941]/90"
+                                  onClick={confirmAddProductWithVariations}
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Adicionar ao Pedido
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Order Items List */}
+                          <div className="space-y-3">
+                            {formData.items.length === 0 ? (
+                              <div className="text-center py-8 text-gray-500">
+                                <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                <p>Nenhum produto adicionado</p>
+                                <p className="text-sm">Use a busca acima para adicionar produtos</p>
+                              </div>
+                            ) : (
+                              formData.items.map((item, index) => (
+                                <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border">
+                                  <div className="w-14 h-14 rounded-lg bg-white border overflow-hidden flex-shrink-0">
+                                    {item.image ? (
+                                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <Package className="w-6 h-6 text-gray-300" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm text-gray-900 truncate">{item.name}</p>
+                                    {(item.selectedColor || item.selectedStorage) && (
+                                      <div className="flex gap-1 mt-0.5">
+                                        {item.selectedColor && (
+                                          <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded">{item.selectedColor}</span>
+                                        )}
+                                        {item.selectedStorage && (
+                                          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{item.selectedStorage}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <p className="text-sm text-gray-600 mt-1">{formatCurrency(item.price)}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => updateItemQuantity(index, -1)}
+                                      className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="w-8 text-center font-medium text-gray-900">{item.quantity}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateItemQuantity(index, 1)}
+                                      className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="text-right min-w-[80px]">
+                                    <p className="font-bold text-gray-900">{formatCurrency(item.price * item.quantity)}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeItem(index)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Order Summary */}
+                      {formData.items.length > 0 && (
+                        <Card>
+                          <CardContent className="pt-6">
+                            <h4 className="font-semibold text-gray-900 mb-4">Resumo do Pedido</h4>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Subtotal ({formData.items.length} {formData.items.length === 1 ? 'item' : 'itens'})</span>
+                                <span className="text-gray-900">{formatCurrency(formData.subtotal)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Frete</span>
+                                <Input
+                                  type="number"
+                                  value={formData.shipping}
+                                  onChange={(e) => {
+                                    const shipping = parseFloat(e.target.value) || 0;
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      shipping,
+                                      total: prev.subtotal + shipping - prev.discount
+                                    }));
+                                  }}
+                                  className="w-24 h-7 text-right text-sm"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Desconto</span>
+                                <Input
+                                  type="number"
+                                  value={formData.discount}
+                                  onChange={(e) => {
+                                    const discount = parseFloat(e.target.value) || 0;
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      discount,
+                                      total: prev.subtotal + prev.shipping - discount
+                                    }));
+                                  }}
+                                  className="w-24 h-7 text-right text-sm"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                              <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                                <span className="text-gray-900">Total</span>
+                                <span className="text-[#001941]">{formatCurrency(formData.total)}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* Step 3: Payment */}
+                  {currentStep === 3 && (
+                    <motion.div
+                      key="step3"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="p-6 space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[#001941] flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Forma de Pagamento</h3>
+                          <p className="text-sm text-gray-500">Selecione o método de pagamento</p>
+                        </div>
+                      </div>
+
+                      <Card>
+                        <CardContent className="pt-6">
+                          {/* Payment Method Selection */}
+                          <div className="mb-6">
+                            <Label className="text-gray-900 mb-3 block">Método de Pagamento</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {paymentMethods.map((method) => {
+                                const IconComponent = method.icon;
+                                return (
+                                  <button
+                                    key={method.value}
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ 
+                                      ...prev, 
+                                      paymentMethod: method.value as any,
+                                      installments: method.value === 'CREDIT_CARD' ? prev.installments : 1
+                                    }))}
+                                    className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
+                                      formData.paymentMethod === method.value
+                                        ? 'border-[#001941] bg-[#001941]/5'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <IconComponent className={`h-6 w-6 mb-2 ${
+                                      formData.paymentMethod === method.value ? 'text-[#001941]' : 'text-gray-500'
+                                    }`} />
+                                    <span className={`text-sm font-medium ${
+                                      formData.paymentMethod === method.value ? 'text-[#001941]' : 'text-gray-600'
+                                    }`}>
+                                      {method.label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Installments (only for credit card) */}
+                          {formData.paymentMethod === 'CREDIT_CARD' && (
+                            <div className="mb-6">
+                              <Label className="text-gray-900 mb-2 block">Parcelas</Label>
+                              <Select
+                                value={formData.installments.toString()}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, installments: parseInt(value) }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                                    <SelectItem key={n} value={n.toString()}>
+                                      {n}x de {formatCurrency(formData.total / n)}
+                                      {n === 1 ? ' à vista' : ''}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {/* Payment Status */}
+                          <div className="mb-6">
+                            <Label className="text-gray-900 mb-2 block">Status do Pagamento</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {paymentStatusOptions.map(option => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => setFormData(prev => ({ ...prev, paymentStatus: option.value as any }))}
+                                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                                    formData.paymentStatus === option.value
+                                      ? 'border-[#001941] bg-[#001941]/5 text-[#001941]'
+                                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className={`w-2 h-2 rounded-full ${option.color}`} />
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Final Order Summary */}
+                      <Card className="bg-gray-50">
+                        <CardContent className="pt-6">
+                          <h4 className="font-semibold text-gray-900 mb-4">Resumo Final do Pedido</h4>
+                          
+                          {/* Customer */}
+                          <div className="flex items-center gap-3 p-3 bg-white rounded-lg mb-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarFallback className="bg-[#001941] text-white">
+                                {formData.customer.name?.charAt(0) || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-sm text-gray-900">{formData.customer.name}</p>
+                              <p className="text-xs text-gray-500">{formData.customer.email}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Items Count */}
+                          <div className="flex items-center justify-between p-3 bg-white rounded-lg mb-3">
+                            <span className="text-sm text-gray-600">{formData.items.length} {formData.items.length === 1 ? 'produto' : 'produtos'}</span>
+                            <span className="text-sm font-medium text-gray-900">{formatCurrency(formData.subtotal)}</span>
+                          </div>
+                          
+                          {/* Totals */}
+                          <div className="space-y-2 pt-3 border-t">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Subtotal</span>
+                              <span className="text-gray-900">{formatCurrency(formData.subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Frete</span>
+                              <span className="text-gray-900">{formatCurrency(formData.shipping)}</span>
+                            </div>
+                            {formData.discount > 0 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Desconto</span>
+                                <span className="text-green-600">-{formatCurrency(formData.discount)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                              <span className="text-gray-900">Total</span>
+                              <span className="text-[#001941]">{formatCurrency(formData.total)}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="saleType" className="text-black">Tipo de Venda</Label>
-                <Select
-                  value={formData.saleType}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, saleType: value as 'online' | 'presencial' }))}
-                  disabled={mode === 'view'}
+              {/* Stepper Navigation */}
+              <div className="border-t bg-white px-6 py-4 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="gap-2"
                 >
-                  <SelectTrigger className="text-black">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="presencial">Presencial</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <ChevronLeft className="w-4 h-4" />
+                  Voltar
+                </Button>
+                
+                <div className="flex items-center gap-2">
+                  {steps.map((step) => (
+                    <div
+                      key={step.number}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        currentStep >= step.number ? 'bg-[#001941]' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {currentStep < 3 ? (
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="gap-2 bg-[#001941] hover:bg-[#001941]/90"
+                  >
+                    Próximo
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    disabled={loading || !canSubmit()}
+                    className="gap-2 bg-green-600 hover:bg-green-700"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    Finalizar Pedido
+                  </Button>
+                )}
               </div>
             </div>
+          ) : (
+            // Original Layout for Edit/View Mode
+            <>
+              {/* Left Side - Customer & Info */}
+              <div className="flex-[2] overflow-y-auto p-6 border-r space-y-5 bg-white">
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="number" className="text-gray-900">Número do Pedido</Label>
+                    <Input
+                      id="number"
+                      value={formData.number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, number: e.target.value }))}
+                      disabled={mode === 'view'}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="status" className="text-black">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as OrderStatus }))}
+                      disabled={mode === 'view'}
+                    >
+                      <SelectTrigger className="text-black">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${option.color}`} />
+                              {option.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="saleType" className="text-black">Tipo de Venda</Label>
+                    <Select
+                      value={formData.saleType}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, saleType: value as 'online' | 'presencial' }))}
+                      disabled={mode === 'view'}
+                    >
+                      <SelectTrigger className="text-black">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="presencial">Presencial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
             {/* Customer Info */}
             <Card>
@@ -1473,6 +2364,8 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
               </div>
             </div>
           </div>
+            </>
+          )}
         </form>
       </DialogContent>
 

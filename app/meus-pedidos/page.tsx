@@ -447,7 +447,27 @@ export default function MeusPedidosPage() {
                                       >
                                         {item.product.name}
                                       </Link>
-                                      <p className="text-sm text-gray-500">
+                                      {/* Exibir variações do item */}
+                                      {(item.selectedColor || item.selectedSize || item.selectedStorage) && (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {item.selectedColor && (
+                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                              {item.selectedColor}
+                                            </span>
+                                          )}
+                                          {item.selectedSize && (
+                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                              {item.selectedSize}
+                                            </span>
+                                          )}
+                                          {item.selectedStorage && (
+                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                              {item.selectedStorage}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                      <p className="text-sm text-gray-500 mt-1">
                                         Qtd: {item.quantity} × {formatPrice(item.price)}
                                       </p>
                                     </div>

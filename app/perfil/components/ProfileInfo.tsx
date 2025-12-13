@@ -10,13 +10,16 @@ import {
   Edit3,
   Save,
   X,
-  Loader2
+  Loader2,
+  Image as ImageIcon,
+  Camera
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { User as UserType } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import Image from 'next/image'
 
 interface ProfileInfoProps {
   user: UserType | null
@@ -31,6 +34,7 @@ export default function ProfileInfo({ user, onUpdate, session }: ProfileInfoProp
     name: user?.name || session?.user?.name || '',
     email: user?.email || session?.user?.email || '',
     phone: user?.phone || '',
+    image: user?.image || '',
   })
 
   const handleSave = async () => {
@@ -44,6 +48,7 @@ export default function ProfileInfo({ user, onUpdate, session }: ProfileInfoProp
       await onUpdate({
         name: formData.name,
         phone: formData.phone || undefined,
+        image: formData.image || undefined,
       })
       setIsEditing(false)
     } catch (error) {
@@ -58,6 +63,7 @@ export default function ProfileInfo({ user, onUpdate, session }: ProfileInfoProp
       name: user?.name || session?.user?.name || '',
       email: user?.email || session?.user?.email || '',
       phone: user?.phone || '',
+      image: user?.image || '',
     })
     setIsEditing(false)
   }
@@ -112,7 +118,51 @@ export default function ProfileInfo({ user, onUpdate, session }: ProfileInfoProp
       </div>
 
       {/* Form */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        {/* Avatar Section */}
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-2xl font-bold overflow-hidden border-4 border-white shadow-md">
+                {formData.image ? (
+                  <Image
+                    src={formData.image}
+                    alt={formData.name || 'Avatar'}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  formData.name?.charAt(0).toUpperCase() || 'U'
+                )}
+              </div>
+              {isEditing && (
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white">
+                  <Camera className="h-3 w-3" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="image" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <ImageIcon className="h-4 w-4 text-gray-400" />
+                URL da Foto de Perfil
+              </Label>
+              <Input
+                id="image"
+                value={formData.image}
+                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                disabled={!isEditing}
+                placeholder="https://exemplo.com/sua-foto.jpg"
+                className={`mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Cole a URL de uma imagem para usar como foto de perfil
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Other Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Nome */}
         <div className="space-y-2">
           <Label htmlFor="name" className="flex items-center gap-2">
@@ -178,6 +228,7 @@ export default function ProfileInfo({ user, onUpdate, session }: ProfileInfoProp
             disabled
             className="bg-gray-50"
           />
+        </div>
         </div>
       </div>
 

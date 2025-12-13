@@ -27,25 +27,33 @@ const SHIPPING_OPTIONS = [
 
 const PAYMENT_METHODS = [
   { id: 'pix', name: 'PIX', icon: QrCode, discount: 5, description: '5% de desconto' },
-  { id: 'credit', name: 'Cartão de Crédito', icon: CreditCard, description: 'Até 12x sem juros' },
+  { id: 'credit', name: 'Cartão de Crédito', icon: CreditCard, description: 'Até 10x sem juros' },
   { id: 'boleto', name: 'Boleto', icon: Barcode, description: 'Vence em 3 dias' },
 ]
 
-// Opções de parcelamento
+// Opções de parcelamento - Sem juros até 10x, com juros a partir de 11x
 const getInstallmentOptions = (total: number) => {
   const options = []
   for (let i = 1; i <= 12; i++) {
-    const value = total / i
     const hasInterest = i > 10 // Juros acima de 10x
+    // Taxa de juros simples: 1.99% ao mês apenas para parcelas 11 e 12
     const interestRate = hasInterest ? 1.99 : 0
-    const finalValue = hasInterest ? value * (1 + interestRate / 100) : value
+    
+    // Calcular total com juros simples (não compostos)
+    // Para 11x: 1.99% sobre o total
+    // Para 12x: 2 * 1.99% = 3.98% sobre o total
+    const extraInstallments = hasInterest ? i - 10 : 0
+    const totalInterestPercent = extraInstallments * interestRate
+    const totalWithInterest = total * (1 + totalInterestPercent / 100)
+    
+    const valuePerInstallment = totalWithInterest / i
     
     options.push({
       installments: i,
-      value: finalValue,
-      total: finalValue * i,
+      value: valuePerInstallment,
+      total: totalWithInterest,
       hasInterest,
-      interestRate
+      interestRate: totalInterestPercent.toFixed(2)
     })
   }
   return options
@@ -389,21 +397,28 @@ export default function CheckoutPage() {
       let stripePaymentIntentId = null
       let stripePaymentStatus = 'PENDING'
       
+      // Calcular valor correto para cobrança (com juros se aplicável)
+      const installmentOption = getInstallmentOptions(finalTotal)[cardData.installments - 1]
+      const chargeAmount = paymentMethod === 'credit' ? installmentOption.total : finalTotal
+      
       // Processar pagamento com Stripe para cartão de crédito
       if (paymentMethod === 'credit') {
         try {
           // Usar endpoint de teste para processar pagamento completo
           // Isso cria o Payment Intent e processa o pagamento em um único passo
           const testPaymentResult = await api.stripe.processTestPayment({
-            amount: finalTotal,
+            amount: chargeAmount, // Valor com juros se aplicável
             currency: 'brl',
             installments: Number(cardData.installments),
             customerEmail: formData.email,
             userId: user?.id,
             items: cartItems.map(item => ({
-              productId: String(item.id),
+              productId: String(item.id).split('-')[0],
               quantity: item.quantity,
               price: item.discountPrice || item.price,
+              selectedColor: item.selectedColor || null,
+              selectedSize: item.selectedSize || null,
+              selectedStorage: item.selectedStorage || null,
             })),
             // Usar token de teste padrão (Visa)
             token: 'tok_visa',
@@ -412,7 +427,7 @@ export default function CheckoutPage() {
           if (testPaymentResult.success) {
             stripePaymentIntentId = testPaymentResult.paymentIntent.id
             stripePaymentStatus = 'PAID'
-            toast.success(`Pagamento de R$ ${finalTotal.toFixed(2).replace('.', ',')} processado com sucesso!`)
+            toast.success(`Pagamento de R$ ${chargeAmount.toFixed(2).replace('.', ',')} processado com sucesso!`)
           } else {
             throw new Error(testPaymentResult.message || 'Falha no processamento')
           }
@@ -427,6 +442,11 @@ export default function CheckoutPage() {
         }
       }
       
+      // Calcular taxas para registro (Taxa Stripe Brasil: 3.99% + R$ 0.39)
+      const stripeFee = chargeAmount * 0.0399 + 0.39 // Taxa Stripe Brasil
+      const invoiceFee = chargeAmount * 0.07 // 7% Nota Fiscal
+      const netAmount = chargeAmount - stripeFee - invoiceFee
+      
       // Create order object to save locally
       const order = {
         id: orderId,
@@ -437,7 +457,12 @@ export default function CheckoutPage() {
         subtotal: cartTotal,
         shipping: shippingCost,
         discount: pixDiscount,
-        total: finalTotal,
+        total: chargeAmount, // Valor total cobrado (com juros se aplicável)
+        originalTotal: finalTotal, // Valor sem juros
+        interestAmount: chargeAmount - finalTotal, // Valor dos juros
+        stripeFee: stripeFee, // Taxa Stripe 3.99% + R$0.39
+        invoiceFee: invoiceFee, // Taxa NF 7%
+        netAmount: netAmount, // Valor líquido
         stripePaymentIntentId: stripePaymentIntentId,
         shippingAddress: {
           name: formData.nome,
@@ -451,9 +476,13 @@ export default function CheckoutPage() {
         },
         items: cartItems.map(item => ({
           id: `${orderId}-${item.id}`,
-          productId: String(item.id),
+          productId: String(item.id).split('-')[0], // Pegar só o ID base, sem variações
           quantity: item.quantity,
           price: item.discountPrice || item.price,
+          // Incluir variações no item do pedido
+          selectedColor: item.selectedColor || null,
+          selectedSize: item.selectedSize || null,
+          selectedStorage: item.selectedStorage || null,
           product: {
             name: item.name,
             image: item.image,
@@ -481,9 +510,12 @@ export default function CheckoutPage() {
         await api.orders.create({
           userId: user?.id || 'guest',
           items: cartItems.map(item => ({
-            productId: String(item.id),
+            productId: String(item.id).split('-')[0],
             quantity: item.quantity,
             price: item.discountPrice || item.price,
+            selectedColor: item.selectedColor || null,
+            selectedSize: item.selectedSize || null,
+            selectedStorage: item.selectedStorage || null,
           })),
           shippingAddress: order.shippingAddress,
           paymentMethod: paymentMethod.toUpperCase(),
@@ -994,7 +1026,7 @@ export default function CheckoutPage() {
                 {paymentMethod === 'pix' && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-xl mb-6">
                     <p className="text-green-800 font-medium">
-                      💰 Você economiza R$ {pixDiscount.toFixed(2).replace('.', ',')} pagando com PIX!
+                      Você economiza R$ {pixDiscount.toFixed(2).replace('.', ',')} pagando com PIX!
                     </p>
                     <p className="text-green-600 text-sm mt-1">
                       O QR Code será gerado após confirmar o pedido.
@@ -1018,11 +1050,11 @@ export default function CheckoutPage() {
                         
                         {/* Card brand logo */}
                         <div className="absolute top-5 right-5 text-2xl font-bold opacity-80">
-                          {detectCardBrand(cardData.cardNumber) === 'visa' && '💳 VISA'}
-                          {detectCardBrand(cardData.cardNumber) === 'mastercard' && '🔴🟡 MC'}
-                          {detectCardBrand(cardData.cardNumber) === 'amex' && '💳 AMEX'}
-                          {detectCardBrand(cardData.cardNumber) === 'elo' && '💳 ELO'}
-                          {!detectCardBrand(cardData.cardNumber) && '💳'}
+                          {detectCardBrand(cardData.cardNumber) === 'visa' && 'VISA'}
+                          {detectCardBrand(cardData.cardNumber) === 'mastercard' && 'MC'}
+                          {detectCardBrand(cardData.cardNumber) === 'amex' && 'AMEX'}
+                          {detectCardBrand(cardData.cardNumber) === 'elo' && 'ELO'}
+                          {!detectCardBrand(cardData.cardNumber) && 'CARD'}
                         </div>
                         
                         {/* Card number */}
@@ -1160,7 +1192,7 @@ export default function CheckoutPage() {
                           onChange={(e) => handleCardInputChange('installments', e.target.value)}
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                         >
-                          {getInstallmentOptions(cartTotal + shippingCost).map((option) => (
+                          {getInstallmentOptions(finalTotal).map((option) => (
                             <option key={option.installments} value={option.installments}>
                               {option.installments}x de R$ {option.value.toFixed(2).replace('.', ',')} 
                               {option.hasInterest ? ` (com juros ${option.interestRate}%)` : ' sem juros'}
@@ -1170,8 +1202,8 @@ export default function CheckoutPage() {
                         </select>
                         {cardData.installments > 1 && (
                           <p className="text-gray-500 text-xs mt-2">
-                            Total: R$ {getInstallmentOptions(cartTotal + shippingCost)[cardData.installments - 1]?.total.toFixed(2).replace('.', ',')}
-                            {getInstallmentOptions(cartTotal + shippingCost)[cardData.installments - 1]?.hasInterest && (
+                            Total: R$ {getInstallmentOptions(finalTotal)[cardData.installments - 1]?.total.toFixed(2).replace('.', ',')}
+                            {getInstallmentOptions(finalTotal)[cardData.installments - 1]?.hasInterest && (
                               <span className="text-amber-600 ml-1">(inclui juros)</span>
                             )}
                           </p>
@@ -1201,7 +1233,7 @@ export default function CheckoutPage() {
                 {paymentMethod === 'boleto' && (
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-6">
                     <p className="text-amber-800 font-medium">
-                      📄 O boleto será gerado após confirmar o pedido
+                      O boleto será gerado após confirmar o pedido
                     </p>
                     <p className="text-amber-600 text-sm mt-1">
                       O pedido será processado após a confirmação do pagamento (até 3 dias úteis).
@@ -1244,7 +1276,7 @@ export default function CheckoutPage() {
               
               <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
                 {cartItems.map((item: any) => (
-                  <div key={`${item.id}-${item.color || ''}`} className="flex gap-3 py-3 border-b border-gray-100">
+                  <div key={`${item.id}-${item.selectedColor || ''}-${item.selectedSize || ''}-${item.selectedStorage || ''}`} className="flex gap-3 py-3 border-b border-gray-100">
                     <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
                         src={item.image || '/placeholder.svg'}
@@ -1256,6 +1288,26 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-gray-900 text-sm font-medium line-clamp-1">{item.name}</h4>
+                      {/* Exibir variações selecionadas */}
+                      {(item.selectedColor || item.selectedSize || item.selectedStorage) && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.selectedColor && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {item.selectedColor}
+                            </span>
+                          )}
+                          {item.selectedSize && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {item.selectedSize}
+                            </span>
+                          )}
+                          {item.selectedStorage && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {item.selectedStorage}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-1">
                           <button
@@ -1345,13 +1397,34 @@ export default function CheckoutPage() {
                     <span>-R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
+
+                {/* Mostrar juros do parcelamento se aplicável */}
+                {currentStep === 4 && paymentMethod === 'credit' && cardData.installments > 10 && (
+                  <div className="flex justify-between text-amber-600">
+                    <span>Juros ({cardData.installments}x)</span>
+                    <span>+R$ {(getInstallmentOptions(finalTotal)[cardData.installments - 1].total - finalTotal).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between text-gray-900 text-lg font-bold pt-3 border-t border-gray-100">
                   <span>Total</span>
                   <span className="text-blue-400">
-                    R$ {(currentStep === 4 ? finalTotal : (completedSteps.includes(3) ? cartTotal + shippingCost : cartTotal)).toFixed(2).replace('.', ',')}
+                    R$ {(currentStep === 4 
+                      ? (paymentMethod === 'credit' 
+                          ? getInstallmentOptions(finalTotal)[cardData.installments - 1].total 
+                          : finalTotal)
+                      : (completedSteps.includes(3) ? cartTotal + shippingCost : cartTotal)
+                    ).toFixed(2).replace('.', ',')}
                   </span>
                 </div>
+
+                {/* Info de parcelas */}
+                {currentStep === 4 && paymentMethod === 'credit' && cardData.installments > 1 && (
+                  <div className="text-center text-sm text-gray-500 mt-2">
+                    {cardData.installments}x de R$ {getInstallmentOptions(finalTotal)[cardData.installments - 1].value.toFixed(2).replace('.', ',')}
+                    {cardData.installments > 10 && <span className="text-amber-600 ml-1">(com juros)</span>}
+                  </div>
+                )}
               </div>
               
               <div className="mt-6 pt-4 border-t border-gray-100">

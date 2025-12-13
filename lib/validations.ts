@@ -1,6 +1,124 @@
 import { z } from 'zod'
 
 // ========================================
+// FUNÇÕES DE VALIDAÇÃO SIMPLES
+// ========================================
+
+/**
+ * Valida se é um email válido
+ */
+export function validateEmail(email: string): boolean {
+  if (!email) return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Valida se a senha é forte (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número)
+ */
+export function validatePassword(password: string): boolean {
+  if (!password || password.length < 8) return false;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  return hasUpperCase && hasLowerCase && hasNumber;
+}
+
+/**
+ * Valida CPF brasileiro
+ */
+export function validateCPF(cpf: string): boolean {
+  if (!cpf) return false;
+  
+  // Remove caracteres não numéricos
+  const cleanCPF = cpf.replace(/\D/g, '');
+  
+  if (cleanCPF.length !== 11) return false;
+  
+  // Verifica se todos os dígitos são iguais
+  if (/^(\d)\1+$/.test(cleanCPF)) return false;
+  
+  // Validação dos dígitos verificadores
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
+  
+  return true;
+}
+
+/**
+ * Valida telefone brasileiro
+ */
+export function validatePhone(phone: string): boolean {
+  if (!phone) return false;
+  const cleanPhone = phone.replace(/\D/g, '');
+  return cleanPhone.length >= 10 && cleanPhone.length <= 11;
+}
+
+/**
+ * Valida CEP brasileiro
+ */
+export function validateCEP(cep: string): boolean {
+  if (!cep) return false;
+  const cleanCEP = cep.replace(/\D/g, '');
+  return cleanCEP.length === 8;
+}
+
+// ========================================
+// FUNÇÕES DE FORMATAÇÃO
+// ========================================
+
+/**
+ * Formata CPF
+ */
+export function formatCPF(cpf: string): string {
+  const cleanCPF = cpf.replace(/\D/g, '');
+  return cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+/**
+ * Formata telefone
+ */
+export function formatPhone(phone: string): string {
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (cleanPhone.length === 11) {
+    return cleanPhone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+  return cleanPhone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+}
+
+/**
+ * Formata CEP
+ */
+export function formatCEP(cep: string): string {
+  const cleanCEP = cep.replace(/\D/g, '');
+  return cleanCEP.replace(/(\d{5})(\d{3})/, '$1-$2');
+}
+
+/**
+ * Formata valor em Real brasileiro
+ */
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+}
+
+// ========================================
 // SCHEMAS DE VALIDAÇÃO PARA API
 // ========================================
 

@@ -6,7 +6,7 @@ import LoadingSpinner from './LoadingSpinner'
 
 interface PremiumButtonProps {
   children: ReactNode
-  variant?: 'primary' | 'secondary' | 'accent' | 'outline'
+  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'danger'
   size?: 'sm' | 'md' | 'lg' | 'xl'
   loading?: boolean
   icon?: ReactNode
@@ -32,10 +32,10 @@ const PremiumButton = ({
   type = 'button'
 }: PremiumButtonProps) => {
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
-    xl: 'px-8 py-4 text-xl'
+    sm: 'px-2 py-1 text-[10px]',
+    md: 'px-3 py-1.5 text-xs',
+    lg: 'px-4 py-2 text-sm',
+    xl: 'px-6 py-2.5 text-base'
   }
 
   const getVariantStyles = () => {
@@ -63,6 +63,8 @@ const PremiumButton = ({
         return { background: '#f3f4f6', color: '#374151' }
       case 'accent':
         return { background: 'linear-gradient(135deg, #06B6D4, #0EA5E9)' }
+      case 'danger':
+        return { background: 'linear-gradient(135deg, #f87171, #ef4444)' }
       case 'outline':
         return { 
           border: '2px solid #60a5fa',

@@ -1,19 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-
-export interface CreateBrandDto {
-  name: string;
-  description?: string;
-  color?: string;
-}
-
-export interface UpdateBrandDto {
-  name?: string;
-  description?: string;
-  color?: string;
-  isActive?: boolean;
-}
+import { CreateBrandDto, UpdateBrandDto } from './dto/brand.dto';
 
 @Injectable()
 export class BrandsService {

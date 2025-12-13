@@ -202,38 +202,38 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 p-3">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-3"
         >
           <div>
-            <h1 className="text-2xl lg:text-4xl font-bold text-[#001941]">
+            <h1 className="text-lg lg:text-xl font-bold text-[#001941]">
               Dashboard Analytics
             </h1>
-            <p className="text-gray-600 mt-1 lg:mt-2 text-sm lg:text-base">
+            <p className="text-gray-600 mt-0.5 text-xs">
               Monitore o desempenho da sua loja em tempo real
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 lg:gap-4">
-            <Button variant="outline" size="sm" onClick={fetchDashboardData} className="border-[#001941]/20 hover:bg-[#001941]/5">
-              <RefreshCw className="h-4 w-4 mr-2" />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button variant="outline" size="sm" onClick={fetchDashboardData} className="border-[#001941]/20 hover:bg-[#001941]/5 h-7 text-[10px] px-2">
+              <RefreshCw className="h-3 w-3 mr-1" />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
-            <Button variant="outline" size="sm" className="border-[#001941]/20 hover:bg-[#001941]/5">
-              <Calendar className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="border-[#001941]/20 hover:bg-[#001941]/5 h-7 text-[10px] px-2">
+              <Calendar className="h-3 w-3 mr-1" />
               <span className="hidden sm:inline">Últimos 30 dias</span>
             </Button>
-            <Button variant="outline" size="sm" className="border-[#001941]/20 hover:bg-[#001941]/5">
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="border-[#001941]/20 hover:bg-[#001941]/5 h-7 text-[10px] px-2">
+              <Download className="h-3 w-3 mr-1" />
               <span className="hidden sm:inline">Exportar</span>
             </Button>
-            <Button size="sm" className="bg-[#001941] hover:bg-[#001941]">
-              <BarChart3 className="h-4 w-4 mr-2" />
+            <Button size="sm" className="bg-[#001941] hover:bg-[#001941] h-7 text-[10px] px-2">
+              <BarChart3 className="h-3 w-3 mr-1" />
               <span className="hidden sm:inline">Relatório</span>
             </Button>
           </div>
@@ -244,9 +244,9 @@ export default function AdminDashboard() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3"
+            className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2"
           >
-            <AlertCircle className="h-5 w-5 text-red-500" />
+            <AlertCircle className="h-4 w-4 text-red-500" />
             <div>
               <p className="text-red-700 font-medium">Erro ao carregar dados</p>
               <p className="text-red-600 text-sm">{error}</p>

@@ -51,9 +51,7 @@ export function ProductCard({ product, className = '' }: ProductCardProps) {
     }
     const wasFavorite = favorites.includes(String(product.id))
     toggleFavorite(String(product.id))
-    toast.success(wasFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos', {
-      icon: wasFavorite ? '💔' : '❤️'
-    })
+    toast.success(wasFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
   }
 
   if (!product || typeof product.id !== 'number') {

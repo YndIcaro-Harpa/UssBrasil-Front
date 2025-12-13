@@ -354,7 +354,7 @@ export default function ContatoPage() {
                                             </Button>
 
                                             <p className="text-xs text-gray-400 text-center pt-2">
-                                                🔒 Seus dados estão protegidos
+                                                Seus dados estão protegidos
                                             </p>
                                         </form>
                                     )}

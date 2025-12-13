@@ -60,7 +60,7 @@ export const ProductsMegaMenu = ({ brands }: { brands: Brand[] }) => {
                           <div className="font-medium flex items-center space-x-2">
                             <span>{b.name}</span>
                             {b.isNew && <Badge className="text-xs bg-green-500 text-white">Novo</Badge>}
-                            {b.isTrending && <Badge className="text-xs bg-orange-500 text-white">🔥</Badge>}
+                            {b.isTrending && <Badge className="text-xs bg-orange-500 text-white">Em Alta</Badge>}
                           </div>
                           <p className="text-xs opacity-80">{b.description}</p>
                         </div>
@@ -106,7 +106,7 @@ export const ProductsMegaMenu = ({ brands }: { brands: Brand[] }) => {
                                         <Image src={p.image} alt={p.name} width={64} height={64} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300" loading="lazy" />
                                       </div>
                                       {p.isNew && <Badge className="absolute -top-1 -right-1 text-xs bg-green-500">Novo</Badge>}
-                                      {p.isBestSeller && <Badge className="absolute -bottom-1 -right-1 text-xs bg-orange-500">🏆</Badge>}
+                                      {p.isBestSeller && <Badge className="absolute -bottom-1 -right-1 text-xs bg-orange-500">Top</Badge>}
                                     </motion.div>
                                     <div className="flex-1 text-left">
                                       <h6 className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{p.name}</h6>
