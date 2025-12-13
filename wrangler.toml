@@ -6,12 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 # Build output directory for Cloudflare Pages
 pages_build_output_dir = ".open-next"
 
-# Main entrypoint for OpenNext (usado pelo Wrangler Workers)
-main = ".open-next/worker.js"
-
-# Assets directory
-assets = { directory = ".open-next/assets", binding = "ASSETS" }
-
 [vars]
 # Backend API URL (Render)
 NEXT_PUBLIC_BACKEND_URL = "https://ussbrasil-api.onrender.com"
