@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BACKEND_URL } from '@/lib/config'
 
-export const runtime = 'edge'
 
 /**
  * GET /api/navigation - Obtém dados de navegação (marcas e categorias)

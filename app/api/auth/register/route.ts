@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { applyRateLimit } from '@/lib/rate-limiter'
 
-export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 const registerSchema = z.object({

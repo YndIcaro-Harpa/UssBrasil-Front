@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 
 // In-memory storage for wishlist (in production, use database)
 const wishlists = new Map<string, Set<string>>()

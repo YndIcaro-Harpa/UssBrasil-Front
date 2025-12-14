@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { applyRateLimit, getClientIP } from '@/lib/rate-limiter'
 
-export const runtime = 'edge'
 
 export async function POST(req: NextRequest){
   // Rate limiting - 1 inscrição por dia por IP

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuditLogs, getAuditStats, type AuditAction, type AuditSeverity } from '@/lib/audit-log'
 
-export const runtime = 'edge'
 
 // GET - Get audit logs or stats
 export async function GET(request: NextRequest) {

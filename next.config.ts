@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   webpack(config) {
     const path = require('path');
     config.resolve.alias['@'] = path.resolve(__dirname);

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BACKEND_URL } from '@/lib/config'
 
-export const runtime = 'edge'
 
 /**
  * GET /api/products - Lista produtos com filtros e paginação
