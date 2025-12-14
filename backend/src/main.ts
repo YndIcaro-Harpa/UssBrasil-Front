@@ -60,7 +60,7 @@ async function bootstrap() {
       .setDescription('API completa para e-commerce USS Brasil')
       .setVersion('1.0')
       .addBearerAuth()
-      .addServer(isProduction ? 'https://ussbrasil-api.onrender.com' : 'http://localhost:3001')
+      .addServer(isProduction ? 'https://ussbrasil-back.onrender.com' : 'http://localhost:3001')
       .build();
     
     const document = SwaggerModule.createDocument(app, config);

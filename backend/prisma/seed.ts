@@ -1469,7 +1469,7 @@ async function main() {
   console.log('   Password: admin123');
   console.log('');
   console.log('🌐 Frontend: https://ussbrasil.pages.dev');
-  console.log('🔧 Backend:  https://ussbrasil-api.onrender.com');
+  console.log('🔧 Backend:  https://ussbrasil-back.onrender.com');
   console.log('');
 }
 

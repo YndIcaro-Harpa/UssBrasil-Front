@@ -8,8 +8,8 @@ pages_build_output_dir = ".open-next"
 
 [vars]
 # Backend API URL (Render)
-NEXT_PUBLIC_BACKEND_URL = "https://ussbrasil-api.onrender.com"
-NEXT_PUBLIC_API_URL = "https://ussbrasil-api.onrender.com"
+NEXT_PUBLIC_BACKEND_URL = "https://ussbrasil-back.onrender.com"
+NEXT_PUBLIC_API_URL = "https://ussbrasil-back.onrender.com"
 
 # NextAuth Configuration
 NEXTAUTH_URL = "https://ussbrasil.pages.dev"
