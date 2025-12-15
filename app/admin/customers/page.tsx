@@ -28,7 +28,8 @@ import {
   FileText,
   ChevronDown,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react'
 import { exportToExcel, exportToPDF } from '@/services/export'
 import { api } from '@/services/api'
@@ -85,6 +86,7 @@ export default function AdminCustomersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<ModalCustomer | undefined>(undefined)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
+  const [deletingCustomerId, setDeletingCustomerId] = useState<string | null>(null)
 
   const statuses = ['all', 'active', 'inactive']
 
@@ -306,6 +308,32 @@ export default function AdminCustomersPage() {
       } else {
         toast.error('Erro ao salvar cliente')
       }
+    }
+  }
+
+  // Função para excluir cliente - só permite se não tiver pedidos
+  const handleDeleteCustomer = async (customer: Customer) => {
+    // Verificar se o cliente tem pedidos
+    if (customer.totalOrders > 0) {
+      toast.error(`Não é possível excluir: cliente tem ${customer.totalOrders} pedido(s)`)
+      return
+    }
+
+    // Confirmar exclusão
+    if (!confirm(`Tem certeza que deseja excluir o cliente "${customer.name}"?`)) {
+      return
+    }
+
+    setDeletingCustomerId(customer.id)
+    try {
+      await api.users.delete(customer.id)
+      toast.success('Cliente excluído com sucesso!')
+      fetchData()
+    } catch (error: any) {
+      console.error('Erro ao excluir cliente:', error)
+      toast.error(error.message || 'Erro ao excluir cliente')
+    } finally {
+      setDeletingCustomerId(null)
     }
   }
 
@@ -660,6 +688,21 @@ export default function AdminCustomersPage() {
                         >
                           <Edit className="w-3 h-3 lg:w-4 lg:h-4" />
                         </button>
+                        {/* Botão de excluir - só aparece se cliente não tem pedidos */}
+                        {customer.totalOrders === 0 && (
+                          <button 
+                            onClick={() => handleDeleteCustomer(customer)}
+                            disabled={deletingCustomerId === customer.id}
+                            className="p-1.5 lg:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                            title="Excluir cliente (sem pedidos)"
+                          >
+                            {deletingCustomerId === customer.id ? (
+                              <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3 lg:w-4 lg:h-4" />
+                            )}
+                          </button>
+                        )}
                         <button className="p-1.5 lg:p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
                           <MoreHorizontal className="w-3 h-3 lg:w-4 lg:h-4" />
                         </button>

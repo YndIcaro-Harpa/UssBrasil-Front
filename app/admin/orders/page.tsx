@@ -36,7 +36,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   PackageCheck,
-  Undo2
+  Undo2,
+  Edit
 } from 'lucide-react'
 import PageHeader from '@/components/admin/PageHeader'
 import StatCard from '@/components/admin/StatCard'
@@ -881,6 +882,20 @@ export default function AdminOrdersPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {/* Botão de editar - só aparece se pagamento está pendente */}
+                        {order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED' && (
+                          <button 
+                            onClick={() => {
+                              setSelectedOrder(order)
+                              setModalMode('edit')
+                              setIsModalOpen(true)
+                            }}
+                            className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                            title="Editar pedido (pagamento pendente)"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
                         {statusInfo.nextStatus && order.status !== 'CANCELLED' && (
                           <button 
                             onClick={() => handleUpdateStatus(order.id, statusInfo.nextStatus!)}
