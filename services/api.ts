@@ -93,6 +93,24 @@ export interface Variation {
   supplier?: Supplier
 }
 
+export interface Coupon {
+  id: string
+  code: string
+  description?: string
+  type: 'PERCENTAGE' | 'FIXED_AMOUNT' | 'FREE_SHIPPING'
+  value: number
+  minAmount?: number
+  maxAmount?: number
+  usageLimit?: number
+  usageCount: number
+  userLimit?: number
+  startDate: string
+  endDate: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ProductVariation {
   id: string
   name: string
@@ -760,6 +778,76 @@ export const variationsApi = {
 }
 
 // ============================================
+// COUPONS API
+// ============================================
+
+export const couponsApi = {
+  async getAll(params?: { page?: number; limit?: number; isActive?: boolean }) {
+    const queryParams = new URLSearchParams()
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString())
+    
+    const response = await fetch(`${API_URL}/coupons?${queryParams}`)
+    return handleResponse<{ coupons: Coupon[]; pagination: { page: number; limit: number; total: number; pages: number } }>(response)
+  },
+
+  async getById(id: string) {
+    const response = await fetch(`${API_URL}/coupons/${id}`)
+    return handleResponse<Coupon>(response)
+  },
+
+  async getByCode(code: string) {
+    const response = await fetch(`${API_URL}/coupons/code/${code}`)
+    return handleResponse<Coupon>(response)
+  },
+
+  async validate(code: string, amount: number) {
+    const response = await fetch(`${API_URL}/coupons/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, amount }),
+    })
+    return handleResponse<{ valid: boolean; coupon?: Coupon; discount?: number; message?: string }>(response)
+  },
+
+  async create(data: Partial<Coupon>, token?: string) {
+    const response = await fetch(`${API_URL}/coupons`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Coupon>(response)
+  },
+
+  async update(id: string, data: Partial<Coupon>, token?: string) {
+    const response = await fetch(`${API_URL}/coupons/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Coupon>(response)
+  },
+
+  async delete(id: string, token?: string) {
+    const response = await fetch(`${API_URL}/coupons/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+
+  async apply(code: string, orderId: string, token?: string) {
+    const response = await fetch(`${API_URL}/coupons/apply`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ code, orderId }),
+    })
+    return handleResponse<{ success: boolean; discount: number; message: string }>(response)
+  },
+}
+
+// ============================================
 // ORDERS API
 // ============================================
 
@@ -1331,6 +1419,7 @@ export const api = {
   brands: brandsApi,
   suppliers: suppliersApi,
   variations: variationsApi,
+  coupons: couponsApi,
   orders: ordersApi,
   stripe: stripeApi,
   analytics: analyticsApi,
