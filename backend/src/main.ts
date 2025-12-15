@@ -31,8 +31,10 @@ async function bootstrap() {
     ? [
         process.env.FRONTEND_URL || 'https://ussbrasil.com.br',
         'https://ussbrasil.pages.dev', // Cloudflare Pages
+        /^https:\/\/[a-z0-9]+\.ussbrasil\.pages\.dev$/, // Cloudflare preview URLs
         'https://ussbrasil.netlify.app',
         'https://ussbrasil.vercel.app',
+        'http://localhost:3000',
       ]
     : true; // Permite qualquer origem em desenvolvimento
 
