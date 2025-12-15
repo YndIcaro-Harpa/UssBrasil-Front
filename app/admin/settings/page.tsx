@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   Settings, Bell, Save, Store, Truck, CreditCard, RotateCcw, 
-  Mail, Phone, Package, Percent, Eye
+  Mail, Phone, Package, Percent, Eye, Loader2, RefreshCw, Cloud, HardDrive
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { api } from '@/services/api'
 
-const SETTINGS_KEY = 'uss_admin_settings'
-
-const defaultSettings = {
-  // Store Info - Essential
+// Configurações padrão do sistema
+const defaultSettings: Record<string, string | number | boolean> = {
+  // Store Info
   storeName: 'USS BRASIL',
   storeEmail: 'contato@ussbrasil.com',
   storePhone: '(11) 98765-4321',
@@ -34,50 +34,139 @@ const defaultSettings = {
   emailNotifications: true,
 }
 
-export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState(defaultSettings)
-  const [isSaving, setIsSaving] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
-  const [savedSettings, setSavedSettings] = useState(defaultSettings)
+// Tipagem das configurações
+type SettingsType = typeof defaultSettings
 
-  useEffect(() => {
+// Converter settings do backend (key-value strings) para o formato tipado
+function parseBackendSettings(backendData: Record<string, string>): SettingsType {
+  const result = { ...defaultSettings }
+  
+  for (const [key, value] of Object.entries(backendData)) {
+    if (key in defaultSettings) {
+      const defaultValue = defaultSettings[key]
+      if (typeof defaultValue === 'number') {
+        result[key] = parseFloat(value) || 0
+      } else if (typeof defaultValue === 'boolean') {
+        result[key] = value === 'true'
+      } else {
+        result[key] = value
+      }
+    }
+  }
+  
+  return result
+}
+
+// Converter settings para formato do backend (key-value strings)
+function formatForBackend(settings: SettingsType): { key: string; value: string }[] {
+  return Object.entries(settings).map(([key, value]) => ({
+    key,
+    value: String(value)
+  }))
+}
+
+export default function AdminSettingsPage() {
+  const [settings, setSettings] = useState<SettingsType>(defaultSettings)
+  const [savedSettings, setSavedSettings] = useState<SettingsType>(defaultSettings)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [dataSource, setDataSource] = useState<'backend' | 'local' | 'default'>('default')
+
+  // Carregar configurações
+  const loadSettings = useCallback(async () => {
+    setIsLoading(true)
     try {
-      const saved = localStorage.getItem(SETTINGS_KEY)
-      if (saved) {
-        const parsedSettings = JSON.parse(saved)
-        setSettings({ ...defaultSettings, ...parsedSettings })
-        setSavedSettings({ ...defaultSettings, ...parsedSettings })
+      // Tentar carregar do backend primeiro
+      const backendData = await api.settings.getAll()
+      
+      if (Object.keys(backendData).length > 0) {
+        const parsed = parseBackendSettings(backendData)
+        setSettings(parsed)
+        setSavedSettings(parsed)
+        setDataSource('backend')
+      } else {
+        // Fallback para localStorage
+        const localData = localStorage.getItem('uss_admin_settings')
+        if (localData) {
+          const parsed = JSON.parse(localData)
+          setSettings({ ...defaultSettings, ...parsed })
+          setSavedSettings({ ...defaultSettings, ...parsed })
+          setDataSource('local')
+        } else {
+          setDataSource('default')
+        }
       }
     } catch (error) {
       console.error('Error loading settings:', error)
+      // Em caso de erro, tentar localStorage
+      try {
+        const localData = localStorage.getItem('uss_admin_settings')
+        if (localData) {
+          const parsed = JSON.parse(localData)
+          setSettings({ ...defaultSettings, ...parsed })
+          setSavedSettings({ ...defaultSettings, ...parsed })
+          setDataSource('local')
+        }
+      } catch {
+        // Usar defaults
+        setDataSource('default')
+      }
+    } finally {
+      setIsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
 
   useEffect(() => {
     setHasChanges(JSON.stringify(settings) !== JSON.stringify(savedSettings))
   }, [settings, savedSettings])
 
+  // Salvar configurações
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 300))
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+      // Obter token do localStorage
+      const token = localStorage.getItem('auth_token') || undefined
+      
+      // Tentar salvar no backend
+      const configs = formatForBackend(settings)
+      await api.settings.updateMany(configs, token)
+      
+      // Também salvar no localStorage como backup
+      localStorage.setItem('uss_admin_settings', JSON.stringify(settings))
+      
       setSavedSettings(settings)
       setHasChanges(false)
-      toast.success('Configurações salvas!')
-    } catch {
-      toast.error('Erro ao salvar')
+      setDataSource('backend')
+      toast.success('Configurações salvas no servidor!')
+    } catch (error) {
+      console.error('Error saving to backend:', error)
+      // Fallback: salvar localmente
+      try {
+        localStorage.setItem('uss_admin_settings', JSON.stringify(settings))
+        setSavedSettings(settings)
+        setHasChanges(false)
+        setDataSource('local')
+        toast.warning('Salvo localmente (backend indisponível)')
+      } catch {
+        toast.error('Erro ao salvar configurações')
+      }
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleReset = () => {
-    if (confirm('Restaurar configurações padrão?')) {
+    if (confirm('Restaurar configurações padrão? Isso não pode ser desfeito.')) {
       setSettings(defaultSettings)
-      localStorage.removeItem(SETTINGS_KEY)
+      localStorage.removeItem('uss_admin_settings')
       setSavedSettings(defaultSettings)
-      toast.success('Restaurado')
+      setDataSource('default')
+      toast.success('Configurações restauradas')
     }
   }
 
@@ -94,6 +183,17 @@ export default function AdminSettingsPage() {
     </button>
   )
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">Carregando configurações...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-2 lg:p-3 bg-gray-50/50 min-h-screen">
       {/* Compact Header */}
@@ -101,8 +201,32 @@ export default function AdminSettingsPage() {
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-blue-600" />
           <h1 className="text-sm font-bold text-gray-900">Configurações</h1>
+          
+          {/* Data source indicator */}
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium ${
+            dataSource === 'backend' 
+              ? 'bg-green-50 text-green-700' 
+              : dataSource === 'local'
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-gray-100 text-gray-500'
+          }`}>
+            {dataSource === 'backend' ? (
+              <><Cloud className="w-2.5 h-2.5" /> Servidor</>
+            ) : dataSource === 'local' ? (
+              <><HardDrive className="w-2.5 h-2.5" /> Local</>
+            ) : (
+              <>Padrão</>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={loadSettings}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            title="Recarregar do servidor"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </button>
           <button
             onClick={handleReset}
             className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
@@ -120,7 +244,7 @@ export default function AdminSettingsPage() {
             }`}
           >
             {isSaving ? (
-              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <Loader2 className="w-3 h-3 animate-spin" />
             ) : (
               <Save className="w-3 h-3" />
             )}
@@ -144,7 +268,7 @@ export default function AdminSettingsPage() {
                 <label className="text-[9px] font-medium text-gray-500 uppercase mb-0.5 block">Nome</label>
                 <input
                   type="text"
-                  value={settings.storeName}
+                  value={settings.storeName as string}
                   onChange={(e) => update('storeName', e.target.value)}
                   className="w-full px-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                 />
@@ -153,7 +277,7 @@ export default function AdminSettingsPage() {
                 <label className="text-[9px] font-medium text-gray-500 uppercase mb-0.5 block">CNPJ</label>
                 <input
                   type="text"
-                  value={settings.storeCnpj}
+                  value={settings.storeCnpj as string}
                   onChange={(e) => update('storeCnpj', e.target.value)}
                   placeholder="00.000.000/0000-00"
                   className="w-full px-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
@@ -167,7 +291,7 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="email"
-                  value={settings.storeEmail}
+                  value={settings.storeEmail as string}
                   onChange={(e) => update('storeEmail', e.target.value)}
                   className="w-full px-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                 />
@@ -178,7 +302,7 @@ export default function AdminSettingsPage() {
                 </label>
                 <input
                   type="tel"
-                  value={settings.storePhone}
+                  value={settings.storePhone as string}
                   onChange={(e) => update('storePhone', e.target.value)}
                   className="w-full px-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                 />
@@ -201,7 +325,7 @@ export default function AdminSettingsPage() {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">R$</span>
                   <input
                     type="number"
-                    value={settings.freeShippingThreshold}
+                    value={settings.freeShippingThreshold as number}
                     onChange={(e) => update('freeShippingThreshold', parseFloat(e.target.value) || 0)}
                     className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                   />
@@ -214,7 +338,7 @@ export default function AdminSettingsPage() {
                   <input
                     type="number"
                     step="0.01"
-                    value={settings.defaultShippingFee}
+                    value={settings.defaultShippingFee as number}
                     onChange={(e) => update('defaultShippingFee', parseFloat(e.target.value) || 0)}
                     className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                   />
@@ -227,7 +351,7 @@ export default function AdminSettingsPage() {
                   <input
                     type="number"
                     step="0.01"
-                    value={settings.expressShippingFee}
+                    value={settings.expressShippingFee as number}
                     onChange={(e) => update('expressShippingFee', parseFloat(e.target.value) || 0)}
                     className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                   />
@@ -235,7 +359,7 @@ export default function AdminSettingsPage() {
               </div>
             </div>
             <div className="p-1.5 bg-emerald-50 rounded text-[9px] text-emerald-700">
-              <strong>Dica:</strong> Pedidos acima de R$ {settings.freeShippingThreshold.toFixed(2)} têm frete grátis
+              <strong>Dica:</strong> Pedidos acima de R$ {(settings.freeShippingThreshold as number).toFixed(2)} têm frete grátis
             </div>
           </div>
         </div>
@@ -286,7 +410,7 @@ export default function AdminSettingsPage() {
               <div>
                 <label className="text-[9px] font-medium text-gray-500 uppercase mb-0.5 block">Máx. Parcelas</label>
                 <select
-                  value={settings.maxInstallments}
+                  value={settings.maxInstallments as number}
                   onChange={(e) => update('maxInstallments', parseInt(e.target.value))}
                   className="w-full px-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400"
                 >
@@ -303,7 +427,7 @@ export default function AdminSettingsPage() {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">R$</span>
                   <input
                     type="number"
-                    value={settings.minInstallmentValue}
+                    value={settings.minInstallmentValue as number}
                     onChange={(e) => update('minInstallmentValue', parseFloat(e.target.value) || 0)}
                     className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400"
                   />
@@ -325,7 +449,7 @@ export default function AdminSettingsPage() {
                 <p className="text-[11px] font-medium text-gray-900">Alerta de Estoque Baixo</p>
                 <p className="text-[9px] text-gray-500">Notificar quando estoque estiver baixo</p>
               </div>
-              <Switch checked={settings.stockAlerts} onChange={(v) => update('stockAlerts', v)} />
+              <Switch checked={settings.stockAlerts as boolean} onChange={(v) => update('stockAlerts', v)} />
             </div>
             <div>
               <label className="text-[9px] font-medium text-gray-500 uppercase mb-0.5 block">Limite Estoque Baixo</label>
@@ -333,7 +457,7 @@ export default function AdminSettingsPage() {
                 <input
                   type="number"
                   min="1"
-                  value={settings.lowStockThreshold}
+                  value={settings.lowStockThreshold as number}
                   onChange={(e) => update('lowStockThreshold', parseInt(e.target.value) || 10)}
                   className="w-20 px-2 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:border-blue-400"
                 />
@@ -345,14 +469,14 @@ export default function AdminSettingsPage() {
                 <p className="text-[11px] font-medium text-gray-900">Notificação de Pedidos</p>
                 <p className="text-[9px] text-gray-500">Alertar quando novos pedidos chegarem</p>
               </div>
-              <Switch checked={settings.orderNotifications} onChange={(v) => update('orderNotifications', v)} />
+              <Switch checked={settings.orderNotifications as boolean} onChange={(v) => update('orderNotifications', v)} />
             </div>
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <div>
                 <p className="text-[11px] font-medium text-gray-900">Notificações por Email</p>
                 <p className="text-[9px] text-gray-500">Receber relatórios por email</p>
               </div>
-              <Switch checked={settings.emailNotifications} onChange={(v) => update('emailNotifications', v)} />
+              <Switch checked={settings.emailNotifications as boolean} onChange={(v) => update('emailNotifications', v)} />
             </div>
           </div>
         </div>

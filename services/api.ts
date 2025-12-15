@@ -111,6 +111,18 @@ export interface Coupon {
   updatedAt: string
 }
 
+export interface CMSPage {
+  id: string
+  title: string
+  slug: string
+  content: string
+  metaTitle?: string
+  metaDescription?: string
+  isPublished: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ProductVariation {
   id: string
   name: string
@@ -1408,6 +1420,128 @@ const wishlistApi = {
 }
 
 // ============================================
+// CMS API - Páginas Estáticas
+// ============================================
+
+const cmsApi = {
+  // Listar todas as páginas
+  getAll: async (): Promise<{ pages: CMSPage[] }> => {
+    try {
+      const response = await fetch(`${API_URL}/cms/pages`, {
+        headers: getHeaders(),
+      })
+      return handleResponse<{ pages: CMSPage[] }>(response)
+    } catch {
+      // Fallback para páginas do sistema se endpoint não existir
+      return { pages: [] }
+    }
+  },
+
+  // Buscar página por ID
+  getById: async (id: string): Promise<CMSPage> => {
+    const response = await fetch(`${API_URL}/cms/pages/${id}`, {
+      headers: getHeaders(),
+    })
+    return handleResponse<CMSPage>(response)
+  },
+
+  // Buscar página por slug
+  getBySlug: async (slug: string): Promise<CMSPage> => {
+    const response = await fetch(`${API_URL}/cms/pages/slug/${slug}`, {
+      headers: getHeaders(),
+    })
+    return handleResponse<CMSPage>(response)
+  },
+
+  // Criar nova página
+  create: async (data: Partial<CMSPage>, token?: string): Promise<CMSPage> => {
+    const response = await fetch(`${API_URL}/cms/pages`, {
+      method: 'POST',
+      headers: token ? getAuthHeaders(token) : getHeaders(),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<CMSPage>(response)
+  },
+
+  // Atualizar página
+  update: async (id: string, data: Partial<CMSPage>, token?: string): Promise<CMSPage> => {
+    const response = await fetch(`${API_URL}/cms/pages/${id}`, {
+      method: 'PATCH',
+      headers: token ? getAuthHeaders(token) : getHeaders(),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<CMSPage>(response)
+  },
+
+  // Deletar página
+  delete: async (id: string, token?: string): Promise<{ message: string }> => {
+    const response = await fetch(`${API_URL}/cms/pages/${id}`, {
+      method: 'DELETE',
+      headers: token ? getAuthHeaders(token) : getHeaders(),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+}
+
+// ============================================
+// SETTINGS API
+// ============================================
+
+export interface SiteConfigItem {
+  id: string
+  key: string
+  value: string
+  createdAt: string
+  updatedAt: string
+}
+
+const settingsApi = {
+  // Buscar todas as configurações (formato key-value)
+  getAll: async (): Promise<Record<string, string>> => {
+    try {
+      const response = await fetch(`${API_URL}/site-config`, {
+        headers: getHeaders(),
+      })
+      return handleResponse<Record<string, string>>(response)
+    } catch {
+      return {}
+    }
+  },
+
+  // Buscar configurações (formato raw para admin)
+  getAllAdmin: async (token?: string): Promise<SiteConfigItem[]> => {
+    try {
+      const response = await fetch(`${API_URL}/site-config/admin`, {
+        headers: token ? getAuthHeaders(token) : getHeaders(),
+      })
+      return handleResponse<SiteConfigItem[]>(response)
+    } catch {
+      return []
+    }
+  },
+
+  // Atualizar uma configuração
+  update: async (key: string, value: string, token?: string): Promise<SiteConfigItem> => {
+    const response = await fetch(`${API_URL}/site-config/${key}`, {
+      method: 'PUT',
+      headers: token ? getAuthHeaders(token) : getHeaders(),
+      body: JSON.stringify({ value }),
+    })
+    return handleResponse<SiteConfigItem>(response)
+  },
+
+  // Atualizar várias configurações de uma vez
+  updateMany: async (configs: { key: string; value: string }[], token?: string): Promise<SiteConfigItem[]> => {
+    const response = await fetch(`${API_URL}/site-config`, {
+      method: 'PUT',
+      headers: token ? getAuthHeaders(token) : getHeaders(),
+      body: JSON.stringify({ configs }),
+    })
+    return handleResponse<SiteConfigItem[]>(response)
+  },
+}
+
+// ============================================
 // EXPORT ALL
 // ============================================
 
@@ -1425,6 +1559,8 @@ export const api = {
   analytics: analyticsApi,
   cart: cartApi,
   wishlist: wishlistApi,
+  cms: cmsApi,
+  settings: settingsApi,
 }
 
 export default api

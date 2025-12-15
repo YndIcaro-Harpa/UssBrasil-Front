@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { FadeInUp, AnimatedCard } from '@/components/admin/PageTransition'
 import { StatCardSkeleton, TableSkeleton } from '@/components/ui/SkeletonLoaders'
 import { toast } from 'react-hot-toast'
+import { api } from '@/services/api'
 
 interface Product {
   id: number
@@ -46,17 +47,8 @@ export default function StockAlertsPage() {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:3001/api/products', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (!response.ok) throw new Error('Failed to fetch products')
-      
-      const data = await response.json()
-      const productList = Array.isArray(data) ? data : data.products || []
+      const response = await api.products.getAll({ limit: 500 })
+      const productList = Array.isArray(response) ? response : response.products || []
       setProducts(productList)
       
       // Calculate alerts
@@ -93,16 +85,7 @@ export default function StockAlertsPage() {
   const handleUpdateStock = async (productId: number, newStock: number) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3001/api/products/${productId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ stock: newStock })
-      })
-      
-      if (!response.ok) throw new Error('Failed to update stock')
+      await api.products.update(productId.toString(), { stock: newStock }, token || undefined)
       
       toast.success('Estoque atualizado com sucesso!')
       fetchProducts()

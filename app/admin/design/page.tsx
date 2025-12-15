@@ -1,74 +1,108 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FileText,
-  Plus,
+  Palette,
   Search,
-  Filter,
-  ChevronDown,
-  Tag,
   Eye,
   Edit,
-  Trash2,
-  MoreHorizontal,
   X,
-  UploadCloud,
-  Video,
-  Type,
-  Palette,
   Save,
-  GripVertical
+  GripVertical,
+  RefreshCw,
+  Loader2,
+  Image as ImageIcon,
+  Tag,
+  Layers
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-import AdminLayout from '@/components/admin-layout'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { api } from '@/services/api'
+import { TableSkeleton } from '@/components/ui/SkeletonLoaders'
 
-const mockCategories = [
-  { id: 'cat-1', name: 'iPhones', slug: 'iphones', products: 15, visible: true, bannerType: 'image', bannerValue: '/public/Produtos/Iphone 16 Pro.png' },
-  { id: 'cat-2', name: 'MacBooks', slug: 'macbooks', products: 10, visible: true, bannerType: 'video', bannerValue: '/public/Videos/Macs Video.mp4' },
-  { id: 'cat-3', name: 'iPads', slug: 'ipads', products: 8, visible: false, bannerType: 'color', bannerValue: '#f0f0f0' },
-  { id: 'cat-4', name: 'Apple Watches', slug: 'watches', products: 12, visible: true, bannerType: 'image', bannerValue: '/public/Produtos/Watch Ultra 2.png' },
-  { id: 'cat-5', name: 'Acessórios', slug: 'acessorios', products: 35, visible: true, bannerType: 'none', bannerValue: '' },
-]
-
-const availableFilters = [
-  { id: 'visible', label: 'Visibilidade' },
-  { id: 'bannerType', label: 'Tipo de Banner' },
-  { id: 'hasProducts', label: 'Com Produtos' },
-]
-
-export default function AdminPagesPage() {
-  const [categories] = useState(mockCategories)
-  const [loading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<typeof mockCategories[0] | null>(null)
-  const [activeFilters, setActiveFilters] = useState(['visible', 'bannerType'])
-
-  const update = async (id: string, data: any) => {
-    toast.success('Categoria atualizada com sucesso!')
+interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  image?: string
+  icon?: string
+  color?: string
+  isActive: boolean
+  sortOrder: number
+  _count?: {
+    products: number
   }
+}
+
+export default function AdminDesignPage() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await api.categories.getAll()
+      const cats = Array.isArray(response) ? response : (response as any)?.categories || []
+      setCategories(cats)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      toast.error('Erro ao carregar categorias')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   const filteredCategories = useMemo(() => {
-    return categories.filter(cat => cat.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    return categories.filter(cat => 
+      cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cat.slug.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   }, [categories, searchTerm])
 
-  const handleSelectCategory = (category: typeof mockCategories[0]) => {
-    setSelectedCategory(JSON.parse(JSON.stringify(category))) // Deep copy to avoid direct mutation
+  const handleSelectCategory = (category: Category) => {
+    setSelectedCategory(JSON.parse(JSON.stringify(category)))
   }
 
   const handleUpdateCategory = async () => {
     if (!selectedCategory) return
-    await update(selectedCategory.id, selectedCategory)
+    
+    setSaving(true)
+    try {
+      const token = localStorage.getItem('token')
+      await api.categories.update(selectedCategory.id, {
+        name: selectedCategory.name,
+        slug: selectedCategory.slug,
+        description: selectedCategory.description,
+        image: selectedCategory.image,
+        icon: selectedCategory.icon,
+        color: selectedCategory.color,
+        isActive: selectedCategory.isActive,
+        sortOrder: selectedCategory.sortOrder
+      }, token || undefined)
+      
+      toast.success('Design da categoria atualizado!')
+      fetchCategories()
+      setSelectedCategory(null)
+    } catch (error: any) {
+      console.error('Error updating category:', error)
+      toast.error(error.message || 'Erro ao atualizar categoria')
+    } finally {
+      setSaving(false)
+    }
   }
   
   const springTransition = { type: "spring" as const, stiffness: 300, damping: 30 }
@@ -81,229 +115,370 @@ export default function AdminPagesPage() {
     visible: { opacity: 1, y: 0, scale: 1, transition: springTransition }
   }
 
-  const renderFilterPill = (filterId: string) => {
-    const filter = availableFilters.find(f => f.id === filterId)
-    if (!filter) return null
+  if (loading) {
     return (
-      <motion.div layout key={filter.id} className="flex items-center bg-white/80 border border-gray-300/50 rounded-full px-3 py-1 text-sm text-slate-700 shadow-sm">
-        <span>{filter.label}</span>
-        <Button variant="ghost" size="icon" className="h-5 w-5 ml-1 rounded-full" onClick={() => setActiveFilters(prev => prev.filter(f => f !== filterId))}>
-          <X className="h-3 w-3" />
-        </Button>
-      </motion.div>
+      <div className="p-6 space-y-6">
+        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+        <TableSkeleton rows={6} columns={5} />
+      </div>
     )
   }
 
   return (
-    <AdminLayout>
-      <div className="flex h-full">
-        <motion.div 
-          className="flex-1 p-4 sm:p-6 lg:p-8"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          <div className="max-w-8xl mx-auto">
-            {/* Header */}
-            <motion.header variants={itemVariants} className="mb-8">
-              <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20 flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent tracking-tight">
-                    Gerenciar Páginas
-                  </h1>
-                  <p className="text-gray-600 mt-1">
-                    Crie e edite as páginas de categoria da sua loja.
-                  </p>
-                </div>
-                <Button 
-                  className="bg-[#001941] hover:bg-[#023a58] text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:scale-105 transition-transform"
-                  onClick={() => toast.info('Funcionalidade de criar nova página em breve!')}
-                >
-                  <Plus className="mr-2 h-5 w-5" />
-                  Nova Página
-                </Button>
+    <div className="flex h-full">
+      <motion.div 
+        className="flex-1 p-4 sm:p-6 lg:p-8"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <motion.header variants={itemVariants} className="mb-8">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                  <Palette className="w-7 h-7 text-[#001941]" />
+                  Design de Categorias
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  Personalize a aparência visual das categorias da loja
+                </p>
               </div>
-            </motion.header>
+              <Button 
+                variant="outline"
+                onClick={fetchCategories}
+                disabled={loading}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
+          </motion.header>
 
-            {/* Filters and Search */}
-            <motion.div variants={itemVariants} className="mb-6">
-              <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-4 shadow-lg border border-white/20 flex items-center justify-between">
-                <div className="relative w-full max-w-sm">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-                  <Input
-                    placeholder="Buscar por nome da página..."
-                    className="w-full pl-12 pr-4 py-3 bg-white/80 border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-400/50"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+          {/* Search */}
+          <motion.div variants={itemVariants} className="mb-6">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Buscar categoria..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Layers className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="text-xl font-bold text-gray-900">{categories.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Eye className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Ativas</p>
+                  <p className="text-xl font-bold text-gray-900">{categories.filter(c => c.isActive).length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <ImageIcon className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Com Imagem</p>
+                  <p className="text-xl font-bold text-gray-900">{categories.filter(c => c.image).length}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Categories Table */}
+          <motion.div variants={itemVariants}>
+            <Card className="shadow-sm border border-gray-100">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="border-b border-gray-100 bg-gray-50">
+                      <tr>
+                        <th className="p-4 font-medium text-gray-600 w-10"></th>
+                        <th className="p-4 font-medium text-gray-600">Categoria</th>
+                        <th className="p-4 font-medium text-gray-600">Slug</th>
+                        <th className="p-4 font-medium text-gray-600 text-center">Produtos</th>
+                        <th className="p-4 font-medium text-gray-600">Cor</th>
+                        <th className="p-4 font-medium text-gray-600">Status</th>
+                        <th className="p-4 font-medium text-gray-600">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {filteredCategories.map(cat => (
+                        <motion.tr 
+                          key={cat.id} 
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => handleSelectCategory(cat)}
+                          variants={itemVariants}
+                          layout
+                        >
+                          <td className="p-4 text-center text-gray-400">
+                            <GripVertical className="w-4 h-4" />
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              {cat.image ? (
+                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100">
+                                  <Image 
+                                    src={cat.image} 
+                                    alt={cat.name}
+                                    width={40}
+                                    height={40}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                  <Tag className="w-5 h-5 text-gray-400" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-gray-900">{cat.name}</p>
+                                {cat.description && (
+                                  <p className="text-xs text-gray-500 truncate max-w-[200px]">{cat.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-gray-500 font-mono text-sm">/{cat.slug}</td>
+                          <td className="p-4 text-center text-gray-600">{cat._count?.products || 0}</td>
+                          <td className="p-4">
+                            {cat.color ? (
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-6 h-6 rounded-full border border-gray-200"
+                                  style={{ backgroundColor: cat.color }}
+                                />
+                                <span className="text-xs text-gray-500 font-mono">{cat.color}</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">-</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <Badge variant={cat.isActive ? 'default' : 'outline'} className={cat.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
+                              {cat.isActive ? 'Ativa' : 'Inativa'}
+                            </Badge>
+                          </td>
+                          <td className="p-4">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="rounded-full hover:bg-gray-100" 
+                              onClick={(e) => {e.stopPropagation(); handleSelectCategory(cat)}}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredCategories.length === 0 && (
+                  <div className="p-12 text-center">
+                    <Layers className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">Nenhuma categoria encontrada</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Editor Panel */}
+      <AnimatePresence>
+        {selectedCategory && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 420, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="h-full bg-white border-l border-gray-200 shadow-xl flex flex-col"
+          >
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">
+                Editar Design
+              </h2>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)} className="rounded-full">
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="flex-1 p-5 space-y-5 overflow-y-auto">
+              {/* Preview */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs font-medium text-gray-500 mb-3">Preview</p>
+                <div className="flex items-center gap-3">
+                  {selectedCategory.image ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shadow-sm">
+                      <Image 
+                        src={selectedCategory.image} 
+                        alt={selectedCategory.name}
+                        width={64}
+                        height={64}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  ) : (
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: selectedCategory.color || '#f3f4f6' }}
+                    >
+                      <Tag className="w-6 h-6 text-white" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-bold text-gray-900">{selectedCategory.name}</p>
+                    <p className="text-sm text-gray-500">/{selectedCategory.slug}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Nome</label>
+                <Input 
+                  value={selectedCategory.name} 
+                  onChange={e => setSelectedCategory(p => p && {...p, name: e.target.value})}
+                />
+              </div>
+
+              {/* Slug */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Slug</label>
+                <Input 
+                  value={selectedCategory.slug} 
+                  onChange={e => setSelectedCategory(p => p && {...p, slug: e.target.value})}
+                  className="font-mono"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Descrição</label>
+                <textarea 
+                  value={selectedCategory.description || ''} 
+                  onChange={e => setSelectedCategory(p => p && {...p, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+                  rows={3}
+                  placeholder="Descrição da categoria..."
+                />
+              </div>
+
+              {/* Image URL */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">URL da Imagem</label>
+                <Input 
+                  value={selectedCategory.image || ''} 
+                  onChange={e => setSelectedCategory(p => p && {...p, image: e.target.value})}
+                  placeholder="https://..."
+                />
+                {selectedCategory.image && (
+                  <div className="mt-2 w-full h-32 rounded-lg overflow-hidden bg-gray-100">
+                    <Image 
+                      src={selectedCategory.image} 
+                      alt="Preview"
+                      width={400}
+                      height={128}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Color */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Cor da Categoria</label>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="color" 
+                    value={selectedCategory.color || '#001941'} 
+                    onChange={e => setSelectedCategory(p => p && {...p, color: e.target.value})}
+                    className="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer"
+                  />
+                  <Input 
+                    value={selectedCategory.color || ''} 
+                    onChange={e => setSelectedCategory(p => p && {...p, color: e.target.value})}
+                    placeholder="#001941"
+                    className="font-mono flex-1"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <AnimatePresence>
-                    {activeFilters.map(renderFilterPill)}
-                  </AnimatePresence>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex items-center space-x-2 rounded-xl border-gray-300/80 hover:bg-white/80">
-                        <Filter className="h-4 w-4" />
-                        <span>Filtros</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white/80 backdrop-blur-xl border-gray-300/50 rounded-xl shadow-lg">
-                      {availableFilters.map(filter => (
-                        <DropdownMenuCheckboxItem
-                          key={filter.id}
-                          checked={activeFilters.includes(filter.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setActiveFilters(prev => [...prev, filter.id])
-                            } else {
-                              setActiveFilters(prev => prev.filter(f => f !== filter.id))
-                            }
-                          }}
-                        >
-                          {filter.label}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
               </div>
-            </motion.div>
 
-            {/* Categories Table */}
-            <motion.div variants={itemVariants}>
-              <Card className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="border-b border-gray-200/50">
-                        <tr>
-                          <th className="p-6 font-semibold text-gray-600 w-10"></th>
-                          <th className="p-6 font-semibold text-gray-600">Nome da Página</th>
-                          <th className="p-6 font-semibold text-gray-600">Slug</th>
-                          <th className="p-6 font-semibold text-gray-600 text-center">Produtos</th>
-                          <th className="p-6 font-semibold text-gray-600">Visibilidade</th>
-                          <th className="p-6 font-semibold text-gray-600">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredCategories.map(cat => (
-                          <motion.tr 
-                            key={cat.id} 
-                            className="border-b border-gray-200/50 hover:bg-white/50 transition-colors cursor-pointer"
-                            onClick={() => handleSelectCategory(cat)}
-                            variants={itemVariants}
-                            layout
-                          >
-                            <td className="p-6 text-center text-gray-400 cursor-grab"><GripVertical /></td>
-                            <td className="p-6 font-semibold text-gray-800">{cat.name}</td>
-                            <td className="p-6 text-gray-500 font-mono text-sm">/{cat.slug}</td>
-                            <td className="p-6 text-center text-gray-600">{cat.products}</td>
-                            <td className="p-6">
-                              <Badge variant={cat.visible ? 'default' : 'outline'} className={cat.visible ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                                {cat.visible ? 'Visível' : 'Oculta'}
-                              </Badge>
-                            </td>
-                            <td className="p-6">
-                              <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-200/50" onClick={(e) => {e.stopPropagation(); handleSelectCategory(cat)}}>
-                                <Edit className="h-5 w-5" />
-                              </Button>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </motion.div>
+              {/* Icon */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Ícone (nome)</label>
+                <Input 
+                  value={selectedCategory.icon || ''} 
+                  onChange={e => setSelectedCategory(p => p && {...p, icon: e.target.value})}
+                  placeholder="smartphone, laptop, watch..."
+                />
+              </div>
 
-        {/* Editor Panel */}
-        <AnimatePresence>
-          {selectedCategory && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 500, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.4, ease: 'easeInOut' }}
-              className="h-full bg-white/80 backdrop-blur-2xl border-l border-white/20 shadow-2xl flex flex-col"
-            >
-              <div className="p-6 border-b border-black/5 flex items-center justify-between h-[88px]">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent">
-                  Editar Página
-                </h2>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)} className="rounded-full">
-                  <X />
-                </Button>
+              {/* Sort Order */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Ordem de Exibição</label>
+                <Input 
+                  type="number"
+                  value={selectedCategory.sortOrder || 0} 
+                  onChange={e => setSelectedCategory(p => p && {...p, sortOrder: parseInt(e.target.value) || 0})}
+                />
               </div>
-              <div className="flex-1 p-6 space-y-6 overflow-y-auto">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-black">Nome da Página</p>
-                  <Input id="pageName" value={selectedCategory.name} onChange={e => setSelectedCategory(p => p && {...p, name: e.target.value})} className="bg-white/80"/>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-black">Slug</p>
-                  <Input id="pageSlug" value={selectedCategory.slug} onChange={e => setSelectedCategory(p => p && {...p, slug: e.target.value})} className="bg-white/80"/>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-black">Visível no site</p>
-                  <Switch checked={selectedCategory.visible} onCheckedChange={c => setSelectedCategory(p => p && {...p, visible: c})} />
-                </div>
-                
-                <Card className="bg-white/60">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center"><Eye className="mr-2"/> Banner da Página</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <p className="text-sm font-semibold text-black">Tipo de Banner</p>
-                      <Select value={selectedCategory.bannerType} onValueChange={v => setSelectedCategory(p => p && {...p, bannerType: v})}>
-                        <SelectTrigger className="bg-white/80"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhum</SelectItem>
-                          <SelectItem value="image">Imagem</SelectItem>
-                          <SelectItem value="video">Vídeo</SelectItem>
-                          <SelectItem value="color">Cor Sólida</SelectItem>
-                        </SelectContent>
-                      </Select>
 
-                      {selectedCategory.bannerType === 'image' && (
-                        <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50">
-                          <UploadCloud className="h-8 w-8 mb-2" />
-                          <span>Arraste uma imagem ou clique</span>
-                          {selectedCategory.bannerValue && <p className="text-xs mt-1">Atual: {selectedCategory.bannerValue.split('/').pop()}</p>}
-                        </div>
-                      )}
-                      {selectedCategory.bannerType === 'video' && (
-                        <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50">
-                          <Video className="h-8 w-8 mb-2" />
-                          <span>Arraste um vídeo ou clique</span>
-                          {selectedCategory.bannerValue && <p className="text-xs mt-1">Atual: {selectedCategory.bannerValue.split('/').pop()}</p>}
-                        </div>
-                      )}
-                      {selectedCategory.bannerType === 'color' && (
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-semibold text-black">Cor</p>
-                          <Input type="color" value={selectedCategory.bannerValue} onChange={e => setSelectedCategory(p => p && {...p, bannerValue: e.target.value})} className="w-24 h-10 p-1 bg-white/80"/>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* Active */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Visível na loja</p>
+                  <p className="text-xs text-gray-500">Exibir categoria para clientes</p>
+                </div>
+                <Switch 
+                  checked={selectedCategory.isActive} 
+                  onCheckedChange={c => setSelectedCategory(p => p && {...p, isActive: c})} 
+                />
               </div>
-              <div className="p-6 border-t border-black/5">
-                <Button className="w-full bg-[#001941] hover:bg-[#023a58] text-white font-bold py-3 rounded-xl shadow-lg hover:scale-102 transition-transform" onClick={handleUpdateCategory}>
-                  <Save className="mr-2 h-5 w-5" />
-                  Salvar Alterações
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </AdminLayout>
+            </div>
+
+            <div className="p-5 border-t border-gray-100">
+              <Button 
+                className="w-full bg-[#001941] hover:bg-[#002a6b] text-white" 
+                onClick={handleUpdateCategory}
+                disabled={saving}
+              >
+                {saving ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando...</>
+                ) : (
+                  <><Save className="w-4 h-4 mr-2" /> Salvar Alterações</>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
