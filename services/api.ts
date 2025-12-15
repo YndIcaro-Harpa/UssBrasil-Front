@@ -42,6 +42,57 @@ export interface Address {
   createdAt: string
 }
 
+export interface Supplier {
+  id: string
+  name: string
+  cnpj?: string
+  email?: string
+  phone?: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    products: number
+    variations: number
+  }
+}
+
+export interface Variation {
+  id: string
+  productId: string
+  name: string
+  sku: string
+  ncm?: string
+  colorName?: string
+  colorCode?: string
+  colorImage?: string
+  colorImages?: string
+  storage?: string
+  size?: string
+  costPrice?: number
+  price: number
+  discountPrice?: number
+  stock: number
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK'
+  isActive: boolean
+  condition: 'new' | 'semi_new' | 'used'
+  image?: string
+  supplierId?: string
+  supplierName?: string
+  createdAt: string
+  updatedAt: string
+  product?: {
+    id: string
+    name: string
+    slug: string
+  }
+  supplier?: Supplier
+}
+
 export interface ProductVariation {
   id: string
   name: string
@@ -117,7 +168,10 @@ export interface Brand {
   description?: string
   logo?: string
   color?: string
+  website?: string
   isActive: boolean
+  createdAt?: string
+  updatedAt?: string
   _count?: { products: number }
 }
 
@@ -339,10 +393,10 @@ export const usersApi = {
     state?: string
     zipCode?: string
     role?: 'USER' | 'ADMIN'
-  }) {
+  }, token?: string) {
     const response = await fetch(`${API_URL}/users`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(token),
       body: JSON.stringify(data),
     })
     return handleResponse<User>(response)
@@ -591,6 +645,117 @@ export const brandsApi = {
       headers: getAuthHeaders(token),
     })
     return handleResponse<{ message: string }>(response)
+  },
+}
+
+// ============================================
+// SUPPLIERS API
+// ============================================
+
+export const suppliersApi = {
+  async getAll() {
+    const response = await fetch(`${API_URL}/suppliers`)
+    return handleResponse<Supplier[]>(response)
+  },
+
+  async getById(id: string) {
+    const response = await fetch(`${API_URL}/suppliers/${id}`)
+    return handleResponse<Supplier>(response)
+  },
+
+  async create(data: Partial<Supplier>, token?: string) {
+    const response = await fetch(`${API_URL}/suppliers`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Supplier>(response)
+  },
+
+  async update(id: string, data: Partial<Supplier>, token?: string) {
+    const response = await fetch(`${API_URL}/suppliers/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Supplier>(response)
+  },
+
+  async delete(id: string, token?: string) {
+    const response = await fetch(`${API_URL}/suppliers/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+}
+
+// ============================================
+// VARIATIONS API
+// ============================================
+
+export const variationsApi = {
+  async getAll(params?: {
+    productId?: string
+    supplierId?: string
+    status?: string
+    page?: number
+    limit?: number
+  }) {
+    const queryParams = new URLSearchParams()
+    if (params?.productId) queryParams.append('productId', params.productId)
+    if (params?.supplierId) queryParams.append('supplierId', params.supplierId)
+    if (params?.status) queryParams.append('status', params.status)
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    
+    const response = await fetch(`${API_URL}/variations?${queryParams}`)
+    return handleResponse<Variation[]>(response)
+  },
+
+  async getById(id: string) {
+    const response = await fetch(`${API_URL}/variations/${id}`)
+    return handleResponse<Variation>(response)
+  },
+
+  async getByProduct(productId: string) {
+    const response = await fetch(`${API_URL}/variations?productId=${productId}`)
+    return handleResponse<Variation[]>(response)
+  },
+
+  async create(data: Partial<Variation>, token?: string) {
+    const response = await fetch(`${API_URL}/variations`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Variation>(response)
+  },
+
+  async update(id: string, data: Partial<Variation>, token?: string) {
+    const response = await fetch(`${API_URL}/variations/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Variation>(response)
+  },
+
+  async delete(id: string, token?: string) {
+    const response = await fetch(`${API_URL}/variations/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+    })
+    return handleResponse<{ message: string }>(response)
+  },
+
+  async updateStock(id: string, stock: number, token?: string) {
+    const response = await fetch(`${API_URL}/variations/${id}/stock`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ stock }),
+    })
+    return handleResponse<Variation>(response)
   },
 }
 
@@ -1164,6 +1329,8 @@ export const api = {
   products: productsApi,
   categories: categoriesApi,
   brands: brandsApi,
+  suppliers: suppliersApi,
+  variations: variationsApi,
   orders: ordersApi,
   stripe: stripeApi,
   analytics: analyticsApi,
