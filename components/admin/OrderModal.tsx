@@ -12,12 +12,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, Package, User, MapPin, Truck, Search, Check, Plus, Minus, Trash2, Loader2, CreditCard, Wallet, QrCode, Banknote, ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react';
+import { X, Package, User, MapPin, Search, Check, Plus, Minus, Trash2, Loader2, CreditCard, Wallet, QrCode, Banknote, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Order as CrudOrder } from '@/hooks/use-admin-crud';
 import { Order as ApiOrder, Product } from '@/services/api';
 import { api } from '@/services/api';
@@ -737,14 +736,6 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = statusOptions.find(s => s.value === status);
-    return (
-      <Badge className={`${statusConfig?.color} text-white`}>
-        {statusConfig?.label}
-      </Badge>
-    );
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -763,11 +754,11 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
         
         return (
           <div key={step.number} className="flex items-center">
-            <div 
+            <div
               className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
-                isActive 
-                  ? 'bg-uss-admin text-white' 
-                  : isCompleted 
+                isActive
+                  ? 'bg-uss-admin text-white'
+                  : isCompleted
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-500'
               }`}
@@ -1677,13 +1668,13 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                   <h3 className="font-semibold text-black">Informações do Cliente</h3>
                 </div>
                 
-                {mode === 'create' && !formData.customer.id && (
+                {!formData.customer.id && (
                   <div className="mb-4 relative">
                     <Label className="text-black">Buscar Cliente</Label>
                     <div className="relative mt-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input 
-                        placeholder="Buscar por nome, CPF ou email..." 
+                      <Input
+                        placeholder="Buscar por nome, CPF ou email..."
                         className="pl-9 text-black"
                         value={searchTerm}
                         onChange={(e) => handleSearchCustomer(e.target.value)}
@@ -1695,7 +1686,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                     {searchResults.length > 0 && (
                       <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                         {searchResults.map(customer => (
-                          <div 
+                          <div
                             key={customer.id}
                             className="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b last:border-0"
                             onClick={() => selectCustomer(customer)}
@@ -1754,13 +1745,13 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                             ...prev,
                             customer: { ...prev.customer, name: e.target.value }
                           }))}
-                          disabled={mode === 'view' || (mode === 'create' && !!formData.customer.id)}
+                          disabled={mode === 'view'}
                           required
                         />
-                        {mode === 'create' && formData.customer.id && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
+                        {mode === 'edit' && formData.customer.id && (
+                          <Button
+                            type="button"
+                            variant="ghost"
                             size="icon"
                             onClick={() => setFormData(prev => ({ ...prev, customer: { id: '', name: '', email: '', avatar: '' } }))}
                           >
@@ -1779,7 +1770,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                           ...prev,
                           customer: { ...prev.customer, email: e.target.value }
                         }))}
-                        disabled={mode === 'view' || (mode === 'create' && !!formData.customer.id)}
+                        disabled={mode === 'view'}
                         required
                       />
                     </div>
@@ -2355,7 +2346,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                 </Button>
                 {mode !== 'view' && (
                   <Button type="submit" disabled={loading} className="w-full bg-[uss-admin] hover:bg-blue-900 text-white">
-                    {loading ? 'Salvando...' : mode === 'create' ? 'Criar' : 'Salvar'}
+                    {loading ? 'Salvando...' : 'Salvar'}
                   </Button>
                 )}
               </div>

@@ -179,88 +179,79 @@ export default function ReportsPage() {
           startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
       }
 
-      // Tentar buscar dados da API
-      const [salesData, ordersData] = await Promise.all([
-        api.analytics.getSales(startDate.toISOString(), now.toISOString()).catch(() => null),
-        api.orders.getAll({ limit: 100 }).catch(() => ({ data: [], total: 0 }))
-      ])
+      // Buscar dados da API
+      const statsResponse = await api.orders.getStats().catch(() => ({ 
+        totalRevenue: 0, 
+        totalOrders: 0, 
+        ordersByStatus: {} 
+      }))
 
-      if (salesData) {
-        // Calcular valores financeiros reais
-        const grossRevenue = salesData.totalRevenue || 0
-        const stripeFeeRate = 0.0399
-        const stripeFeeFixed = 0.39
-        const taxRate = 0.07
+      const stats = statsResponse as any
 
-        // Custo estimado dos produtos (margem média de 40% sobre o custo)
-        const productCostRate = 0.60 // 60% do valor de vitrine é custo
-        const productCost = grossRevenue * productCostRate
-        
-        // Lucro Real = Valor Vitrine - Custo do Produto
-        const realProfit = grossRevenue - productCost
-        const realProfitMargin = grossRevenue > 0 ? (realProfit / grossRevenue) * 100 : 0
+      // Calcular métricas financeiras reais
+      const totalRevenue = stats.totalRevenue || 0
+      const totalOrders = stats.totalOrders || 0
+      const averageOrderValue = stats.averageOrderValue || 0
 
-        const stripeFees = (grossRevenue * stripeFeeRate) + (salesData.totalOrders * stripeFeeFixed)
-        const taxFees = grossRevenue * taxRate
-        const netRevenue = grossRevenue - stripeFees - taxFees
-        
-        // Lucro Mediante (Líquido) = Lucro Real - Taxas (Stripe + NF)
-        const netProfit = realProfit - stripeFees - taxFees
-        const netProfitMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0
-        
-        setFinancialSummary({
-          grossRevenue,
-          netRevenue,
-          stripeFees,
-          taxFees,
-          profit: netRevenue,
-          profitMargin: grossRevenue > 0 ? (netRevenue / grossRevenue) * 100 : 0,
-          totalOrders: salesData.totalOrders || 0,
-          averageOrderValue: salesData.averageOrderValue || 0,
-          refunds: 0,
-          pendingPayments: 0,
-          productCost,
-          realProfit,
-          realProfitMargin,
-          netProfit,
-          netProfitMargin
-        })
-      } else {
-        // Dados mock para demonstração
-        // Receita Bruta: R$ 245.780,50
-        // Custo dos Produtos (60%): R$ 147.468,30
-        // Lucro Real (40%): R$ 98.312,20
-        // Taxa Stripe (3.99% + R$0.39/pedido): R$ 10.202,00
-        // Imposto NF (7%): R$ 17.204,64
-        // Lucro Mediante (Líquido): R$ 70.905,56
-        
-        const grossRevenue = 245780.50
-        const productCost = 147468.30
-        const realProfit = 98312.20
-        const stripeFees = 10202.00
-        const taxFees = 17204.64
-        const netProfit = realProfit - stripeFees - taxFees // 70.905,56
-        
-        setFinancialSummary({
-          grossRevenue,
-          netRevenue: grossRevenue - stripeFees - taxFees,
-          stripeFees,
-          taxFees,
-          profit: grossRevenue - stripeFees - taxFees,
-          profitMargin: 88.8,
-          totalOrders: 847,
-          averageOrderValue: 290.12,
-          refunds: 3245.00,
-          pendingPayments: 12450.00,
-          productCost,
-          realProfit,
-          realProfitMargin: 40.0, // 40% de margem sobre vitrine
-          netProfit,
-          netProfitMargin: (netProfit / grossRevenue) * 100 // ~28.8%
-        })
-      }
+      // Calcular taxas e custos
+      const stripeFeeRate = 0.0399
+      const stripeFeeFixed = 0.39
+      const taxRate = 0.07
+      const productCostRate = 0.60 // 60% do valor de vitrine é custo
+
+      const productCost = totalRevenue * productCostRate
+      const realProfit = totalRevenue - productCost
+      const realProfitMargin = totalRevenue > 0 ? (realProfit / totalRevenue) * 100 : 0
+
+      const stripeFees = (totalRevenue * stripeFeeRate) + (totalOrders * stripeFeeFixed)
+      const taxFees = totalRevenue * taxRate
+      const netRevenue = totalRevenue - stripeFees - taxFees
+      
+      const netProfit = realProfit - stripeFees - taxFees
+      const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+
+      setFinancialSummary({
+        grossRevenue: totalRevenue,
+        netRevenue,
+        stripeFees,
+        taxFees,
+        profit: netRevenue,
+        profitMargin: totalRevenue > 0 ? (netRevenue / totalRevenue) * 100 : 0,
+        totalOrders,
+        averageOrderValue,
+        refunds: 0, // TODO: implementar cálculo de reembolsos
+        pendingPayments: 0, // TODO: implementar cálculo de pagamentos pendentes
+        productCost,
+        realProfit,
+        realProfitMargin,
+        netProfit,
+        netProfitMargin
+      })
+
+      setStats({
+        totalRevenue,
+        ordersByStatus: statsResponse.ordersByStatus || {}
+      })
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
+      // Em caso de erro, definir valores padrão
+      setFinancialSummary({
+        grossRevenue: 0,
+        netRevenue: 0,
+        stripeFees: 0,
+        taxFees: 0,
+        profit: 0,
+        profitMargin: 0,
+        totalOrders: 0,
+        averageOrderValue: 0,
+        refunds: 0,
+        pendingPayments: 0,
+        productCost: 0,
+        realProfit: 0,
+        realProfitMargin: 0,
+        netProfit: 0,
+        netProfitMargin: 0
+      })
     } finally {
       setLoading(false)
     }

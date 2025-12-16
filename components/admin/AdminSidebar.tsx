@@ -178,7 +178,7 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
     <motion.aside
       initial={false}
       animate={{ width: collapsed ? 80 : 288 }}
-      className="bg-[uss-admin] 
+      className="bg-gray-900 text-white 
                  flex flex-col h-screen fixed left-0 top-0 z-40 shadow-lg"
     >
       {/* Header */}

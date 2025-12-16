@@ -16,6 +16,7 @@ export interface User {
   name: string
   email: string
   phone?: string
+  cpf?: string
   address?: string
   city?: string
   state?: string
@@ -241,6 +242,11 @@ export interface Order {
   items: OrderItem[]
   orderItems?: OrderItem[]
   user?: User
+  coupon?: {
+    code: string
+    type: string
+    value: number
+  }
   createdAt: string
   updatedAt: string
   // Stripe fields

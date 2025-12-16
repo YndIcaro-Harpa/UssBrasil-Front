@@ -23,6 +23,7 @@ import {
   Tag, ShoppingBag, Loader2, BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Order } from '@/services/api';
 
 // Constantes de taxas (mesmas do módulo de precificação)
 const TAXA_CARTAO = 0.05; // 5% taxa cartão
@@ -55,48 +56,6 @@ interface OrderItem {
     weight?: number;
     brand?: { name: string };
     category?: { name: string };
-  };
-}
-
-interface Order {
-  id: string;
-  userId: string;
-  status: string;
-  paymentStatus: string;
-  paymentMethod: string;
-  subtotal: number;
-  shipping: number;
-  discount: number;
-  total: number;
-  shippingAddress: any;
-  trackingCode?: string;
-  notes?: string;
-  estimatedDelivery?: string;
-  deliveredAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  installments?: number;
-  stripePaymentIntentId?: string;
-  stripeCustomerId?: string;
-  items?: OrderItem[];
-  orderItems?: OrderItem[];
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    cpf?: string;
-    image?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    createdAt?: string;
-  };
-  coupon?: {
-    code: string;
-    type: string;
-    value: number;
   };
 }
 
