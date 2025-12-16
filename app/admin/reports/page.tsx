@@ -379,7 +379,7 @@ export default function ReportsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-[#034a6e] animate-spin mx-auto mb-4" />
+          <RefreshCw className="w-8 h-8 text-uss-900 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Carregando relatórios...</p>
         </div>
       </div>
@@ -411,7 +411,7 @@ export default function ReportsPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setModal({ isOpen: true, type: 'create' })}
-              className="flex items-center space-x-2 bg-[#034a6e] hover:bg-[#023a58] 
+              className="flex items-center space-x-2 bg-uss-900 hover:bg-uss-800 
                        text-white px-4 py-2.5 rounded-xl transition-all shadow-lg"
             >
               <Plus className="w-4 h-4" />
@@ -686,7 +686,7 @@ export default function ReportsPage() {
               <h3 className="text-lg font-bold text-gray-900">Receita vs Lucro</h3>
               <p className="text-sm text-gray-500">Últimos 6 meses</p>
             </div>
-            <BarChart3 className="w-6 h-6 text-[#034a6e]" />
+            <BarChart3 className="w-6 h-6 text-uss-900" />
           </div>
           <div className="h-80">
             <AdminChart 
@@ -702,7 +702,7 @@ export default function ReportsPage() {
           </div>
           <div className="flex items-center justify-center gap-6 mt-4">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-[#034a6e] rounded-full" />
+              <div className="w-3 h-3 bg-uss-900 rounded-full" />
               <span className="text-sm text-gray-600">Receita Bruta</span>
             </div>
             <div className="flex items-center gap-2">
@@ -723,7 +723,7 @@ export default function ReportsPage() {
               <h3 className="text-lg font-bold text-gray-900">Composição da Receita</h3>
               <p className="text-sm text-gray-500">Distribuição de custos</p>
             </div>
-            <PieChart className="w-6 h-6 text-[#034a6e]" />
+            <PieChart className="w-6 h-6 text-uss-900" />
           </div>
           <div className="h-64">
             <AdminChart 
@@ -766,7 +766,7 @@ export default function ReportsPage() {
                 placeholder="Buscar relatórios..."
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
                          text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 
-                         focus:ring-[#034a6e]/20 focus:border-[#034a6e] transition-all"
+                         focus:ring-uss-900/20 focus:border-uss-900 transition-all"
               />
             </div>
           </div>
@@ -778,8 +778,8 @@ export default function ReportsPage() {
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
-                       text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#034a6e]/20 
-                       focus:border-[#034a6e] transition-all"
+                       text-gray-900 focus:outline-none focus:ring-2 focus:ring-uss-900/20 
+                       focus:border-uss-900 transition-all"
             >
               <option value="week">Última semana</option>
               <option value="month">Último mês</option>
@@ -795,8 +795,8 @@ export default function ReportsPage() {
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
-                       text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#034a6e]/20 
-                       focus:border-[#034a6e] transition-all"
+                       text-gray-900 focus:outline-none focus:ring-2 focus:ring-uss-900/20 
+                       focus:border-uss-900 transition-all"
             >
               <option value="all">Todos os tipos</option>
               <option value="financial">Financeiro</option>
@@ -877,7 +877,7 @@ export default function ReportsPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setModal({ isOpen: true, type: 'view', report })}
-                        className="p-2 rounded-lg text-gray-400 hover:text-[#034a6e] hover:bg-gray-100 
+                        className="p-2 rounded-lg text-gray-400 hover:text-uss-900 hover:bg-gray-100 
                                  transition-colors"
                         title="Visualizar"
                       >
@@ -885,7 +885,7 @@ export default function ReportsPage() {
                       </button>
                       <button
                         onClick={() => handleExport(report, 'pdf')}
-                        className="p-2 rounded-lg text-gray-400 hover:text-[#034a6e] hover:bg-gray-100 
+                        className="p-2 rounded-lg text-gray-400 hover:text-uss-900 hover:bg-gray-100 
                                  transition-colors"
                         title="Download PDF"
                       >
@@ -957,7 +957,7 @@ export default function ReportsPage() {
                             key={key}
                             onClick={() => handleGenerateReport(key)}
                             disabled={generating}
-                            className={`p-4 rounded-xl border-2 text-left transition-all hover:border-[#034a6e] 
+                            className={`p-4 rounded-xl border-2 text-left transition-all hover:border-uss-900 
                                       hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed
                                       ${config.color.replace('text-', 'border-').split(' ')[2]}`}
                           >
@@ -973,7 +973,7 @@ export default function ReportsPage() {
 
                     {generating && (
                       <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-8 h-8 text-[#034a6e] animate-spin" />
+                        <Loader2 className="w-8 h-8 text-uss-900 animate-spin" />
                         <span className="ml-3 text-gray-600">Gerando relatório...</span>
                       </div>
                     )}
@@ -1027,7 +1027,7 @@ export default function ReportsPage() {
                       <button
                         onClick={() => handleExport(modal.report!, 'pdf')}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 
-                                 bg-[#034a6e] text-white rounded-xl hover:bg-[#023a58] transition-all"
+                                 bg-uss-900 text-white rounded-xl hover:bg-uss-800 transition-all"
                       >
                         <Download className="w-4 h-4" />
                         Download PDF
@@ -1072,7 +1072,7 @@ export default function ReportsPage() {
                         placeholder="email@exemplo.com"
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
                                  text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 
-                                 focus:ring-[#034a6e]/20 focus:border-[#034a6e] transition-all"
+                                 focus:ring-uss-900/20 focus:border-uss-900 transition-all"
                       />
                     </div>
 
@@ -1085,7 +1085,7 @@ export default function ReportsPage() {
                         placeholder="Adicione uma mensagem..."
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
                                  text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 
-                                 focus:ring-[#034a6e]/20 focus:border-[#034a6e] transition-all resize-none"
+                                 focus:ring-uss-900/20 focus:border-uss-900 transition-all resize-none"
                       />
                     </div>
 
@@ -1103,7 +1103,7 @@ export default function ReportsPage() {
                           setModal({ isOpen: false, type: null })
                         }}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 
-                                 bg-[#034a6e] text-white rounded-xl hover:bg-[#023a58] transition-all"
+                                 bg-uss-900 text-white rounded-xl hover:bg-uss-800 transition-all"
                       >
                         <Mail className="w-4 h-4" />
                         Enviar
