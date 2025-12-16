@@ -89,6 +89,7 @@ export class ProductsService {
           brand: true,
         },
         orderBy: { createdAt: 'desc' },
+        
       }),
       this.prisma.product.count({ where }),
     ]);

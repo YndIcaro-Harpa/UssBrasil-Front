@@ -44,7 +44,7 @@ const steps = [
 
 const paymentMethods = [
   { name: 'PIX', description: '5% de desconto', highlight: true },
-  { name: 'Cartão de Crédito', description: 'Até 12x sem juros' },
+  { name: 'Cartão de Crédito', description: 'Até 10x sem juros' },
   { name: 'Boleto Bancário', description: 'Vencimento em 3 dias' },
   { name: 'Cartão de Débito', description: 'Pagamento à vista' }
 ];

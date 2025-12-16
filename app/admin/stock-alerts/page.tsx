@@ -9,18 +9,7 @@ import { Input } from '@/components/ui/input'
 import { FadeInUp, AnimatedCard } from '@/components/admin/PageTransition'
 import { StatCardSkeleton, TableSkeleton } from '@/components/ui/SkeletonLoaders'
 import { toast } from 'react-hot-toast'
-import { api } from '@/services/api'
-
-interface Product {
-  id: number
-  name: string
-  sku?: string
-  stock: number
-  price: number
-  categoryId?: number
-  category?: { name: string }
-  images?: string[]
-}
+import { api, Product } from '@/services/api'
 
 interface StockAlert {
   product: Product
@@ -33,6 +22,21 @@ const STOCK_THRESHOLDS = {
   critical: 5,
   low: 15,
   medium: 30
+}
+
+// Helper para obter a primeira imagem do produto
+const getFirstImage = (images: string | undefined): string | null => {
+  if (!images) return null
+  try {
+    const parsed = JSON.parse(images)
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0]
+    }
+    return null
+  } catch {
+    // Se não for JSON válido, pode ser uma URL direta
+    return images.startsWith('http') ? images : null
+  }
 }
 
 export default function StockAlertsPage() {
@@ -48,7 +52,7 @@ export default function StockAlertsPage() {
   const fetchProducts = useCallback(async () => {
     try {
       const response = await api.products.getAll({ limit: 500 })
-      const productList = Array.isArray(response) ? response : response.products || []
+      const productList = Array.isArray(response) ? response : response.data || []
       setProducts(productList)
       
       // Calculate alerts
@@ -82,10 +86,10 @@ export default function StockAlertsPage() {
     fetchProducts()
   }
 
-  const handleUpdateStock = async (productId: number, newStock: number) => {
+  const handleUpdateStock = async (productId: string, newStock: number) => {
     try {
       const token = localStorage.getItem('token')
-      await api.products.update(productId.toString(), { stock: newStock }, token || undefined)
+      await api.products.update(productId, { stock: newStock }, token || undefined)
       
       toast.success('Estoque atualizado com sucesso!')
       fetchProducts()
@@ -375,9 +379,9 @@ export default function StockAlertsPage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              {alert.product.images?.[0] ? (
+                              {getFirstImage(alert.product.images) ? (
                                 <img 
-                                  src={alert.product.images[0]} 
+                                  src={getFirstImage(alert.product.images)!} 
                                   alt={alert.product.name}
                                   className="w-10 h-10 object-cover rounded-lg"
                                 />

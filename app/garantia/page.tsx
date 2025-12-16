@@ -7,7 +7,7 @@ const warrantyTypes = [
   {
     icon: Shield,
     title: 'Garantia do Fabricante',
-    description: 'Todos os produtos vendidos pela USS Brasil possuem garantia do fabricante, que varia de acordo com a categoria do produto.',
+    description: 'Os produtos vendidos pela USS Brasil possuem garantia do fabricante, que varia de acordo com a categoria do produto.',
     duration: '12 a 24 meses',
     color: 'blue'
   },
@@ -190,7 +190,7 @@ export default function GarantiaPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="https://wa.me/5511999999999"
+              href="https://wa.me/5548991832760"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-400 rounded-full font-semibold hover:bg-gray-100 transition-colors"

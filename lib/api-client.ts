@@ -361,6 +361,17 @@ class ApiClient {
       },
     })
   }
+
+  async getOrderByTrackingCode(trackingCode: string) {
+    return this.fetchApi(`/orders/tracking/${trackingCode}`)
+  }
+
+  async updateOrderStatus(orderId: string, statusData: { status: string; phase: string }) {
+    return this.fetchApi(`/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    })
+  }
 }
 
 // Instância singleton

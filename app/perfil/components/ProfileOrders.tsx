@@ -387,7 +387,7 @@ export default function ProfileOrders({ userId, initialOrders }: ProfileOrdersPr
             </Button>
           ) : (
             <Link href="/produtos">
-              <Button>
+              <Button className="gap-2 bg-blue-600 text-white hover:bg-blue-900">
                 Começar a Comprar
               </Button>
             </Link>
@@ -480,6 +480,11 @@ export default function ProfileOrders({ userId, initialOrders }: ProfileOrdersPr
                     {order.trackingCode && (
                       <p className="text-xs text-blue-500 mt-1">
                         Rastreio: {order.trackingCode}
+                      </p>
+                    )}
+                    {order.shippingAddress && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        📍 {order.shippingAddress.cidade}/{order.shippingAddress.estado} - CEP: {order.shippingAddress.cep}
                       </p>
                     )}
                   </div>

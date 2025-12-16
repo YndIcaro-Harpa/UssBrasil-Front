@@ -193,7 +193,7 @@ export default function TrocasDevolucoes() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="https://wa.me/5511999999999?text=Olá! Preciso de ajuda com uma troca ou devolução."
+              href="https://wa.me/5548991832760?text=Olá! Preciso de ajuda com uma troca ou devolução."
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-full font-semibold transition-colors"

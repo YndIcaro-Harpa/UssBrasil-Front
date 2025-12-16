@@ -31,6 +31,7 @@ import { toast } from 'sonner'
 
 // Tipos
 interface OrderItem {
+  [x: string]: any
   id: string
   productId: string
   quantity: number

@@ -33,16 +33,50 @@ export default function ProfileFavorites() {
   const [favoriteProducts, setFavoriteProducts] = useState<FavoriteProduct[]>([])
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
-  const { favorites, toggleFavorite } = useAuth()
+  const { favorites, favoriteItems, toggleFavorite, syncFavorites, isAuthenticated, token } = useAuth()
 
   useEffect(() => {
-    // Carregar produtos dos favoritos usando o AuthContext
-    const loadFavorites = () => {
+    // Carregar produtos dos favoritos usando o AuthContext e API
+    const loadFavorites = async () => {
       try {
-        // Buscar produtos do db.json que estão nos favoritos
-        const products = data.products.filter((p: any) => 
-          favorites.includes(String(p.id))
-        ).map((p: any) => ({
+        console.log('ProfileFavorites - Loading favorites:', favorites)
+        console.log('ProfileFavorites - Favorite items:', favoriteItems)
+        console.log('ProfileFavorites - Is authenticated:', isAuthenticated)
+
+        if (isAuthenticated && token) {
+          // Usuário logado - sincronizar com backend
+          console.log('ProfileFavorites - Syncing with backend...')
+          await syncFavorites()
+        } else {
+          // Usuário não logado - usar dados locais
+          console.log('ProfileFavorites - Using local data...')
+          // Buscar produtos do db.json que estão nos favoritos
+          const products = data.products.filter((p: any) => {
+            const productId = String(p.id)
+            const isInFavorites = favorites.includes(productId)
+            console.log(`Checking product ${productId}:`, isInFavorites)
+            return isInFavorites
+          }).map((p: any) => ({
+            id: String(p.id),
+            name: p.name,
+            slug: p.slug || String(p.id),
+            price: p.price,
+            discountPrice: p.discountPrice || undefined,
+            image: p.image || p.images?.[0] || '/placeholder.png',
+            brand: p.brand || 'USS Brasil',
+            inStock: (p.stock || 99) > 0
+          }))
+          
+          setFavoriteProducts(products)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar favoritos:', error)
+        // Fallback para dados locais em caso de erro
+        const products = data.products.filter((p: any) => {
+          const productId = String(p.id)
+          const isInFavorites = favorites.includes(productId)
+          return isInFavorites
+        }).map((p: any) => ({
           id: String(p.id),
           name: p.name,
           slug: p.slug || String(p.id),
@@ -52,32 +86,100 @@ export default function ProfileFavorites() {
           brand: p.brand || 'USS Brasil',
           inStock: (p.stock || 99) > 0
         }))
-        
         setFavoriteProducts(products)
-      } catch (error) {
-        console.error('Erro ao carregar favoritos:', error)
       } finally {
         setLoading(false)
       }
     }
 
     loadFavorites()
-  }, [favorites])
+  }, [favorites, favoriteItems, isAuthenticated, token, syncFavorites])
+
+  // Atualizar produtos quando os favoriteItems do backend mudarem
+  useEffect(() => {
+    if (isAuthenticated && favoriteItems.length > 0) {
+      console.log('ProfileFavorites - Updating products from backend items:', favoriteItems)
+      
+      const products: FavoriteProduct[] = favoriteItems.map((item) => {
+        // Parse das imagens (vem como string JSON do backend)
+        let images: string[] = []
+        try {
+          images = JSON.parse(item.product.images || '[]')
+        } catch (e) {
+          images = []
+        }
+
+        return {
+          id: item.productId,
+          name: item.product.name,
+          slug: item.product.slug,
+          price: item.product.price,
+          discountPrice: item.product.originalPrice || undefined,
+          image: images[0] || '/placeholder.png',
+          brand: item.product.brand?.name || 'USS Brasil',
+          inStock: item.product.stock > 0
+        }
+      })
+      
+      setFavoriteProducts(products)
+      setLoading(false)
+    }
+  }, [favoriteItems, isAuthenticated])
+
+  // Função para forçar reload dos favoritos
+  const reloadFavorites = async () => {
+    console.log('ProfileFavorites - Reloading favorites manually')
+    setLoading(true)
+    
+    try {
+      if (isAuthenticated && token) {
+        // Usuário logado - sincronizar com backend
+        await syncFavorites()
+      } else {
+        // Usuário não logado - recarregar dados locais
+        const products = data.products.filter((p: any) => {
+          const productId = String(p.id)
+          const isInFavorites = favorites.includes(productId)
+          return isInFavorites
+        }).map((p: any) => ({
+          id: String(p.id),
+          name: p.name,
+          slug: p.slug || String(p.id),
+          price: p.price,
+          discountPrice: p.discountPrice || undefined,
+          image: p.image || p.images?.[0] || '/placeholder.png',
+          brand: p.brand || 'USS Brasil',
+          inStock: (p.stock || 99) > 0
+        }))
+        setFavoriteProducts(products)
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar favoritos:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleRemoveFavorite = (id: string) => {
+    console.log('ProfileFavorites - Removing favorite:', id)
     toggleFavorite(id)
     toast.success('Removido dos favoritos')
+    
+    // Atualizar lista localmente também
+    setFavoriteProducts(prev => prev.filter(product => product.id !== id))
   }
 
   const handleAddToCart = (product: FavoriteProduct) => {
-    addToCart({
-      id: parseInt(product.id) || Date.now(),
+    const cartProduct = {
+      id: product.id,
       name: product.name,
-      price: product.discountPrice || product.price,
+      price: product.price,
+      discountPrice: product.discountPrice,
       image: product.image,
-      quantity: 1,
       stock: 99
-    })
+    }
+
+    addToCart(cartProduct as any, 1)
     toast.success('Adicionado ao carrinho!')
   }
 
@@ -115,12 +217,23 @@ export default function ProfileFavorites() {
             {favoriteProducts.length} {favoriteProducts.length === 1 ? 'produto salvo' : 'produtos salvos'}
           </p>
         </div>
-        <Link href="/favoritos">
-          <Button variant="outline" className="gap-2">
-            <Heart className="h-4 w-4" />
-            Ver Página Completa
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={reloadFavorites}
+            className="gap-2"
+          >
+            <Loader2 className="h-4 w-4" />
+            Atualizar
           </Button>
-        </Link>
+          <Link href="/favoritos">
+            <Button variant="outline" className="gap-2 bg-blue-600 text-white hover:bg-blue-700">
+              <Heart className="h-4 w-4" />
+              Ver Página Completa
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Favorites List */}
@@ -134,7 +247,7 @@ export default function ProfileFavorites() {
             Explore nossos produtos e salve seus favoritos
           </p>
           <Link href="/produtos">
-            <Button>
+            <Button className="gap-2 bg-blue-600 text-white hover:bg-blue-700">
               Explorar Produtos
             </Button>
           </Link>

@@ -31,11 +31,11 @@ const faqCategories = [
     questions: [
       {
         question: 'Quais formas de pagamento são aceitas?',
-        answer: 'Aceitamos cartões de crédito (Visa, Mastercard, Elo, American Express), PIX, boleto bancário e transferência.'
+        answer: 'Aceitamos cartões de crédito (Visa, Mastercard, Elo, American Express), PIX e transferência.'
       },
       {
         question: 'Posso parcelar minhas compras?',
-        answer: 'Sim! Oferecemos parcelamento em até 12x sem juros no cartão de crédito para compras acima de R$ 500.'
+        answer: 'Sim! Oferecemos parcelamento em até 10x sem juros no cartão de crédito para compras acima de R$ 500.'
       },
       {
         question: 'O pagamento via PIX é seguro?',

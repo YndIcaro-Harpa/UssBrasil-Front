@@ -56,7 +56,7 @@ export interface User {
 
 export interface Order {
   id: string
-  userId: string
+  userId?: string
   items: CartItem[]
   total: number
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'

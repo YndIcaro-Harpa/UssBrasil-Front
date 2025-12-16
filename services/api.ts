@@ -225,7 +225,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string
-  userId: string
+  userId?: string
   status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
   paymentMethod: string
@@ -369,7 +369,10 @@ export const usersApi = {
     if (params?.page) queryParams.append('page', params.page.toString())
     if (params?.limit) queryParams.append('limit', params.limit.toString())
     
-    const response = await fetch(`${API_URL}/users?${queryParams}`)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const response = await fetch(`${API_URL}/users?${queryParams}`, {
+      headers: getAuthHeaders(token || undefined)
+    })
     return handleResponse<PaginatedResponse<User>>(response)
   },
 
@@ -390,7 +393,10 @@ export const usersApi = {
     if (params?.search) queryParams.append('search', params.search)
     if (params?.status) queryParams.append('status', params.status)
     
-    const response = await fetch(`${API_URL}/users/customers?${queryParams}`)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const response = await fetch(`${API_URL}/users/customers?${queryParams}`, {
+      headers: getAuthHeaders(token || undefined)
+    })
     return handleResponse<{ customers: CustomerStats[]; pagination: { page: number; limit: number; total: number; pages: number } }>(response)
   },
 
@@ -399,7 +405,10 @@ export const usersApi = {
     if (params?.page) queryParams.append('page', params.page.toString())
     if (params?.limit) queryParams.append('limit', params.limit.toString())
     
-    const response = await fetch(`${API_URL}/users/${id}/orders?${queryParams}`)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const response = await fetch(`${API_URL}/users/${id}/orders?${queryParams}`, {
+      headers: getAuthHeaders(token || undefined)
+    })
     return handleResponse<{ orders: Order[]; totalSpent: number; pagination: { page: number; limit: number; total: number; pages: number } }>(response)
   },
 
@@ -925,13 +934,16 @@ export const ordersApi = {
   },
 
   async create(data: {
-    userId: string
-    items: Array<{ productId: string; quantity: number; price: number }>
+    userId?: string
+    items: Array<{ productId: string; quantity: number; price: number; selectedColor?: string; selectedSize?: string; selectedStorage?: string }>
     shippingAddress: any
     paymentMethod: string
     subtotal: number
     shipping: number
     discount?: number
+    couponId?: string
+    saleType?: 'online' | 'presencial'
+    notes?: string
   }) {
     const response = await fetch(`${API_URL}/orders`, {
       method: 'POST',
@@ -1038,6 +1050,7 @@ export const stripeApi = {
     installments?: number
     customerEmail?: string
     userId?: string
+    orderId?: string
     items?: Array<{ productId: string; quantity: number; price: number }>
     token?: string
   }) {
@@ -1427,8 +1440,9 @@ const cmsApi = {
   // Listar todas as páginas
   getAll: async (): Promise<{ pages: CMSPage[] }> => {
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       const response = await fetch(`${API_URL}/cms/pages`, {
-        headers: getHeaders(),
+        headers: getAuthHeaders(token || undefined),
       })
       return handleResponse<{ pages: CMSPage[] }>(response)
     } catch {
@@ -1439,16 +1453,18 @@ const cmsApi = {
 
   // Buscar página por ID
   getById: async (id: string): Promise<CMSPage> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     const response = await fetch(`${API_URL}/cms/pages/${id}`, {
-      headers: getHeaders(),
+      headers: getAuthHeaders(token || undefined),
     })
     return handleResponse<CMSPage>(response)
   },
 
   // Buscar página por slug
   getBySlug: async (slug: string): Promise<CMSPage> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     const response = await fetch(`${API_URL}/cms/pages/slug/${slug}`, {
-      headers: getHeaders(),
+      headers: getAuthHeaders(token || undefined),
     })
     return handleResponse<CMSPage>(response)
   },
@@ -1457,7 +1473,7 @@ const cmsApi = {
   create: async (data: Partial<CMSPage>, token?: string): Promise<CMSPage> => {
     const response = await fetch(`${API_URL}/cms/pages`, {
       method: 'POST',
-      headers: token ? getAuthHeaders(token) : getHeaders(),
+      headers: getAuthHeaders(token),
       body: JSON.stringify(data),
     })
     return handleResponse<CMSPage>(response)
@@ -1467,7 +1483,7 @@ const cmsApi = {
   update: async (id: string, data: Partial<CMSPage>, token?: string): Promise<CMSPage> => {
     const response = await fetch(`${API_URL}/cms/pages/${id}`, {
       method: 'PATCH',
-      headers: token ? getAuthHeaders(token) : getHeaders(),
+      headers: getAuthHeaders(token),
       body: JSON.stringify(data),
     })
     return handleResponse<CMSPage>(response)
@@ -1477,7 +1493,7 @@ const cmsApi = {
   delete: async (id: string, token?: string): Promise<{ message: string }> => {
     const response = await fetch(`${API_URL}/cms/pages/${id}`, {
       method: 'DELETE',
-      headers: token ? getAuthHeaders(token) : getHeaders(),
+      headers: getAuthHeaders(token),
     })
     return handleResponse<{ message: string }>(response)
   },
@@ -1499,8 +1515,9 @@ const settingsApi = {
   // Buscar todas as configurações (formato key-value)
   getAll: async (): Promise<Record<string, string>> => {
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       const response = await fetch(`${API_URL}/site-config`, {
-        headers: getHeaders(),
+        headers: getAuthHeaders(token || undefined),
       })
       return handleResponse<Record<string, string>>(response)
     } catch {
@@ -1512,7 +1529,7 @@ const settingsApi = {
   getAllAdmin: async (token?: string): Promise<SiteConfigItem[]> => {
     try {
       const response = await fetch(`${API_URL}/site-config/admin`, {
-        headers: token ? getAuthHeaders(token) : getHeaders(),
+        headers: getAuthHeaders(token),
       })
       return handleResponse<SiteConfigItem[]>(response)
     } catch {
@@ -1524,7 +1541,7 @@ const settingsApi = {
   update: async (key: string, value: string, token?: string): Promise<SiteConfigItem> => {
     const response = await fetch(`${API_URL}/site-config/${key}`, {
       method: 'PUT',
-      headers: token ? getAuthHeaders(token) : getHeaders(),
+      headers: getAuthHeaders(token),
       body: JSON.stringify({ value }),
     })
     return handleResponse<SiteConfigItem>(response)
@@ -1534,7 +1551,7 @@ const settingsApi = {
   updateMany: async (configs: { key: string; value: string }[], token?: string): Promise<SiteConfigItem[]> => {
     const response = await fetch(`${API_URL}/site-config`, {
       method: 'PUT',
-      headers: token ? getAuthHeaders(token) : getHeaders(),
+      headers: getAuthHeaders(token),
       body: JSON.stringify({ configs }),
     })
     return handleResponse<SiteConfigItem[]>(response)

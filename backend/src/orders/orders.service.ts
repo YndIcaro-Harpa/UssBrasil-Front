@@ -3,10 +3,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
 import { EmailService } from '../email/email.service';
 
+export interface ShippingAddress {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+}
+
 export interface CreateOrderDto {
-  userId: string;
+  userId?: string;
   items: OrderItemDto[];
-  shippingAddress: any;
+  shippingAddress: ShippingAddress | string;
   paymentMethod: string;
   subtotal: number;
   shipping: number;
@@ -39,48 +50,76 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
+    console.log('🔍 Criando pedido:', JSON.stringify(createOrderDto, null, 2));
+
     const { items, shippingAddress, ...orderData } = createOrderDto;
     
     // Calcular total
     const total = orderData.subtotal + orderData.shipping - (orderData.discount || 0);
+    console.log('💰 Total calculado:', total);
 
     // Converter shippingAddress para string JSON se for objeto
     const shippingAddressStr = typeof shippingAddress === 'object' 
       ? JSON.stringify(shippingAddress) 
       : shippingAddress;
 
-    // Criar pedido com itens
-    const order = await this.prisma.order.create({
-      data: {
-        ...orderData,
+    console.log('📍 Endereço convertido:', shippingAddressStr);
+
+    try {
+      // Preparar dados do pedido, excluindo userId inválido
+      const orderCreateData: any = {
         shippingAddress: shippingAddressStr,
         total,
-        orderItems: {
+        subtotal: orderData.subtotal,
+        shipping: orderData.shipping,
+        discount: orderData.discount || 0,
+      };
+
+      // Só incluir orderItems se houver items
+      if (items && items.length > 0) {
+        orderCreateData.orderItems = {
           create: items,
-        },
-      },
-      include: {
-        orderItems: {
-          include: {
-            product: {
-              include: {
-                brand: true,
-                category: true,
+        };
+      }
+
+      // Só incluir userId se for um UUID válido (não "guest")
+      if (orderData.userId && orderData.userId !== 'guest' && orderData.userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        orderCreateData.userId = orderData.userId;
+      }
+
+      // Incluir outros campos não-userId
+      if (orderData.paymentMethod) orderCreateData.paymentMethod = orderData.paymentMethod;
+      if (orderData.couponId) orderCreateData.couponId = orderData.couponId;
+      if (orderData.saleType) orderCreateData.saleType = orderData.saleType;
+      if (orderData.notes) orderCreateData.notes = orderData.notes;
+
+      // Criar pedido com itens
+      const order = await this.prisma.order.create({
+        data: orderCreateData,
+        include: {
+          orderItems: {
+            include: {
+              product: {
+                include: {
+                  brand: true,
+                  category: true,
+                },
               },
             },
           },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
           },
+          coupon: true,
         },
-        coupon: true,
-      },
-    });
+      });
+
+      console.log('✅ Pedido criado com sucesso:', order.id);
 
     // Atualizar estoque dos produtos
     for (const item of items) {
@@ -110,6 +149,10 @@ export class OrdersService {
     }
 
     return order;
+    } catch (error) {
+      console.error('❌ Erro ao criar pedido:', error);
+      throw error;
+    }
   }
 
   async findAll(
@@ -521,7 +564,7 @@ export class OrdersService {
   }
 
   // Criar notificação interna para o usuário
-  private async createUserNotification(userId: string, orderId: string, status: string) {
+  private async createUserNotification(userId: string | null, orderId: string, status: string) {
     // Você pode criar uma tabela de notificações ou usar outro sistema
     // Por agora, vamos apenas logar
     console.log(`[User Notification] User: ${userId}, Order: ${orderId}, Status: ${status}`);

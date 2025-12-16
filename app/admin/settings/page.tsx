@@ -170,7 +170,7 @@ export default function AdminSettingsPage() {
     }
   }
 
-  const update = (field: string, value: unknown) => {
+  const update = (field: string, value: string | number | boolean) => {
     setSettings(prev => ({ ...prev, [field]: value }))
   }
 

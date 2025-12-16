@@ -243,7 +243,7 @@ export default function ProfileSecurity({ userId, session }: ProfileSecurityProp
           <Button 
             onClick={handleChangePassword}
             disabled={loading}
-            className="w-full"
+            className="w-full gap-2 bg-blue-600 text-white hover:bg-blue-700"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -271,7 +271,7 @@ export default function ProfileSecurity({ userId, session }: ProfileSecurityProp
               </p>
             </div>
           </div>
-          <Button
+          <Button className='gap-2 bg-blue-600 text-white hover:bg-blue-700'
             variant={twoFactorEnabled ? 'destructive' : 'default'}
             onClick={handleToggle2FA}
           >

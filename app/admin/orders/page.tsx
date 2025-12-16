@@ -81,6 +81,7 @@ export default function AdminOrdersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [loadingDetails, setLoadingDetails] = useState(false)
 
   const handleSaveOrder = async (orderData: any) => {
     try {
@@ -873,9 +874,20 @@ export default function AdminOrdersPage() {
                     <td className="p-3 lg:p-4">
                       <div className="flex items-center gap-1">
                         <button 
-                          onClick={() => {
-                            setSelectedOrder(order)
-                            setIsDetailsModalOpen(true)
+                          onClick={async () => {
+                            try {
+                              setLoadingDetails(true)
+                              setIsDetailsModalOpen(true)
+                              // Buscar dados completos do pedido incluindo usuário
+                              const orderDetails = await api.orders.getById(order.id)
+                              setSelectedOrder(orderDetails)
+                            } catch (error) {
+                              console.error('Erro ao buscar detalhes do pedido:', error)
+                              toast.error('Erro ao carregar detalhes do pedido')
+                              setIsDetailsModalOpen(false)
+                            } finally {
+                              setLoadingDetails(false)
+                            }
                           }}
                           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                           title="Ver detalhes"
@@ -1022,8 +1034,10 @@ export default function AdminOrdersPage() {
         onClose={() => {
           setIsDetailsModalOpen(false)
           setSelectedOrder(null)
+          setLoadingDetails(false)
         }}
         order={selectedOrder}
+        loading={loadingDetails}
         onStatusChange={async (orderId, status) => {
           await handleUpdateStatus(orderId, status as OrderStatus)
         }}

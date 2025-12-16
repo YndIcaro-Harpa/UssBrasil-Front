@@ -9,7 +9,7 @@ const supportChannels = [
     title: 'WhatsApp',
     description: 'Atendimento rápido e prático',
     action: 'Iniciar conversa',
-    href: 'https://wa.me/5511999999999',
+    href: 'https://wa.me/5548991832760',
     highlight: true
   },
   {

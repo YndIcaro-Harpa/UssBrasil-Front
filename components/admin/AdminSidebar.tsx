@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import AdminNavigation from './AdminNavigation'
 import { useAdminAuth } from '@/hooks/useAdminAuth'
+import { useAuth } from '@/contexts/AuthContext'
 import api from '@/services/api'
 
 interface AdminSidebarProps {
@@ -112,7 +113,18 @@ const quickActions = [
 export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQuickAction }: AdminSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const { user } = useAdminAuth()
+  const { logout } = useAuth()
   const [counts, setCounts] = useState<BadgeCounts>({ products: 0, pendingOrders: 0, customers: 0 })
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      // Redirect to home page after logout
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
+    }
+  }
 
   // Fetch real counts from API
   useEffect(() => {
@@ -285,14 +297,14 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
                                transition-colors" title="Configurações">
                 <Settings className="w-3.5 h-3.5" />
               </button>
-              <Link
-                href="/"
+              <button 
+                onClick={handleLogout}
                 className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                          transition-colors" 
                 title="Sair"
               >
                 <LogOut className="w-3.5 h-3.5" />
-              </Link>
+              </button>
             </div>
           </div>
         ) : (
@@ -306,14 +318,14 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
                                transition-colors" title="Notificações">
                 <Bell className="w-3.5 h-3.5" />
               </button>
-              <Link
-                href="/"
+              <button 
+                onClick={handleLogout}
                 className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 
                          transition-colors" 
                 title="Sair"
               >
                 <LogOut className="w-3.5 h-3.5" />
-              </Link>
+              </button>
             </div>
           </div>
         )}

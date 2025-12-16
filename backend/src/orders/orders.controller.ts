@@ -24,6 +24,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Criar novo pedido' })
   @ApiResponse({ status: 201, description: 'Pedido criado com sucesso' })
   create(@Body() createOrderDto: CreateOrderDto) {
+    console.log('🔍 Controller: Recebendo requisição para criar pedido:', JSON.stringify(createOrderDto, null, 2));
     return this.ordersService.create(createOrderDto);
   }
 

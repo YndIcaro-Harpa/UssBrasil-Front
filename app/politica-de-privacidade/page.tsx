@@ -8,7 +8,8 @@ import {
   Database,
   Mail,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Sparkles
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -165,32 +166,37 @@ Ao continuar utilizando nossos serviços após as alterações, você concorda c
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-400 via-blue-950 to-gray-900 text-white overflow-hidden pt-24 sm:pt-28 pb-16 sm:pb-20">
+      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-700 to-slate-900 text-white overflow-hidden pt-24 sm:pt-28 pb-16 sm:pb-20">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-cyan-400/10 to-purple-400/10 rounded-full blur-2xl" />
         </div>
 
         <div className="container mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0 text-xs sm:text-sm font-bold px-4 sm:px-6 py-2 mb-6 shadow-2xl shadow-cyan-500/50">
+            <Badge className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white border-0 text-xs sm:text-sm font-bold px-4 sm:px-6 py-2 mb-6 shadow-2xl shadow-cyan-500/50 animate-fade-in">
               <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-2 inline" />
               LGPD
             </Badge>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6 leading-tight animate-fade-in-up">
               Política de
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-cyan-300">
                 Privacidade
               </span>
             </h1>
             
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-4 leading-relaxed max-w-3xl mx-auto px-4">
+            <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-4 leading-relaxed max-w-3xl mx-auto px-4 animate-fade-in-up delay-200">
               Última atualização: Janeiro de 2025
             </p>
+
+            <div className="flex justify-center mt-8">
+              <Sparkles className="h-8 w-8 text-cyan-400 animate-bounce" />
+            </div>
           </div>
         </div>
       </section>
@@ -199,15 +205,15 @@ Ao continuar utilizando nossos serviços após as alterações, você concorda c
       <section className="py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-3 sm:px-4 lg:px-6">
           <div className="max-w-4xl mx-auto">
-            <Card className="border border-gray-200 shadow-xl bg-white mb-8">
+            <Card className="border border-slate-200 shadow-2xl bg-white mb-8 hover:shadow-3xl transition-shadow duration-300">
               <CardContent className="p-6 sm:p-8">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Shield className="h-6 w-6 text-green-600" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <Shield className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Compromisso com sua Privacidade</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <h3 className="font-bold text-slate-900 mb-2">Compromisso com sua Privacidade</h3>
+                    <p className="text-slate-600 text-sm leading-relaxed">
                       A USS Brasil está comprometida com a proteção de seus dados pessoais. Esta política descreve como 
                       coletamos, utilizamos, armazenamos e protegemos suas informações, em conformidade com a Lei Geral 
                       de Proteção de Dados (LGPD - Lei nº 13.709/2018).
@@ -219,15 +225,15 @@ Ao continuar utilizando nossos serviços após as alterações, você concorda c
 
             <div className="space-y-6">
               {sections.map((section, index) => (
-                <Card key={index} className="border border-gray-200 shadow-lg bg-white">
+                <Card key={index} className="border border-slate-200 shadow-lg bg-white hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   <CardContent className="p-6 sm:p-8">
-                    <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
                         <section.icon className="h-5 w-5 text-white" />
                       </div>
                       {section.title}
                     </h2>
-                    <div className="text-gray-600 leading-relaxed whitespace-pre-line">
+                    <div className="text-slate-600 leading-relaxed whitespace-pre-line">
                       {section.content}
                     </div>
                   </CardContent>
@@ -236,18 +242,18 @@ Ao continuar utilizando nossos serviços após as alterações, você concorda c
             </div>
 
             {/* Contact Section */}
-            <Card className="border border-gray-200 shadow-xl bg-white mt-8">
+            <Card className="border border-slate-200 shadow-2xl bg-white mt-8 hover:shadow-3xl transition-shadow duration-300">
               <CardContent className="p-6 sm:p-8">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Mail className="h-6 w-6 text-blue-400" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <Mail className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Encarregado de Dados (DPO)</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <h3 className="font-bold text-slate-900 mb-2">Encarregado de Dados (DPO)</h3>
+                    <p className="text-slate-600 text-sm leading-relaxed">
                       Para questões relacionadas à privacidade e proteção de dados, entre em contato com nosso 
                       Encarregado de Dados através do e-mail:{' '}
-                      <a href="mailto:privacidade@ussbrasil.com.br" className="text-blue-400 hover:text-blue-500 font-semibold">
+                      <a href="mailto:privacidade@ussbrasil.com.br" className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">
                         privacidade@ussbrasil.com.br
                       </a>
                     </p>

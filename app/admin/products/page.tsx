@@ -582,7 +582,7 @@ export default function AdminProductsPage() {
               size="sm"
               icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
               onClick={fetchProducts}
-              className="hidden sm:flex"
+              className="hidden sm:flex"  
             >
               Atualizar
             </PremiumButton>

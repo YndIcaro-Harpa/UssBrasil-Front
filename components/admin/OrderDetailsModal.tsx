@@ -107,6 +107,7 @@ interface OrderDetailsModalProps {
   onStatusChange?: (orderId: string, status: string) => Promise<void>;
   onSendNotification?: (orderId: string, type: 'email' | 'whatsapp', status: string) => Promise<void>;
   token?: string;
+  loading?: boolean;
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
@@ -138,12 +139,14 @@ export function OrderDetailsModal({
   order, 
   onStatusChange,
   onSendNotification,
-  token 
+  token,
+  loading = false
 }: OrderDetailsModalProps) {
   const [activeTab, setActiveTab] = useState('resumo');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [financials, setFinancials] = useState({
     custoTotal: 0,
     taxaCartao: 0,
@@ -158,7 +161,10 @@ export function OrderDetailsModal({
   const items = order?.items || order?.orderItems || [];
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Calcular financeiros quando o pedido mudar
+  // Atualizar estado de loading baseado no prop
+  useEffect(() => {
+    setIsLoading(loading);
+  }, [loading]);
   useEffect(() => {
     if (!order) return;
 
@@ -378,23 +384,23 @@ export function OrderDetailsModal({
         {/* Tabs de navegação */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full justify-start gap-1 bg-gray-50 p-1 rounded-none border-b">
-            <TabsTrigger value="resumo" className="data-[state=active]:bg-white">
+            <TabsTrigger value="resumo" className="text-black data-[state=active]:bg-white">
               <BarChart3 className="w-4 h-4 mr-2" />
               Resumo
             </TabsTrigger>
-            <TabsTrigger value="produtos" className="data-[state=active]:bg-white">
+            <TabsTrigger value="produtos" className="text-black data-[state=active]:bg-white">
               <Package className="w-4 h-4 mr-2" />
               Produtos ({totalItems})
             </TabsTrigger>
-            <TabsTrigger value="cliente" className="data-[state=active]:bg-white">
+            <TabsTrigger value="cliente" className="text-black data-[state=active]:bg-white">
               <User className="w-4 h-4 mr-2" />
               Cliente
             </TabsTrigger>
-            <TabsTrigger value="financeiro" className="data-[state=active]:bg-white">
+            <TabsTrigger value="financeiro" className="text-black data-[state=active]:bg-white">
               <DollarSign className="w-4 h-4 mr-2" />
               Financeiro
             </TabsTrigger>
-            <TabsTrigger value="acoes" className="data-[state=active]:bg-white">
+            <TabsTrigger value="acoes" className="text-black data-[state=active]:bg-white">
               <Send className="w-4 h-4 mr-2" />
               Ações
             </TabsTrigger>
@@ -468,11 +474,11 @@ export function OrderDetailsModal({
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Subtotal ({totalItems} itens)</span>
-                      <span className="font-medium">{formatCurrency(order.subtotal)}</span>
+                      <span className="font-medium text-gray-600">{formatCurrency(order.subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Frete</span>
-                      <span className="font-medium">{order.shipping > 0 ? formatCurrency(order.shipping) : 'Grátis'}</span>
+                      <span className="font-medium text-gray-600">{order.shipping > 0 ? formatCurrency(order.shipping) : 'Grátis'}</span>
                     </div>
                     {order.discount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
@@ -513,7 +519,7 @@ export function OrderDetailsModal({
                     {order.stripePaymentIntentId && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Stripe ID</span>
-                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                        <span className="font-mono text-black text-xs bg-gray-100 px-2 py-1 rounded">
                           {order.stripePaymentIntentId.slice(0, 20)}...
                         </span>
                       </div>
@@ -673,7 +679,7 @@ export function OrderDetailsModal({
                               <h4 className="font-bold text-gray-900 truncate">
                                 {item.product?.name || item.productName || 'Produto'}
                               </h4>
-                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <div className="flex items-center text-gray-600 gap-2 mt-1 flex-wrap">
                                 {item.product?.brand && (
                                   <Badge variant="outline" className="text-xs">
                                     {item.product.brand.name}
@@ -772,7 +778,12 @@ export function OrderDetailsModal({
 
             {/* Tab Cliente */}
             <TabsContent value="cliente" className="mt-0">
-              {order.user ? (
+              {isLoading ? (
+                <div className="text-center py-10">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-600" />
+                  <p className="text-gray-500">Carregando dados do cliente...</p>
+                </div>
+              ) : order.user ? (
                 <div className="space-y-5">
                   {/* Card principal do cliente */}
                   <div className="bg-white rounded-xl border p-6">
@@ -823,22 +834,22 @@ export function OrderDetailsModal({
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-500">ID do Cliente</span>
-                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{order.user.id.slice(0, 12)}...</span>
+                          <span className="font-mono text-xs text-black bg-gray-100 px-2 py-1 rounded">{order.user.id.slice(0, 12)}...</span>
                         </div>
                         {order.user.cpf && (
                           <div className="flex justify-between">
                             <span className="text-gray-500">CPF</span>
-                            <span className="font-medium">{order.user.cpf}</span>
+                            <span className="font-medium text-gray-700 ">{order.user.cpf}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
                           <span className="text-gray-500">Email</span>
-                          <span className="font-medium">{order.user.email}</span>
+                          <span className="font-medium text-gray-700 ">{order.user.email}</span>
                         </div>
                         {order.user.phone && (
                           <div className="flex justify-between">
                             <span className="text-gray-500">Telefone</span>
-                            <span className="font-medium">{order.user.phone}</span>
+                            <span className="font-medium text-gray-700 ">{order.user.phone}</span>
                           </div>
                         )}
                       </div>
@@ -872,7 +883,7 @@ export function OrderDetailsModal({
                   <div className="flex gap-3">
                     <Button 
                       variant="outline" 
-                      className="flex-1"
+                      className="flex-1 bg-blue-400 text-white hover:bg-blue-500 cursor-pointer"
                       onClick={handleSendEmail}
                       disabled={sendingEmail}
                     >
@@ -881,7 +892,7 @@ export function OrderDetailsModal({
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="flex-1"
+                      className="flex-1 bg-green-600 text-white hover:bg-green-700 cursor-pointer"
                       onClick={handleSendWhatsapp}
                       disabled={!order.user.phone}
                     >
@@ -892,7 +903,7 @@ export function OrderDetailsModal({
                 </div>
               ) : (
                 <div className="text-center py-10">
-                  <User className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <User className="w-12 h-12 text-gray-700 mx-auto mb-3" />
                   <p className="text-gray-500">Dados do cliente não disponíveis</p>
                 </div>
               )}
@@ -947,16 +958,16 @@ export function OrderDetailsModal({
                       <div className="space-y-2 pl-4 border-l-2 border-emerald-200">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Subtotal dos Produtos</span>
-                          <span className="font-medium">{formatCurrency(order.subtotal)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(order.subtotal)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Frete Cobrado</span>
-                          <span className="font-medium">{formatCurrency(order.shipping)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(order.shipping)}</span>
                         </div>
                         {order.discount > 0 && (
                           <div className="flex justify-between text-sm text-red-600">
                             <span>Desconto Aplicado</span>
-                            <span className="font-medium">-{formatCurrency(order.discount)}</span>
+                            <span className="font-medium text-red-600">-{formatCurrency(order.discount)}</span>
                           </div>
                         )}
                         <div className="flex justify-between text-sm font-bold pt-2 border-t">
@@ -972,11 +983,11 @@ export function OrderDetailsModal({
                       <div className="space-y-2 pl-4 border-l-2 border-red-200">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Custo dos Produtos</span>
-                          <span className="font-medium">{formatCurrency(financials.custoTotal)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(financials.custoTotal)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Frete (custo)</span>
-                          <span className="font-medium">{formatCurrency(order.shipping)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(order.shipping)}</span>
                         </div>
                       </div>
                     </div>
@@ -987,19 +998,19 @@ export function OrderDetailsModal({
                       <div className="space-y-2 pl-4 border-l-2 border-orange-200">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Taxa do Cartão (5%)</span>
-                          <span className="font-medium">{formatCurrency(financials.taxaCartao)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(financials.taxaCartao)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Taxa do Gateway (3.5%)</span>
-                          <span className="font-medium">{formatCurrency(financials.taxaGateway)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(financials.taxaGateway)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Impostos (6.5%)</span>
-                          <span className="font-medium">{formatCurrency(financials.taxaImpostos)}</span>
+                          <span className="font-medium text-gray-700">{formatCurrency(financials.taxaImpostos)}</span>
                         </div>
                         <div className="flex justify-between text-sm font-bold pt-2 border-t">
                           <span className="text-orange-700">Total de Taxas</span>
-                          <span className="text-orange-700">{formatCurrency(financials.taxasTotal)}</span>
+                          <span className="text-orange-700 font-medium">{formatCurrency(financials.taxasTotal)}</span>
                         </div>
                       </div>
                     </div>
@@ -1131,7 +1142,7 @@ export function OrderDetailsModal({
                         <p className={`font-bold ${order.user?.phone ? 'text-green-800' : 'text-gray-600'}`}>
                           WhatsApp
                         </p>
-                        <p className={`text-sm ${order.user?.phone ? 'text-green-600' : 'text-gray-500'}`}>
+                        <p className={`text-sm ${order.user?.phone ? 'text-green-600' : 'text-gray-800'}`}>
                           {order.user?.phone ? 'Abrir conversa' : 'Telefone não cadastrado'}
                         </p>
                       </div>
@@ -1148,11 +1159,11 @@ export function OrderDetailsModal({
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Button variant="outline" onClick={handlePrint} className="flex flex-col h-auto py-3">
                       <Printer className="w-5 h-5 mb-1" />
-                      <span className="text-xs">Imprimir</span>
+                      <span className="text-xs text-gray-700">Imprimir</span>
                     </Button>
                     <Button variant="outline" onClick={() => copyToClipboard(order.id, 'ID do pedido')} className="flex flex-col h-auto py-3">
-                      <Copy className="w-5 h-5 mb-1" />
-                      <span className="text-xs">Copiar ID</span>
+                      <Copy className="w-5 h-5 mb-1 text-gray-700" />
+                      <span className="text-xs text-gray-700">Copiar ID</span>
                     </Button>
                     {order.trackingCode && (
                       <Button 
@@ -1161,7 +1172,7 @@ export function OrderDetailsModal({
                         className="flex flex-col h-auto py-3"
                       >
                         <ExternalLink className="w-5 h-5 mb-1" />
-                        <span className="text-xs">Rastrear</span>
+                        <span className="text-xs text-gray-700">Rastrear</span>
                       </Button>
                     )}
                     <Button 
@@ -1185,7 +1196,7 @@ export function OrderDetailsModal({
           <p className="text-sm text-gray-500">
             Última atualização: {formatDate(order.updatedAt)}
           </p>
-          <Button variant="outline" onClick={onClose}>
+          <Button className="bg-red-600 text-white hover:bg-red-900" variant="outline" onClick={onClose}>
             Fechar
           </Button>
         </div>

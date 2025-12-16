@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { 
-  Package, 
-  Truck, 
-  MapPin, 
-  CheckCircle, 
-  Clock, 
+import {
+  Package,
+  Truck,
+  MapPin,
+  CheckCircle,
+  Clock,
   Search,
   ArrowLeft,
   Calendar,
@@ -26,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import apiClient from '@/lib/api-client'
 
 // Tipos
 interface TrackingEvent {
@@ -35,6 +36,7 @@ interface TrackingEvent {
   location: string
   date: string
   time: string
+  createdAt?: string
 }
 
 interface TrackingInfo {
@@ -55,53 +57,87 @@ interface TrackingInfo {
     id: string
     total: number
     items: number
+    status: string
+    phase: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+  }
+  externalTracking?: {
+    provider: string
+    trackingNumber: string
+    lastUpdate: string
+  }
+}
+
+// Tipos de fase do pedido
+type OrderPhase = 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+
+// Mapeamento de status do pedido para status de rastreamento
+const mapOrderStatusToTracking = (orderStatus: string, phase: OrderPhase): keyof typeof statusConfig => {
+  if (phase === 'DELIVERED') return 'DELIVERED'
+  if (phase === 'CANCELLED') return 'RETURNED'
+  if (phase === 'SHIPPED') return 'IN_TRANSIT'
+
+  // Baseado no status do pedido
+  switch (orderStatus.toLowerCase()) {
+    case 'shipped':
+    case 'enviado':
+      return 'IN_TRANSIT'
+    case 'delivered':
+    case 'entregue':
+      return 'DELIVERED'
+    case 'cancelled':
+    case 'cancelado':
+      return 'RETURNED'
+    case 'processing':
+    case 'processando':
+    default:
+      return 'PENDING'
   }
 }
 
 // Configuração de status
 const statusConfig = {
-  PENDING: { 
-    label: 'Aguardando Coleta', 
+  PENDING: {
+    label: 'Aguardando Coleta',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
     borderColor: 'border-yellow-200',
     icon: Clock,
     progress: 10
   },
-  IN_TRANSIT: { 
-    label: 'Em Trânsito', 
+  IN_TRANSIT: {
+    label: 'Em Trânsito',
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
     borderColor: 'border-blue-200',
     icon: Truck,
     progress: 50
   },
-  OUT_FOR_DELIVERY: { 
-    label: 'Saiu para Entrega', 
+  OUT_FOR_DELIVERY: {
+    label: 'Saiu para Entrega',
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
     borderColor: 'border-purple-200',
     icon: MapPin,
     progress: 85
   },
-  DELIVERED: { 
-    label: 'Entregue', 
+  DELIVERED: {
+    label: 'Entregue',
     color: 'text-green-600',
     bgColor: 'bg-green-100',
     borderColor: 'border-green-200',
     icon: CheckCircle,
     progress: 100
   },
-  RETURNED: { 
-    label: 'Devolvido', 
+  RETURNED: {
+    label: 'Devolvido',
     color: 'text-orange-600',
     bgColor: 'bg-orange-100',
     borderColor: 'border-orange-200',
     icon: RefreshCw,
     progress: 0
   },
-  EXCEPTION: { 
-    label: 'Exceção', 
+  EXCEPTION: {
+    label: 'Exceção',
     color: 'text-red-600',
     bgColor: 'bg-red-100',
     borderColor: 'border-red-200',
@@ -110,7 +146,7 @@ const statusConfig = {
   },
 }
 
-// Dados simulados para demonstração
+// Dados simulados para demonstração (remover quando backend estiver pronto)
 const mockTrackingData: Record<string, TrackingInfo> = {
   'BR123456789BR': {
     code: 'BR123456789BR',
@@ -119,7 +155,7 @@ const mockTrackingData: Record<string, TrackingInfo> = {
     estimatedDelivery: '2025-11-27',
     origin: { city: 'São Paulo', state: 'SP' },
     destination: { city: 'Rio de Janeiro', state: 'RJ' },
-    order: { id: 'ORD-12345', total: 2499.90, items: 2 },
+    order: { id: 'ORD-12345', total: 2499.90, items: 2, status: 'shipped', phase: 'SHIPPED' },
     events: [
       {
         id: '1',
@@ -136,74 +172,7 @@ const mockTrackingData: Record<string, TrackingInfo> = {
         location: 'CTE Rio de Janeiro - RJ',
         date: '25/11/2025',
         time: '22:15'
-      },
-      {
-        id: '3',
-        status: 'IN_TRANSIT',
-        description: 'Objeto em trânsito - de Unidade de Tratamento',
-        location: 'CTE São Paulo - SP',
-        date: '25/11/2025',
-        time: '03:45'
-      },
-      {
-        id: '4',
-        status: 'IN_TRANSIT',
-        description: 'Objeto postado',
-        location: 'AGF São Paulo - SP',
-        date: '24/11/2025',
-        time: '14:20'
-      },
-      {
-        id: '5',
-        status: 'PENDING',
-        description: 'Objeto recebido pelos Correios do Brasil',
-        location: 'São Paulo - SP',
-        date: '24/11/2025',
-        time: '10:00'
-      },
-    ]
-  },
-  'USS987654321': {
-    code: 'USS987654321',
-    carrier: 'USS Express',
-    status: 'DELIVERED',
-    estimatedDelivery: '2025-11-25',
-    origin: { city: 'Curitiba', state: 'PR' },
-    destination: { city: 'Florianópolis', state: 'SC' },
-    order: { id: 'ORD-67890', total: 1299.00, items: 1 },
-    events: [
-      {
-        id: '1',
-        status: 'DELIVERED',
-        description: 'Objeto entregue ao destinatário',
-        location: 'Florianópolis - SC',
-        date: '25/11/2025',
-        time: '15:42'
-      },
-      {
-        id: '2',
-        status: 'OUT_FOR_DELIVERY',
-        description: 'Objeto saiu para entrega',
-        location: 'Centro de Distribuição Florianópolis',
-        date: '25/11/2025',
-        time: '07:30'
-      },
-      {
-        id: '3',
-        status: 'IN_TRANSIT',
-        description: 'Objeto em trânsito para cidade de destino',
-        location: 'Curitiba - PR',
-        date: '24/11/2025',
-        time: '18:00'
-      },
-      {
-        id: '4',
-        status: 'PENDING',
-        description: 'Pedido coletado',
-        location: 'Curitiba - PR',
-        date: '24/11/2025',
-        time: '11:30'
-      },
+      }
     ]
   }
 }
@@ -226,11 +195,12 @@ export default function RastreamentoPage() {
 function RastreamentoContent() {
   const searchParams = useSearchParams()
   const codeFromUrl = searchParams.get('code')
-  
+
   const [trackingCode, setTrackingCode] = useState(codeFromUrl || '')
   const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(false)
 
   // Buscar automaticamente se vier código na URL
   useEffect(() => {
@@ -238,6 +208,17 @@ function RastreamentoContent() {
       handleSearch()
     }
   }, [codeFromUrl])
+
+  // Auto refresh para pedidos em trânsito
+  useEffect(() => {
+    if (trackingInfo && trackingInfo.status === 'IN_TRANSIT' && autoRefresh) {
+      const interval = setInterval(() => {
+        updateTrackingFromExternalAPI()
+      }, 300000) // 5 minutos
+
+      return () => clearInterval(interval)
+    }
+  }, [trackingInfo, autoRefresh])
 
   const handleSearch = async () => {
     if (!trackingCode.trim()) {
@@ -248,22 +229,250 @@ function RastreamentoContent() {
     setLoading(true)
     setSearched(true)
 
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      // Tentar buscar dados do pedido no backend
+      const orderData = await apiClient.getOrderByTrackingCode(trackingCode.trim())
 
-    // Verificar se existe nos dados mock
-    const upperCode = trackingCode.toUpperCase().trim()
-    const data = mockTrackingData[upperCode]
+      if (orderData) {
+        // Mapear dados do pedido para formato de rastreamento
+        const trackingData = await mapOrderToTrackingInfo(orderData)
+        setTrackingInfo(trackingData)
 
-    if (data) {
-      setTrackingInfo(data)
-      toast.success('Rastreamento encontrado!')
-    } else {
-      setTrackingInfo(null)
-      toast.error('Código de rastreio não encontrado')
+        // Ativar auto-refresh se estiver em trânsito
+        setAutoRefresh(trackingData.status === 'IN_TRANSIT')
+
+        toast.success('Rastreamento encontrado!')
+        setLoading(false)
+        return
+      }
+    } catch (error) {
+      console.warn('Erro ao buscar no backend, tentando dados mockados:', error)
     }
 
-    setLoading(false)
+    // Fallback para dados mockados (para desenvolvimento)
+    try {
+      const upperCode = trackingCode.toUpperCase().trim()
+      const mockData = mockTrackingData[upperCode]
+
+      if (mockData) {
+        setTrackingInfo(mockData)
+        setAutoRefresh(mockData.status === 'IN_TRANSIT')
+        toast.success('Rastreamento encontrado! (dados de desenvolvimento)')
+      } else {
+        setTrackingInfo(null)
+        toast.error('Código de rastreio não encontrado')
+      }
+    } catch (error) {
+      console.error('Erro ao buscar rastreamento:', error)
+      setTrackingInfo(null)
+      toast.error('Erro ao buscar informações de rastreamento')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const mapOrderToTrackingInfo = async (orderData: any): Promise<TrackingInfo> => {
+    const { order, shipping, tracking } = orderData
+
+    // Determinar status baseado na fase do pedido
+    const trackingStatus = mapOrderStatusToTracking(order.status, order.phase)
+
+    // Eventos baseados no histórico do pedido
+    const events: TrackingEvent[] = []
+
+    // Evento inicial - pedido criado
+    events.push({
+      id: 'order-created',
+      status: 'PENDING',
+      description: 'Pedido realizado com sucesso',
+      location: `${shipping.origin.city} - ${shipping.origin.state}`,
+      date: new Date(order.createdAt).toLocaleDateString('pt-BR'),
+      time: new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      createdAt: order.createdAt
+    })
+
+    // Se o pedido foi enviado, adicionar eventos de envio
+    if (order.phase === 'SHIPPED' || ['shipped', 'enviado'].includes(order.status.toLowerCase())) {
+      events.push({
+        id: 'order-shipped',
+        status: 'IN_TRANSIT',
+        description: `Pedido enviado via ${shipping.carrier}`,
+        location: `${shipping.origin.city} - ${shipping.origin.state}`,
+        date: new Date(order.shippedAt || order.updatedAt).toLocaleDateString('pt-BR'),
+        time: new Date(order.shippedAt || order.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: order.shippedAt || order.updatedAt
+      })
+
+      // Se temos rastreamento externo, buscar atualizações
+      if (tracking && tracking.externalTrackingNumber) {
+        try {
+          const externalEvents = await fetchExternalTracking(tracking.externalTrackingNumber, tracking.carrier)
+          events.push(...externalEvents)
+        } catch (error) {
+          console.warn('Erro ao buscar rastreamento externo:', error)
+          // Fallback para evento genérico
+          events.push({
+            id: 'in-transit',
+            status: 'IN_TRANSIT',
+            description: 'Pedido em trânsito para entrega',
+            location: `${shipping.destination.city} - ${shipping.destination.state}`,
+            date: new Date().toLocaleDateString('pt-BR'),
+            time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          })
+        }
+      } else {
+        // Sem rastreamento externo, usar evento genérico
+        events.push({
+          id: 'in-transit',
+          status: 'IN_TRANSIT',
+          description: 'Pedido em trânsito para entrega',
+          location: `${shipping.destination.city} - ${shipping.destination.state}`,
+          date: new Date().toLocaleDateString('pt-BR'),
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        })
+      }
+    }
+
+    // Se o pedido foi entregue
+    if (order.phase === 'DELIVERED' || ['delivered', 'entregue'].includes(order.status.toLowerCase())) {
+      events.push({
+        id: 'delivered',
+        status: 'DELIVERED',
+        description: 'Pedido entregue com sucesso',
+        location: `${shipping.destination.city} - ${shipping.destination.state}`,
+        date: new Date(order.deliveredAt || order.updatedAt).toLocaleDateString('pt-BR'),
+        time: new Date(order.deliveredAt || order.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: order.deliveredAt || order.updatedAt
+      })
+    }
+
+    // Ordenar eventos por data (mais recente primeiro)
+    events.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`)
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`)
+      return dateB.getTime() - dateA.getTime()
+    })
+
+    return {
+      code: trackingCode.trim(),
+      carrier: shipping.carrier || 'USS Express',
+      status: trackingStatus,
+      estimatedDelivery: shipping.estimatedDelivery,
+      origin: shipping.origin,
+      destination: shipping.destination,
+      events,
+      order: {
+        id: order.id,
+        total: order.total,
+        items: order.items?.length || 0,
+        status: order.status,
+        phase: order.phase
+      },
+      externalTracking: tracking ? {
+        provider: tracking.carrier,
+        trackingNumber: tracking.externalTrackingNumber,
+        lastUpdate: tracking.lastUpdate
+      } : undefined
+    }
+  }
+
+  const fetchExternalTracking = async (trackingNumber: string, carrier: string): Promise<TrackingEvent[]> => {
+    // TODO: Implementar integração com APIs externas de rastreamento
+    // Por enquanto, retorna eventos mockados baseados no carrier
+
+    const events: TrackingEvent[] = []
+
+    // Simular diferentes cenários baseado no carrier
+    if (carrier.toLowerCase().includes('correios')) {
+      events.push({
+        id: 'correios-1',
+        status: 'IN_TRANSIT',
+        description: 'Objeto em trânsito - por favor aguarde',
+        location: 'Centro de Distribuição',
+        date: new Date(Date.now() - 86400000).toLocaleDateString('pt-BR'), // 1 dia atrás
+        time: '14:30'
+      })
+    } else if (carrier.toLowerCase().includes('uss')) {
+      events.push({
+        id: 'uss-1',
+        status: 'IN_TRANSIT',
+        description: 'Pedido em processamento para entrega',
+        location: 'Centro de Distribuição USS',
+        date: new Date(Date.now() - 43200000).toLocaleDateString('pt-BR'), // 12 horas atrás
+        time: '09:15'
+      })
+    }
+
+    return events
+  }
+
+  const updateTrackingFromExternalAPI = async () => {
+    if (!trackingInfo?.externalTracking) return
+
+    try {
+      const externalEvents = await fetchExternalTracking(
+        trackingInfo.externalTracking.trackingNumber,
+        trackingInfo.externalTracking.provider
+      )
+
+      if (externalEvents.length > 0) {
+        setTrackingInfo(prev => {
+          if (!prev) return prev
+
+          // Adicionar novos eventos que não existem ainda
+          const existingEventIds = new Set(prev.events.map(e => e.id))
+          const newEvents = externalEvents.filter(e => !existingEventIds.has(e.id))
+
+          if (newEvents.length > 0) {
+            const updatedEvents = [...newEvents, ...prev.events].sort((a, b) => {
+              const dateA = a.createdAt ? new Date(a.createdAt) : new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`)
+              const dateB = b.createdAt ? new Date(b.createdAt) : new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`)
+              return dateB.getTime() - dateA.getTime()
+            })
+
+            return {
+              ...prev,
+              events: updatedEvents,
+              externalTracking: prev.externalTracking ? {
+                ...prev.externalTracking,
+                lastUpdate: new Date().toISOString()
+              } : undefined
+            }
+          }
+
+          return prev
+        })
+
+        toast.info('Rastreamento atualizado')
+      }
+    } catch (error) {
+      console.warn('Erro ao atualizar rastreamento externo:', error)
+    }
+  }
+
+  const updateOrderStatus = async (orderId: string, newStatus: string, newPhase: OrderPhase) => {
+    try {
+      await apiClient.updateOrderStatus(orderId, { status: newStatus, phase: newPhase })
+
+      // Atualizar localmente
+      setTrackingInfo(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          status: mapOrderStatusToTracking(newStatus, newPhase),
+          order: prev.order ? {
+            ...prev.order,
+            status: newStatus,
+            phase: newPhase
+          } : undefined
+        }
+      })
+
+      toast.success('Status do pedido atualizado')
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
+      toast.error('Erro ao atualizar status do pedido')
+    }
   }
 
   const getEventIcon = (status: string) => {
@@ -463,6 +672,100 @@ function RastreamentoContent() {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Seção Administrativa / Auto-refresh */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5" />
+                  Controle de Rastreamento
+                </h3>
+                {autoRefresh && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Atualizando automaticamente</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {/* Status do Pedido */}
+                {trackingInfo.order && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-500 mb-1">Status do Pedido</p>
+                      <p className="font-semibold text-gray-900">{trackingInfo.order.status}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-500 mb-1">Fase</p>
+                      <p className="font-semibold text-gray-900">{trackingInfo.order.phase}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rastreamento Externo */}
+                {trackingInfo.externalTracking && (
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-4 h-4 text-blue-600" />
+                      <p className="text-sm font-medium text-blue-900">Rastreamento Externo</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-blue-700">Transportadora:</span>
+                        <span className="ml-2 font-medium">{trackingInfo.externalTracking.provider}</span>
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Código:</span>
+                        <span className="ml-2 font-mono font-medium">{trackingInfo.externalTracking.trackingNumber}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-2">
+                      Última atualização: {new Date(trackingInfo.externalTracking.lastUpdate).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Controles Administrativos (só para admins) */}
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-sm text-gray-500 mb-3">Controles Administrativos</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => trackingInfo.order && updateOrderStatus(trackingInfo.order.id, 'shipped', 'SHIPPED')}
+                      variant="outline"
+                      size="sm"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      disabled={trackingInfo.order?.phase === 'SHIPPED' || trackingInfo.order?.phase === 'DELIVERED'}
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      Marcar como Enviado
+                    </Button>
+
+                    <Button
+                      onClick={() => trackingInfo.order && updateOrderStatus(trackingInfo.order.id, 'delivered', 'DELIVERED')}
+                      variant="outline"
+                      size="sm"
+                      className="text-green-600 border-green-200 hover:bg-green-50"
+                      disabled={trackingInfo.order?.phase === 'DELIVERED'}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Marcar como Entregue
+                    </Button>
+
+                    <Button
+                      onClick={updateTrackingFromExternalAPI}
+                      variant="outline"
+                      size="sm"
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                      disabled={!trackingInfo.externalTracking}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Atualizar Rastreamento
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

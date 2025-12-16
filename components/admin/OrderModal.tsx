@@ -124,9 +124,6 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
       city: '',
       state: '',
       zipCode: '',
-      number: '',
-      complement: '',
-      neighborhood: ''
     }
   });
 
@@ -346,7 +343,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
         setFormData({
           number: apiOrder.id,
           customer: {
-            id: apiOrder.userId,
+            id: apiOrder.userId || '',
             name: apiOrder.user?.name || 'Cliente',
             email: apiOrder.user?.email || '',
             avatar: apiOrder.user?.image || ''

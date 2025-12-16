@@ -514,7 +514,7 @@ export default function NewProductPage() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Novo Produto</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-red-900 mb-1">Novo Produto</h1>
               <p className="text-sm sm:text-base text-gray-500">Preencha os dados do produto</p>
             </div>
             <Button

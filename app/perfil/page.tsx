@@ -243,7 +243,7 @@ function PerfilContent() {
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2 justify-center">
               {/* Admin Panel Button - Only for admins */}
-              {(userData?.role === 'ADMIN' || userData?.role === 'admin' || session?.user?.email === 'admin@ussbrasil.com') && (
+              {((userData?.role as string) === 'ADMIN' || session?.user?.email === 'admin@ussbrasil.com') && (
                 <Link href="/admin">
                   <button className="flex items-center gap-2 px-4 py-2 bg-[#001941] hover:bg-blue-900 text-white rounded-lg transition-colors text-sm font-medium">
                     <Settings className="h-4 w-4" />

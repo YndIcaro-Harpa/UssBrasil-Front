@@ -181,7 +181,7 @@ export default function CentralAjudaPage() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             <a
-              href="https://wa.me/5511999999999"
+              href="https://wa.me/5548991832760"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white/10 hover:bg-white/20 rounded-2xl p-6 text-center transition-colors"

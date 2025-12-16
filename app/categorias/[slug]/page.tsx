@@ -205,9 +205,8 @@ const ProductCard = ({ product, viewMode }: { product: Product; viewMode: 'grid'
       id: parseInt(product.id),
       name: product.name,
       price: product.price,
-      image: product.image,
-      quantity: 1
-    })
+      image: product.image
+    }, 1)
     toast.success('Produto adicionado ao carrinho!')
   }
 

@@ -303,24 +303,45 @@ export default function CheckoutPage() {
   
   const fetchAddress = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '')
-    if (cleanCep.length !== 8) return
-    
+    if (cleanCep.length !== 8) {
+      console.log('CEP inválido:', cleanCep)
+      return
+    }
+
+    console.log('Buscando endereço para CEP:', cleanCep)
     setCepLoading(true)
+
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
       const data = await response.json()
-      
-      if (!data.erro) {
-        setFormData(prev => ({
-          ...prev,
-          rua: data.logradouro || '',
-          bairro: data.bairro || '',
-          cidade: data.localidade || '',
-          estado: data.uf || '',
-        }))
+
+      console.log('Resposta ViaCEP:', data)
+
+      if (data.erro) {
+        console.warn('CEP não encontrado:', cleanCep)
+        toast.error('CEP não encontrado. Verifique se está correto.')
+        return
       }
+
+      // Preencher os campos com os dados do ViaCEP
+      const addressData = {
+        rua: data.logradouro || '',
+        bairro: data.bairro || '',
+        cidade: data.localidade || '',
+        estado: data.uf || '',
+      }
+
+      console.log('Dados do endereço preenchidos:', addressData)
+
+      setFormData(prev => ({
+        ...prev,
+        ...addressData
+      }))
+
+      toast.success('Endereço encontrado e preenchido automaticamente!')
     } catch (error) {
-      console.error('Error fetching CEP:', error)
+      console.error('Erro ao buscar CEP:', error)
+      toast.error('Erro ao buscar CEP. Tente novamente.')
     } finally {
       setCepLoading(false)
     }
@@ -401,6 +422,45 @@ export default function CheckoutPage() {
       const installmentOption = getInstallmentOptions(finalTotal)[cardData.installments - 1]
       const chargeAmount = paymentMethod === 'credit' ? installmentOption.total : finalTotal
       
+      // Criar pedido na API primeiro (antes do pagamento)
+      let apiOrder = null
+      try {
+        apiOrder = await api.orders.create({
+          userId: user?.id || 'guest',
+          items: cartItems.map(item => ({
+            productId: String(item.id).split('-')[0],
+            quantity: item.quantity,
+            price: item.discountPrice || item.price,
+            selectedColor: item.selectedColor || null,
+            selectedSize: item.selectedSize || null,
+            selectedStorage: item.selectedStorage || null,
+          })),
+          shippingAddress: {
+            name: formData.nome,
+            cep: formData.cep,
+            rua: formData.rua,
+            numero: formData.numero,
+            complemento: formData.complemento,
+            bairro: formData.bairro,
+            cidade: formData.cidade,
+            estado: formData.estado,
+          },
+          paymentMethod: paymentMethod.toUpperCase(),
+          subtotal: cartTotal,
+          shipping: shippingCost,
+          discount: pixDiscount,
+        })
+        
+        // Usar o ID real da API se disponível
+        if (apiOrder?.id) {
+          orderId = apiOrder.id
+        }
+        
+        console.log('Pedido criado na API:', apiOrder)
+      } catch (apiError) {
+        console.log('Erro ao criar pedido na API, continuando apenas localmente:', apiError)
+      }
+      
       // Processar pagamento com Stripe para cartão de crédito
       if (paymentMethod === 'credit') {
         try {
@@ -412,6 +472,7 @@ export default function CheckoutPage() {
             installments: Number(cardData.installments),
             customerEmail: formData.email,
             userId: user?.id,
+            orderId: orderId,
             items: cartItems.map(item => ({
               productId: String(item.id).split('-')[0],
               quantity: item.quantity,
@@ -504,28 +565,6 @@ export default function CheckoutPage() {
       const existingOrders = JSON.parse(localStorage.getItem('uss_orders') || '[]')
       existingOrders.unshift(order)
       localStorage.setItem('uss_orders', JSON.stringify(existingOrders))
-      
-      // Tentar criar pedido na API também (se backend disponível)
-      try {
-        await api.orders.create({
-          userId: user?.id || 'guest',
-          items: cartItems.map(item => ({
-            productId: String(item.id).split('-')[0],
-            quantity: item.quantity,
-            price: item.discountPrice || item.price,
-            selectedColor: item.selectedColor || null,
-            selectedSize: item.selectedSize || null,
-            selectedStorage: item.selectedStorage || null,
-          })),
-          shippingAddress: order.shippingAddress,
-          paymentMethod: paymentMethod.toUpperCase(),
-          subtotal: cartTotal,
-          shipping: shippingCost,
-          discount: pixDiscount,
-        })
-      } catch (apiError) {
-        console.log('API não disponível, pedido salvo localmente')
-      }
       
       clearCart()
       router.push(`/pedido-confirmado?orderId=${orderId}&method=${paymentMethod}&installments=${paymentMethod === 'credit' ? cardData.installments : 1}`)

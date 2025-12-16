@@ -86,9 +86,9 @@ export default function ProfileInfo({ user, onUpdate, session }: ProfileInfoProp
         {!isEditing ? (
           <Button 
             onClick={() => setIsEditing(true)}
-            className="gap-2"
+            className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
           >
-            <Edit3 className="h-4 w-4" />
+            <Edit3 className="h-4 w-4 " />
             Editar
           </Button>
         ) : (
