@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers, Copy, Save, DollarSign, Barcode, Archive, AlertTriangle, TrendingUp, TrendingDown, Percent, Calculator, ShoppingBag } from 'lucide-react';
+import { X, Package, Image as ImageIcon, Tag, Palette, HardDrive, Upload, Loader2, Plus, Building2, Check, Settings, Eye, Edit2, Trash2, Layers, Copy, Save, DollarSign, Barcode, Archive, AlertTriangle, TrendingUp, TrendingDown, Percent, Calculator, ShoppingBag, ChevronDown } from 'lucide-react';
 import { Product } from '@/hooks/use-admin-crud';
 import { toast } from 'sonner';
 import { BACKEND_URL } from '@/lib/config';
@@ -179,6 +179,9 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
   });
   const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, index: number | null}>({isOpen: false, index: null});
 
+  // Estado para dropdown de precificação detalhada
+  const [showDetailedPricing, setShowDetailedPricing] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
@@ -271,7 +274,19 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     // Cálculos automáticos
     idealPrice: 0,              // Valor de Venda + 15%
     idealPriceWithTax: 0,       // Preço Ideal - 12%
-    displayPriceWithTax: 0,     // Valor em Exposição - 12%
+    displayPriceWithTax: 0,     // Valor em Exposição - 12% (relatório)
+    // Novos campos exatos
+    stripeFee: 0,               // Taxa Stripe (3.99%) sobre vitrine
+    nfTax: 0,                   // NF / IR (7%) sobre vitrine
+    receivedValue: 0,           // Valor que eu realmente recebo (vitrine - stripe - nf)
+    // Parcelamento
+    installments: [] as Array<{
+      n: number;
+      installmentValue: number;
+      total: number;
+      merchantReceives: number;
+      interestRate: number;
+    }>,
     // Margens
     currentMargin: 0,           // Margem atual (%)
     profitValue: 0,             // Lucro em R$
@@ -581,82 +596,118 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     const costPrice = Number(formData.costPrice) || 0;
     const salePrice = Number(formData.price) || 0;
     let displayPrice = Number(formData.displayPrice) || 0;
-    
-    // Calcular displayPrice baseado no tipo de desconto ativo
-    if (formData.discountType === 'original' && formData.discountOriginal > 0) {
+
+    // Aplicar desconto diretamente no valor de vitrine (independente do preço original)
+    if (formData.discountOriginal > 0 && salePrice > 0) {
+      // Desconto sobre o preço original (para compatibilidade)
       displayPrice = salePrice * (1 - formData.discountOriginal / 100);
-    } else if (formData.discountType === 'vitrine' && formData.discountVitrine > 0) {
-      displayPrice = salePrice * (1 - formData.discountVitrine / 100);
+    } else if (formData.discountVitrine > 0 && displayPrice > 0) {
+      // Desconto aplicado diretamente no valor de vitrine
+      displayPrice = Number(formData.displayPrice) || salePrice;
+    } else {
+      // Sem desconto, usar valor atual ou preço original como fallback
+      displayPrice = Number(formData.displayPrice) || salePrice;
     }
-    
-    // Atualizar displayPrice se calculado
-    if (displayPrice !== Number(formData.displayPrice)) {
-      setFormData(prev => ({ ...prev, displayPrice: Math.round(displayPrice * 100) / 100 }));
-    }
-    
+
     // 1. Preço Ideal = Custo + 20% de margem / (1 - taxa)
-    // Fórmula correta: Preço = Custo * (1 + Margem) / (1 - Taxa)
-    const idealPrice = costPrice > 0 
+    const idealPrice = costPrice > 0
       ? (costPrice * (1 + MARGEM_MINIMA_IDEAL)) / (1 - TAXA_TOTAL)
-      : salePrice * 1.15; // Fallback se não tiver custo
-    
-    // 2. Valor líquido após taxas (o que realmente recebe)
+      : salePrice * 1.15;
+
+    // 2. Valores exatos baseados na VITRINE (displayPrice)
+    const STRIPE_FEE_RATE = 0.0399; // 3.99% gateway
+    const NF_RATE = 0.07; // 7% imposto/nota fiscal
+
+    // Taxas aplicadas diretamente sobre o valor da vitrine
+    const stripeFee = displayPrice * STRIPE_FEE_RATE;
+    const nfTax = displayPrice * NF_RATE; // NF calculada sobre o valor bruto da vitrine
+
+    // Valor que o lojista recebe: vitrine - stripe - nf
+    const receivedValue = displayPrice - stripeFee - nfTax;
+
+    // Mantemos também os cálculos de relatório (TAXA_TOTAL) para compatibilidade
     const idealPriceWithTax = idealPrice * (1 - TAXA_TOTAL);
-    
-    // 3. Valor líquido do preço de vitrine
     const displayPriceWithTax = displayPrice * (1 - TAXA_TOTAL);
-    
-    // 4. Calcular porcentagem de desconto automaticamente (para compatibilidade)
+
+    // 3. Calcular desconto atual baseado nos preços (apenas para exibição)
     let discountPercent = 0;
-    if (salePrice > 0 && displayPrice > 0 && displayPrice < salePrice) {
-      discountPercent = Math.round(((salePrice - displayPrice) / salePrice) * 100);
-      // Marcar como oferta se houver desconto
-      if (discountPercent > 0 && !formData.isOnSale) {
-        setFormData(prev => ({ ...prev, isOnSale: true, discountPercent }));
+    if (formData.discountOriginal > 0) {
+      discountPercent = formData.discountOriginal;
+    } else if (formData.discountVitrine > 0) {
+      // Para desconto na vitrine, calcular percentual baseado no preço original
+      if (salePrice > 0 && displayPrice > 0) {
+        discountPercent = Math.round(((salePrice - displayPrice) / salePrice) * 100);
       }
-    } else if (displayPrice >= salePrice && formData.discountPercent !== 0) {
+    }
+
+    if (discountPercent > 0 && !formData.isOnSale) {
+      setFormData(prev => ({ ...prev, isOnSale: true, discountPercent }));
+    } else if (discountPercent === 0 && formData.discountPercent !== 0) {
       setFormData(prev => ({ ...prev, discountPercent: 0 }));
     }
-    
-    // Calcular margem atual LÍQUIDA (após taxas)
+
+    // Calcular margem atual LÍQUIDA com base no que realmente será recebido
     let currentMargin = 0;
     let profitValue = 0;
-    
+
     if (costPrice > 0 && displayPrice > 0) {
-      // Lucro líquido = Preço Vitrine - Taxas - Custo
-      const valorLiquido = displayPrice * (1 - TAXA_TOTAL);
-      profitValue = valorLiquido - costPrice;
-      // Margem sobre o custo (considerando taxas)
+      profitValue = receivedValue - costPrice; // lucro real após stripe + nf
       currentMargin = (profitValue / costPrice) * 100;
     }
-    
-    // Verificar alertas de margem LÍQUIDA (após taxas)
-    // Níveis: >= 20% = OK (verde), 15-20% = Atenção (amarelo), < 15% = Crítico (vermelho)
+
+    // Alertas de margem
     const hasValidPrices = costPrice > 0 && displayPrice > 0;
     const isGoodMargin = hasValidPrices && currentMargin >= (MARGEM_MINIMA_IDEAL * 100);
     const isLowMargin = hasValidPrices && currentMargin >= (MARGEM_CRITICA * 100) && currentMargin < (MARGEM_MINIMA_IDEAL * 100);
     const isCriticalMargin = hasValidPrices && currentMargin < (MARGEM_CRITICA * 100);
-    // Mostrar botão ideal se: custo preenchido E exposição menor que ideal
     const showIdealButton = costPrice > 0 && displayPrice < idealPrice;
-    
+
+    // Calcular opções de parcelamento (1..12)
+    const MONTHLY_INTEREST = 0.0199; // 1.99% ao mês para parcelas com juros (configurável)
+    const installments: Array<{n:number; installmentValue:number; total:number; merchantReceives:number; interestRate:number}> = [];
+    for (let n = 1; n <= 12; n++) {
+      const interestRate = n <= 3 ? 0 : MONTHLY_INTEREST; // sem juros até 3x
+      let installmentValue = 0;
+      if (interestRate === 0) {
+        installmentValue = displayPrice / n;
+      } else {
+        const i = interestRate;
+        const factor = Math.pow(1 + i, n);
+        installmentValue = displayPrice * (i * factor) / (factor - 1);
+      }
+      const total = installmentValue * n;
+      const merchantReceives = total - (STRIPE_FEE_RATE * total) - (NF_RATE * total);
+      installments.push({
+        n,
+        installmentValue: Math.round(installmentValue * 100) / 100,
+        total: Math.round(total * 100) / 100,
+        merchantReceives: Math.round(merchantReceives * 100) / 100,
+        interestRate
+      });
+    }
+
     setPriceCalculations({
       idealPrice,
       idealPriceWithTax,
       displayPriceWithTax,
+      stripeFee,
+      nfTax,
+      receivedValue,
+      installments,
       currentMargin,
       profitValue,
       isLowMargin,
       isCriticalMargin,
       showIdealButton
     });
-    
+
     // Mostrar confirmação se margem crítica
     if (isCriticalMargin && displayPrice > 0 && costPrice > 0) {
       setShowLowMarginConfirm(true);
     } else {
       setShowLowMarginConfirm(false);
     }
-  }, [formData.costPrice, formData.price, formData.displayPrice, formData.discountType, formData.discountOriginal, formData.discountVitrine]);
+  }, [formData.costPrice, formData.price, formData.displayPrice, formData.discountOriginal, formData.discountVitrine]);
 
   // Aplicar Valor Ideal
   const applyIdealPrice = () => {
@@ -1298,268 +1349,179 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
               </div>
             </div>
 
-            {/* ========== SEÇÃO 3: PRECIFICAÇÃO ========== */}
-            <div className="mb-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-between mb-2 pb-1 border-b border-blue-200">
-                <div className="flex items-center gap-1.5">
-                  <Calculator className="h-3 w-3 text-blue-600" />
-                  <h3 className="font-semibold text-gray-800 text-xs">Precificação</h3>
-                  <span className="text-[8px] text-gray-500" title="Taxa total considerada: 15% (cartão ~5% + gateway ~3.5% + impostos ~6.5%)">
-                    (Taxas: 15%)
+            {/* ========== SEÇÃO 3: PRECIFICAÇÃO INTUITIVA ========== */}
+            <div className="mb-3 p-3 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-blue-600" />
+                  <h3 className="font-semibold text-gray-800 text-sm">Precificação Inteligente</h3>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full border">
+                    Taxas: 15% (cartão + gateway + impostos)
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  {formData.discountPercent > 0 && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white flex items-center gap-0.5">
-                      <Percent className="h-2 w-2" />
-                      -{formData.discountPercent}%
-                    </span>
-                  )}
-                  {formData.costPrice > 0 && formData.displayPrice > 0 && (
-                    <span 
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full cursor-help ${
-                        priceCalculations.isCriticalMargin ? 'bg-red-500 text-white' :
-                        priceCalculations.isLowMargin ? 'bg-yellow-500 text-white' :
-                        'bg-green-500 text-white'
-                      }`}
-                      title={`Margem líquida sobre custo: ${priceCalculations.currentMargin.toFixed(1)}%\n🟢 ≥20% Ideal | 🟡 10-20% Atenção | 🔴 <10% Crítico`}
-                    >
-                      {priceCalculations.currentMargin.toFixed(0)}% Líq
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Campos de Preço */}
-              <div className="grid grid-cols-5 gap-2 mb-2">
-                {/* Preço de Custo */}
-                <div>
-                  <Label className="text-[9px] font-medium text-gray-600 mb-0.5 block">
-                    Custo
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.costPrice || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
-                    disabled={mode === 'view' || !canEditPrice}
-                    className="text-black h-7 text-xs bg-white"
-                    placeholder="R$ 0,00"
-                  />
-                </div>
-
-                {/* Preço Original/Venda */}
-                <div>
-                  <Label className="text-[9px] font-medium text-gray-600 mb-0.5 block">
-                    Original
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.price || ''}
-                    onChange={(e) => {
-                      const newPrice = parseFloat(e.target.value) || 0;
-                      setFormData(prev => ({ ...prev, price: newPrice }));
-                    }}
-                    disabled={mode === 'view' || !canEditPrice}
-                    className="text-black h-7 text-xs bg-white"
-                    placeholder="R$ 0,00"
-                  />
-                </div>
-
-                {/* Descontos - Dois campos ativáveis */}
-                <div className="col-span-2">
-                  <Label className="text-[9px] font-medium text-red-600 mb-0.5 block flex items-center gap-0.5">
-                    <Percent className="h-2 w-2" />
-                    Descontos
-                  </Label>
-                  <div className="flex gap-1">
-                    {/* Desconto no Original */}
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="1"
-                          min="0"
-                          max="99"
-                          value={formData.discountType === 'original' ? (formData.discountOriginal || '') : ''}
-                          onChange={(e) => {
-                            const discount = Math.min(99, Math.max(0, parseInt(e.target.value) || 0));
-                            setFormData(prev => ({
-                              ...prev,
-                              discountType: 'original',
-                              discountOriginal: discount,
-                              discountVitrine: 0,
-                              isOnSale: discount > 0
-                            }));
-                          }}
-                          disabled={mode === 'view' || !canEditPrice}
-                          className={`text-black h-6 text-[10px] pr-6 ${
-                            formData.discountType === 'original' && formData.discountOriginal > 0
-                              ? 'bg-red-50 border-red-300 ring-1 ring-red-200'
-                              : 'bg-white'
-                          }`}
-                          placeholder="Orig"
-                        />
-                        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-gray-400">%</span>
-                        <span className="absolute -top-3 left-0 text-[7px] text-gray-500">Original</span>
-                      </div>
-                    </div>
-
-                    {/* Desconto na Vitrine */}
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="1"
-                          min="0"
-                          max="99"
-                          value={formData.discountType === 'vitrine' ? (formData.discountVitrine || '') : ''}
-                          onChange={(e) => {
-                            const discount = Math.min(99, Math.max(0, parseInt(e.target.value) || 0));
-                            setFormData(prev => ({
-                              ...prev,
-                              discountType: 'vitrine',
-                              discountVitrine: discount,
-                              discountOriginal: 0,
-                              isOnSale: discount > 0
-                            }));
-                          }}
-                          disabled={mode === 'view' || !canEditPrice}
-                          className={`text-black h-6 text-[10px] pr-6 ${
-                            formData.discountType === 'vitrine' && formData.discountVitrine > 0
-                              ? 'bg-orange-50 border-orange-300 ring-1 ring-orange-200'
-                              : 'bg-white'
-                          }`}
-                          placeholder="Vitr"
-                        />
-                        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-gray-400">%</span>
-                        <span className="absolute -top-3 left-0 text-[7px] text-gray-500">Vitrine</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preço na Vitrine (com desconto) */}
-                <div className="relative">
-                  <Label className="text-[9px] font-medium text-green-600 mb-0.5 block">
-                    Vitrine
-                  </Label>
-                  {/* Sugestão de Preço Ideal */}
-                  {priceCalculations.showIdealButton && formData.price > 0 && (
-                    <div className="absolute -top-0.5 right-0 flex items-center gap-0.5">
-                      <span className="text-[7px] text-indigo-600 font-medium">
-                        R$ {priceCalculations.idealPrice.toFixed(0)}
-                      </span>
-                      {mode !== 'view' && (
-                        <button
-                          type="button"
-                          onClick={applyIdealPrice}
-                          className="text-[6px] bg-indigo-500 text-white px-1 py-0.5 rounded hover:bg-indigo-600"
-                        >
-                          ✓
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.displayPrice || ''}
-                    onChange={(e) => {
-                      const newDisplayPrice = parseFloat(e.target.value) || 0;
-                      setFormData(prev => ({ ...prev, displayPrice: newDisplayPrice }));
-                    }}
-                    disabled={mode === 'view' || !canEditPrice}
-                    className={`text-black h-7 text-xs ${
-                      (formData.discountOriginal > 0 || formData.discountVitrine > 0) ? 'bg-green-50 border-green-300' :
-                      priceCalculations.isCriticalMargin ? 'border-red-500 ring-1 ring-red-200' :
-                      priceCalculations.isLowMargin ? 'border-yellow-500 ring-1 ring-yellow-200' : 'bg-white'
-                    }`}
-                    placeholder="R$ 0,00"
-                  />
-                </div>
-              </div>
-
-              {/* Switch de Promoção e Resumo */}
-              <div className="flex items-center justify-between p-1.5 bg-white rounded border">
-                <div className="flex items-center gap-3">
-                  {/* Switch Promoção */}
-                  <div className="flex items-center gap-1.5">
-                    <Switch
-                      id="isOnSaleSwitch"
-                      checked={formData.isOnSale}
-                      onCheckedChange={(checked) => {
-                        if (!checked) {
-                          // Ao desativar promoção, igualar preço de vitrine ao original
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            isOnSale: false,
-                            discountPercent: 0,
-                            displayPrice: prev.price
-                          }));
-                        } else {
-                          setFormData(prev => ({ ...prev, isOnSale: true }));
-                        }
-                      }}
-                      disabled={mode === 'view'}
-                      className="scale-75"
-                    />
-                    <Label htmlFor="isOnSaleSwitch" className={`text-[9px] font-medium ${
-                      formData.isOnSale ? 'text-red-600' : 'text-gray-500'
-                    }`}>
-                      {formData.isOnSale ? '🔥 Em Promoção' : 'Promoção'}
-                    </Label>
-                  </div>
-
-                  {/* Resumo de valores */}
-                  {formData.costPrice > 0 && formData.displayPrice > 0 && (
-                    <div className="flex items-center gap-2 text-[9px]">
-                      <div title="Lucro líquido após taxas (15%)">
-                        <span className="text-gray-500">Lucro Líq:</span>
-                        <span className={`ml-0.5 font-bold ${priceCalculations.profitValue < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          R$ {priceCalculations.profitValue.toFixed(0)}
-                        </span>
-                      </div>
-                      <div title="Valor que você recebe após taxas de cartão e gateway (~15%)">
-                        <span className="text-gray-500">Recebe:</span>
-                        <span className="ml-0.5 font-bold text-purple-600">
-                          R$ {priceCalculations.displayPriceWithTax.toFixed(0)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Botão aplicar desconto rápido */}
-                {mode !== 'view' && formData.price > 0 && (
-                  <div className="flex gap-1">
-                    {[5, 10, 15, 20].map((pct) => (
-                      <button
-                        key={pct}
-                        type="button"
-                        onClick={() => {
-                          const newDisplayPrice = formData.price * (1 - pct / 100);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            discountPercent: pct,
-                            displayPrice: Math.round(newDisplayPrice * 100) / 100,
-                            isOnSale: true
-                          }));
-                        }}
-                        className={`text-[7px] px-1.5 py-0.5 rounded transition-colors ${
-                          formData.discountPercent === pct 
-                            ? 'bg-red-500 text-white' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600'
-                        }`}
-                      >
-                        -{pct}%
-                      </button>
-                    ))}
+                {formData.costPrice > 0 && formData.displayPrice > 0 && (
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    priceCalculations.isCriticalMargin ? 'bg-red-100 text-red-700 border border-red-300' :
+                    priceCalculations.isLowMargin ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                    'bg-green-100 text-green-700 border border-green-300'
+                  }`}>
+                    Margem: {priceCalculations.currentMargin.toFixed(1)}%
                   </div>
                 )}
               </div>
-            </div>
+
+              {/* Layout Compacto: 2 colunas lado a lado */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-2">
+                {/* COLUNA ESQUERDA: VALORES BÁSICOS */}
+                <div className="bg-white p-3 rounded border">
+                  <div className="space-y-3">
+                    {/* Custo */}
+                    <div>
+                      <Label className="text-xs text-gray-600 font-medium">Custo</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.costPrice || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
+                        disabled={mode === 'view' || !canEditPrice}
+                        className="text-sm font-bold text-red-600 bg-red-50 border-red-300 h-8"
+                        placeholder="0,00"
+                      />
+                    </div>
+
+                    {/* Preço Original */}
+                    <div>
+                      <Label className="text-xs text-gray-600 font-medium">Original</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.price || ''}
+                        onChange={(e) => {
+                          const newPrice = parseFloat(e.target.value) || 0;
+                          setFormData(prev => ({ ...prev, price: newPrice }));
+                        }}
+                        disabled={mode === 'view' || !canEditPrice}
+                        className="text-sm font-bold text-gray-700 bg-gray-50 h-8"
+                        placeholder="0,00"
+                      />
+                    </div>
+
+                    {/* Preço na Vitrine */}
+                    <div>
+                      <Label className="text-xs text-gray-600 font-medium">Vitrine</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.displayPrice || ''}
+                        onChange={(e) => {
+                          const newDisplayPrice = parseFloat(e.target.value) || 0;
+                          setFormData(prev => ({ ...prev, displayPrice: newDisplayPrice }));
+                        }}
+                        disabled={mode === 'view' || !canEditPrice}
+                        className="text-sm font-bold text-gray-700 bg-gray-50 h-8"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* COLUNA DIREITA: RELATÓRIO FINANCEIRO */}
+                <div className="bg-white p-3 rounded border">
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-gray-700 mb-2">Recebimentos</h4>
+
+                    {/* Valores Principais */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-green-50 p-2 rounded border">
+                        <div className="text-green-700 font-medium">Você Recebe</div>
+                        <div className="text-green-800 font-bold text-sm">
+                          R$ {priceCalculations.receivedValue.toFixed(2)}
+                        </div>
+                        <div className="text-green-600 text-[10px]">Total líquido (vitrine - Stripe - NF)</div>
+                      </div>
+
+                      <div className="bg-blue-50 p-2 rounded border">
+                        <div className="text-blue-700 font-medium">Valor Líquido</div>
+                        <div className={`font-bold text-sm ${priceCalculations.profitValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          R$ {priceCalculations.profitValue.toFixed(2)}
+                        </div>
+                        <div className="text-blue-600 text-[10px]">Margem {priceCalculations.currentMargin.toFixed(1)}%</div>
+                      </div>
+                    </div>
+
+                    {/* Descontos */}
+                    <div className="border-t border-gray-200 pt-2 mt-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-orange-50 p-2 rounded border">
+                          <div className="text-orange-700 font-medium">Stripe (3.99%)</div>
+                          <div className="text-orange-800 font-bold text-sm">
+                            R$ {priceCalculations.stripeFee.toFixed(2)}
+                          </div>
+                          <div className="text-orange-600 text-[10px]">Taxa gateway</div>
+                        </div>
+
+                        <div className="bg-red-50 p-2 rounded border">
+                          <div className="text-red-700 font-medium">NF (7%)</div>
+                          <div className="text-red-800 font-bold text-sm">
+                            R$ {priceCalculations.nfTax.toFixed(2)}
+                          </div>
+                          <div className="text-red-600 text-[10px]">Imposto sobre valor bruto da vitrine</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dropdown para Precificação Detalhada */}
+                    <div className="border-t border-gray-200 pt-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDetailedPricing(!showDetailedPricing)}
+                        className="w-full flex items-center justify-between text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        <span className="font-medium">Precificação Detalhada</span>
+                        <ChevronDown className={`h-3 w-3 transition-transform ${showDetailedPricing ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {showDetailedPricing && (
+                        <div className="mt-2 space-y-2 text-[10px]">
+                          <div className="grid grid-cols-2 gap-1">
+                            <div className="bg-gray-50 p-1 rounded">
+                              <div className="text-gray-600">Valor Bruto</div>
+                              <div className="font-bold">R$ {formData.displayPrice.toFixed(2)}</div>
+                            </div>
+                            <div className="bg-gray-50 p-1 rounded">
+                              <div className="text-gray-600">Após Stripe</div>
+                              <div className="font-bold">R$ {(formData.displayPrice - priceCalculations.stripeFee).toFixed(2)}</div>
+                            </div>
+                              <div className="bg-gray-50 p-1 rounded">
+                                <div className="text-gray-600">Após NF 7%</div>
+                                <div className="font-bold">R$ {(formData.displayPrice - priceCalculations.nfTax).toFixed(2)}</div>
+                              </div>
+                              <div className="bg-gray-50 p-1 rounded">
+                                <div className="text-gray-600">Recebido (Stripe + NF)</div>
+                                <div className="font-bold">R$ {priceCalculations.receivedValue.toFixed(2)}</div>
+                              </div>
+                            <div className="bg-gray-50 p-1 rounded">
+                              <div className="text-gray-600">Após 15% Total</div>
+                              <div className="font-bold">R$ {priceCalculations.displayPriceWithTax.toFixed(2)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status da Margem */}
+                    {formData.costPrice > 0 && formData.displayPrice > 0 && (
+                      <div className={`text-center text-[10px] font-semibold py-1 px-2 rounded mt-2 ${
+                        priceCalculations.isCriticalMargin ? 'bg-red-100 text-red-700' :
+                        priceCalculations.isLowMargin ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {priceCalculations.isCriticalMargin ? 'Crítica' : priceCalculations.isLowMargin ? 'Atenção' : 'Saudável'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
             {/* ========== SEÇÃO 4: DESCRIÇÃO ========== */}
             <div className="mb-3">
@@ -1858,6 +1820,34 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   <p className="text-green-700 text-[8px] uppercase">Lucro</p>
                   <p className="text-sm font-bold text-green-700">{formatCurrency(priceCalculations.profitValue)}</p>
                 </div>
+
+                {/* Parcelamento (tabela) */}
+                <div className="border-t pt-2">
+                  <h4 className="text-xs font-medium text-gray-700">Parcelamento</h4>
+                  <div className="mt-1 text-xs max-h-36 overflow-y-auto">
+                    <table className="w-full text-left text-[12px]">
+                      <thead>
+                        <tr className="text-gray-500">
+                          <th className="pb-1 pr-2">x</th>
+                          <th className="pb-1 text-right">Parcela</th>
+                          <th className="pb-1 text-right">Total</th>
+                          <th className="pb-1 text-right">Recebo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {priceCalculations.installments && priceCalculations.installments.map((opt) => (
+                          <tr key={opt.n} className="odd:bg-white even:bg-gray-50">
+                            <td className="py-1 pr-2">{opt.n}x</td>
+                            <td className="py-1 text-right">{formatCurrency(opt.installmentValue)}</td>
+                            <td className="py-1 text-right">{formatCurrency(opt.total)}</td>
+                            <td className="py-1 text-right text-green-700 font-medium">{formatCurrency(opt.merchantReceives)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-[10px] text-gray-400 mt-1">Sem juros até 3x; juros mensais aplicados a partir da 4ª parcela.</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1873,6 +1863,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                 )}
               </div>
             </div>
+          </div>
           </div>
         </form>
 

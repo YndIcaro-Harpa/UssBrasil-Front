@@ -7,10 +7,11 @@ import { api } from '@/services/api'
 
 interface AdminHeaderProps {
   sidebarCollapsed?: boolean
+  isMobile?: boolean
   onToggleSidebar?: () => void
 }
 
-export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar }: AdminHeaderProps) {
+export default function AdminHeader({ sidebarCollapsed = false, isMobile = false, onToggleSidebar }: AdminHeaderProps) {
   const [notifications, setNotifications] = useState<any[]>([
     { id: 1, message: 'Bem-vindo ao painel admin', time: 'Agora', unread: false }
   ])
@@ -59,7 +60,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
     <motion.header
       initial={false}
       animate={{ 
-        marginLeft: sidebarCollapsed ? 80 : 288 
+        marginLeft: isMobile ? 0 : (sidebarCollapsed ? 80 : 288)
       }}
       className="bg-white border-b border-gray-200 
                  h-12 fixed top-0 right-0 left-0 z-30 flex items-center justify-between px-4 shadow-sm"

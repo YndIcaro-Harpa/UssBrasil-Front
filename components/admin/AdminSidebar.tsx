@@ -32,7 +32,10 @@ import api from '@/services/api'
 
 interface AdminSidebarProps {
   collapsed?: boolean
-  onToggleCollapse?: () => void
+  open?: boolean
+  isMobile?: boolean
+  onToggleCollapse: () => void
+  onCloseMobile?: () => void
   onQuickAction?: (action: string) => void
 }
 
@@ -110,7 +113,14 @@ const quickActions = [
   { name: 'Relatório', icon: FileText, action: 'new-report' }
 ]
 
-export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQuickAction }: AdminSidebarProps) {
+export default function AdminSidebar({ 
+  collapsed = false, 
+  open = false, 
+  isMobile = false, 
+  onToggleCollapse, 
+  onCloseMobile,
+  onQuickAction 
+}: AdminSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const { user } = useAdminAuth()
   const { logout } = useAuth()
@@ -177,9 +187,16 @@ export default function AdminSidebar({ collapsed = false, onToggleCollapse, onQu
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 80 : 288 }}
-      className="bg-gray-900 text-white 
-                 flex flex-col h-screen fixed left-0 top-0 z-40 shadow-lg"
+      animate={isMobile ? {
+        x: open ? 0 : -288,
+        width: 288
+      } : {
+        width: collapsed ? 80 : 288
+      }}
+      className={`bg-gray-900 text-white 
+                 flex flex-col h-screen fixed left-0 top-0 z-50 shadow-lg ${
+                   isMobile ? 'lg:hidden' : ''
+                 }`}
     >
       {/* Header */}
       <div className="p-4 border-b border-blue-900/50">
