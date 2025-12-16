@@ -227,11 +227,6 @@ export default function ReportsPage() {
         netProfit,
         netProfitMargin
       })
-
-      setStats({
-        totalRevenue,
-        ordersByStatus: statsResponse.ordersByStatus || {}
-      })
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
       // Em caso de erro, definir valores padrão

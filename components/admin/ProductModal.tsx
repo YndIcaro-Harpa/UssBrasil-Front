@@ -82,7 +82,10 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     price: 0,               // Valor de Venda (preço base/original)
     displayPrice: 0,        // Valor em Exposição (preço com desconto)
     originalPrice: 0,       // Preço Original (para compatibilidade)
-    discountPercent: 0,     // Porcentagem de desconto
+    discountPercent: 0,     // Porcentagem de desconto (compatibilidade)
+    discountType: 'original' as 'original' | 'vitrine', // Tipo de desconto ativo
+    discountOriginal: 0,    // Desconto sobre preço original
+    discountVitrine: 0,     // Desconto sobre preço de vitrine
     isOnSale: false,        // Produto em oferta/promoção
     category: '',
     subcategory: '',
@@ -120,6 +123,30 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
   const [savingSupplier, setSavingSupplier] = useState(false);
   const [showSuppliersListModal, setShowSuppliersListModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+  // Estado para marcas
+  const [showBrandModal, setShowBrandModal] = useState(false);
+  const [newBrand, setNewBrand] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    logo: '',
+    image: ''
+  });
+  const [savingBrand, setSavingBrand] = useState(false);
+  const [showBrandsListModal, setShowBrandsListModal] = useState(false);
+
+  // Estado para categorias
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    image: '',
+    parentId: ''
+  });
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [showCategoriesListModal, setShowCategoriesListModal] = useState(false);
   
   // Estado para modal de variações
   const [showVariationsModal, setShowVariationsModal] = useState(false);
@@ -328,6 +355,106 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     }
   };
 
+  // Salvar nova marca
+  const handleSaveBrand = async () => {
+    if (!newBrand.name.trim()) {
+      toast.error('Nome da marca é obrigatório');
+      return;
+    }
+
+    setSavingBrand(true);
+    try {
+      const payload: any = {
+        name: newBrand.name.trim(),
+        slug: newBrand.slug.trim() || newBrand.name.toLowerCase().replace(/\s+/g, '-'),
+        description: newBrand.description.trim(),
+        logo: newBrand.logo.trim(),
+        image: newBrand.image.trim()
+      };
+
+      console.log('Salvando marca:', payload);
+
+      const response = await fetch(`${API_URL}/brands`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('Response status:', response.status);
+
+      if (response.ok) {
+        const created = await response.json();
+        console.log('Marca criada:', created);
+        setFormData(prev => ({ ...prev, brand: created.id }));
+        setShowBrandModal(false);
+        setNewBrand({ name: '', slug: '', description: '', logo: '', image: '' });
+        toast.success('Marca cadastrada com sucesso! Recarregue a página para ver na lista.');
+      } else {
+        const errorData = await response.text();
+        console.error('Erro response:', errorData);
+        toast.error(`Erro: ${response.status} - ${errorData || 'Erro ao criar marca'}`);
+      }
+    } catch (error: any) {
+      console.error('Erro completo:', error);
+      toast.error(`Erro de conexão: ${error.message}`);
+    } finally {
+      setSavingBrand(false);
+    }
+  };
+
+  // Salvar nova categoria
+  const handleSaveCategory = async () => {
+    if (!newCategory.name.trim()) {
+      toast.error('Nome da categoria é obrigatório');
+      return;
+    }
+
+    setSavingCategory(true);
+    try {
+      const payload: any = {
+        name: newCategory.name.trim(),
+        slug: newCategory.slug.trim() || newCategory.name.toLowerCase().replace(/\s+/g, '-'),
+        description: newCategory.description.trim(),
+        image: newCategory.image.trim(),
+        parentId: newCategory.parentId.trim() || null
+      };
+
+      console.log('Salvando categoria:', payload);
+
+      const response = await fetch(`${API_URL}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('Response status:', response.status);
+
+      if (response.ok) {
+        const created = await response.json();
+        console.log('Categoria criada:', created);
+        setFormData(prev => ({ ...prev, category: created.id }));
+        setShowCategoryModal(false);
+        setNewCategory({ name: '', slug: '', description: '', image: '', parentId: '' });
+        toast.success('Categoria cadastrada com sucesso! Recarregue a página para ver na lista.');
+      } else {
+        const errorData = await response.text();
+        console.error('Erro response:', errorData);
+        toast.error(`Erro: ${response.status} - ${errorData || 'Erro ao criar categoria'}`);
+      }
+    } catch (error: any) {
+      console.error('Erro completo:', error);
+      toast.error(`Erro de conexão: ${error.message}`);
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
   // Copiar dados do produto pai para variação
   const copyFromParentProduct = () => {
     const selectedSupplier = suppliers.find(s => s.id === formData.supplierId);
@@ -453,7 +580,19 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
   useEffect(() => {
     const costPrice = Number(formData.costPrice) || 0;
     const salePrice = Number(formData.price) || 0;
-    const displayPrice = Number(formData.displayPrice) || 0;
+    let displayPrice = Number(formData.displayPrice) || 0;
+    
+    // Calcular displayPrice baseado no tipo de desconto ativo
+    if (formData.discountType === 'original' && formData.discountOriginal > 0) {
+      displayPrice = salePrice * (1 - formData.discountOriginal / 100);
+    } else if (formData.discountType === 'vitrine' && formData.discountVitrine > 0) {
+      displayPrice = salePrice * (1 - formData.discountVitrine / 100);
+    }
+    
+    // Atualizar displayPrice se calculado
+    if (displayPrice !== Number(formData.displayPrice)) {
+      setFormData(prev => ({ ...prev, displayPrice: Math.round(displayPrice * 100) / 100 }));
+    }
     
     // 1. Preço Ideal = Custo + 20% de margem / (1 - taxa)
     // Fórmula correta: Preço = Custo * (1 + Margem) / (1 - Taxa)
@@ -467,7 +606,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     // 3. Valor líquido do preço de vitrine
     const displayPriceWithTax = displayPrice * (1 - TAXA_TOTAL);
     
-    // 4. Calcular porcentagem de desconto automaticamente
+    // 4. Calcular porcentagem de desconto automaticamente (para compatibilidade)
     let discountPercent = 0;
     if (salePrice > 0 && displayPrice > 0 && displayPrice < salePrice) {
       discountPercent = Math.round(((salePrice - displayPrice) / salePrice) * 100);
@@ -517,7 +656,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     } else {
       setShowLowMarginConfirm(false);
     }
-  }, [formData.costPrice, formData.price, formData.displayPrice]);
+  }, [formData.costPrice, formData.price, formData.displayPrice, formData.discountType, formData.discountOriginal, formData.discountVitrine]);
 
   // Aplicar Valor Ideal
   const applyIdealPrice = () => {
@@ -551,6 +690,9 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
         displayPrice: (product as any).displayPrice || (product as any).discountPrice || product.price || 0,
         originalPrice: product.originalPrice || 0,
         discountPercent: (product as any).discountPercent || 0,
+        discountType: 'original',
+        discountOriginal: (product as any).discountPercent || 0,
+        discountVitrine: 0,
         isOnSale: (product as any).isOnSale || ((product as any).discountPrice && (product as any).discountPrice < product.price) || false,
         category: product.category || '',
         subcategory: product.subcategory || '',
@@ -603,6 +745,9 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
         displayPrice: 0,
         originalPrice: 0,
         discountPercent: 0,
+        discountType: 'original',
+        discountOriginal: 0,
+        discountVitrine: 0,
         isOnSale: false,
         category: '',
         subcategory: '',
@@ -884,8 +1029,8 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[80vw] !max-w-[80vw] sm:!max-w-[80vw] h-[85vh] p-0 gap-0 overflow-hidden flex flex-col" showCloseButton={false}>
-        <DialogHeader className="px-4 py-2 border-b shrink-0 bg-[uss-admin] text-white">
+      <DialogContent className="w-[65vw] !max-w-[65vw] sm:!max-w-[65vw] h-[85vh] p-0 gap-0 overflow-hidden flex flex-col" showCloseButton={false}>
+        <DialogHeader className="px-4 py-2 border-b shrink-0 bg-blue-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white text-base">
             <Package className="h-4 w-4 text-blue-400" />
             {mode === 'create' && 'Criar Novo Produto'}
@@ -896,7 +1041,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
 
         <form onSubmit={handleSubmit} className="flex flex-1 overflow-hidden">
           {/* Left Side - Form Fields */}
-          <div className="flex-[3] overflow-y-auto p-3 border-r bg-white">
+          <div className="flex-[4] overflow-y-auto p-3 border-r bg-white">
             
             {/* ========== SEÇÃO 1: IDENTIFICAÇÃO ========== */}
             <div className="mb-3">
@@ -974,22 +1119,48 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                 {/* Categoria */}
                 <div className="space-y-0.5">
                   <Label className="text-[10px] text-gray-600">Categoria *</Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    disabled={mode === 'view'}
-                  >
-                    <SelectTrigger className="h-7 text-black text-xs">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category.id || category} value={category.id || category}>
-                          {category.name || category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                      disabled={mode === 'view'}
+                    >
+                      <SelectTrigger className="h-7 text-black text-xs flex-1">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category.id || category} value={category.id || category}>
+                            {category.name || category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {mode !== 'view' && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCategoryModal(true)}
+                          className="h-9 w-9 p-0 bg-green-50 border-green-300 hover:bg-green-100"
+                          title="Nova categoria"
+                        >
+                          <Plus className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCategoriesListModal(true)}
+                          className="h-9 w-9 p-0"
+                          title="Ver todas categorias"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Subcategoria */}
@@ -1007,22 +1178,48 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                 {/* Marca */}
                 <div className="space-y-0.5">
                   <Label className="text-[10px] text-gray-600">Marca</Label>
-                  <Select
-                    value={formData.brand}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
-                    disabled={mode === 'view'}
-                  >
-                    <SelectTrigger className="h-7 text-black text-xs">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map(brand => (
-                        <SelectItem key={brand.id || brand} value={brand.id || brand}>
-                          {brand.name || brand}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Select
+                      value={formData.brand}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
+                      disabled={mode === 'view'}
+                    >
+                      <SelectTrigger className="h-7 text-black text-xs flex-1">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands.map(brand => (
+                          <SelectItem key={brand.id || brand} value={brand.id || brand}>
+                            {brand.name || brand}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {mode !== 'view' && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowBrandModal(true)}
+                          className="h-9 w-9 p-0 bg-green-50 border-green-300 hover:bg-green-100"
+                          title="Nova marca"
+                        >
+                          <Plus className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowBrandsListModal(true)}
+                          className="h-9 w-9 p-0"
+                          title="Ver todas marcas"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Status */}
@@ -1134,7 +1331,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
               </div>
 
               {/* Campos de Preço */}
-              <div className="grid grid-cols-4 gap-2 mb-2">
+              <div className="grid grid-cols-5 gap-2 mb-2">
                 {/* Preço de Custo */}
                 <div>
                   <Label className="text-[9px] font-medium text-gray-600 mb-0.5 block">
@@ -1162,9 +1359,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     value={formData.price || ''}
                     onChange={(e) => {
                       const newPrice = parseFloat(e.target.value) || 0;
-                      const discount = formData.discountPercent || 0;
-                      const newDisplayPrice = discount > 0 ? newPrice * (1 - discount / 100) : newPrice;
-                      setFormData(prev => ({ ...prev, price: newPrice, displayPrice: Math.round(newDisplayPrice * 100) / 100 }));
+                      setFormData(prev => ({ ...prev, price: newPrice }));
                     }}
                     disabled={mode === 'view' || !canEditPrice}
                     className="text-black h-7 text-xs bg-white"
@@ -1172,37 +1367,76 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   />
                 </div>
 
-                {/* Desconto % */}
-                <div>
+                {/* Descontos - Dois campos ativáveis */}
+                <div className="col-span-2">
                   <Label className="text-[9px] font-medium text-red-600 mb-0.5 block flex items-center gap-0.5">
                     <Percent className="h-2 w-2" />
-                    Desconto
+                    Descontos
                   </Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      max="99"
-                      value={formData.discountPercent || ''}
-                      onChange={(e) => {
-                        const discount = Math.min(99, Math.max(0, parseInt(e.target.value) || 0));
-                        const originalPrice = formData.price || 0;
-                        const newDisplayPrice = originalPrice * (1 - discount / 100);
-                        setFormData(prev => ({ 
-                          ...prev, 
-                          discountPercent: discount,
-                          displayPrice: Math.round(newDisplayPrice * 100) / 100,
-                          isOnSale: discount > 0
-                        }));
-                      }}
-                      disabled={mode === 'view' || !canEditPrice}
-                      className={`text-black h-7 text-xs pr-5 ${
-                        formData.discountPercent > 0 ? 'bg-red-50 border-red-300' : 'bg-white'
-                      }`}
-                      placeholder="0"
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400">%</span>
+                  <div className="flex gap-1">
+                    {/* Desconto no Original */}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="99"
+                          value={formData.discountType === 'original' ? (formData.discountOriginal || '') : ''}
+                          onChange={(e) => {
+                            const discount = Math.min(99, Math.max(0, parseInt(e.target.value) || 0));
+                            setFormData(prev => ({
+                              ...prev,
+                              discountType: 'original',
+                              discountOriginal: discount,
+                              discountVitrine: 0,
+                              isOnSale: discount > 0
+                            }));
+                          }}
+                          disabled={mode === 'view' || !canEditPrice}
+                          className={`text-black h-6 text-[10px] pr-6 ${
+                            formData.discountType === 'original' && formData.discountOriginal > 0
+                              ? 'bg-red-50 border-red-300 ring-1 ring-red-200'
+                              : 'bg-white'
+                          }`}
+                          placeholder="Orig"
+                        />
+                        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-gray-400">%</span>
+                        <span className="absolute -top-3 left-0 text-[7px] text-gray-500">Original</span>
+                      </div>
+                    </div>
+
+                    {/* Desconto na Vitrine */}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="99"
+                          value={formData.discountType === 'vitrine' ? (formData.discountVitrine || '') : ''}
+                          onChange={(e) => {
+                            const discount = Math.min(99, Math.max(0, parseInt(e.target.value) || 0));
+                            setFormData(prev => ({
+                              ...prev,
+                              discountType: 'vitrine',
+                              discountVitrine: discount,
+                              discountOriginal: 0,
+                              isOnSale: discount > 0
+                            }));
+                          }}
+                          disabled={mode === 'view' || !canEditPrice}
+                          className={`text-black h-6 text-[10px] pr-6 ${
+                            formData.discountType === 'vitrine' && formData.discountVitrine > 0
+                              ? 'bg-orange-50 border-orange-300 ring-1 ring-orange-200'
+                              : 'bg-white'
+                          }`}
+                          placeholder="Vitr"
+                        />
+                        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-gray-400">%</span>
+                        <span className="absolute -top-3 left-0 text-[7px] text-gray-500">Vitrine</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1234,21 +1468,11 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     value={formData.displayPrice || ''}
                     onChange={(e) => {
                       const newDisplayPrice = parseFloat(e.target.value) || 0;
-                      const originalPrice = formData.price || 0;
-                      let newDiscount = 0;
-                      if (originalPrice > 0 && newDisplayPrice < originalPrice) {
-                        newDiscount = Math.round(((originalPrice - newDisplayPrice) / originalPrice) * 100);
-                      }
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        displayPrice: newDisplayPrice,
-                        discountPercent: newDiscount,
-                        isOnSale: newDiscount > 0
-                      }));
+                      setFormData(prev => ({ ...prev, displayPrice: newDisplayPrice }));
                     }}
                     disabled={mode === 'view' || !canEditPrice}
                     className={`text-black h-7 text-xs ${
-                      formData.discountPercent > 0 ? 'bg-green-50 border-green-300' :
+                      (formData.discountOriginal > 0 || formData.discountVitrine > 0) ? 'bg-green-50 border-green-300' :
                       priceCalculations.isCriticalMargin ? 'border-red-500 ring-1 ring-red-200' :
                       priceCalculations.isLowMargin ? 'border-yellow-500 ring-1 ring-yellow-200' : 'bg-white'
                     }`}
@@ -1541,7 +1765,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     placeholder="Valor"
                     className="flex-1 h-7 text-xs text-black"
                   />
-                  <Button type="button" onClick={addSpecification} size="sm" className="h-7 px-2 bg-[uss-admin] hover:bg-blue-900 text-xs">
+                  <Button type="button" onClick={addSpecification} size="sm" className="h-7 px-2 bg-blue-600 hover:bg-blue-700 text-xs">
                     +
                   </Button>
                 </div>
@@ -1572,7 +1796,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
           </div>
 
           {/* Right Side - Preview & Actions */}
-          <div className="w-[220px] flex flex-col bg-gray-50 h-full shrink-0">
+          <div className="w-[180px] flex flex-col bg-gray-50 h-full shrink-0">
             <div className="p-2 border-b bg-gray-50">
               <h3 className="font-semibold text-black text-xs flex items-center gap-1">
                 <Package className="h-3 w-3 text-gray-700" />
@@ -1599,7 +1823,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   <Badge className="absolute top-0.5 left-0.5 bg-blue-500 text-[8px] px-1 py-0">Novo</Badge>
                 )}
                 {formData.isFeatured && (
-                  <Badge className="absolute top-0.5 right-0.5 bg-[uss-admin] text-[8px] px-1 py-0">Dest.</Badge>
+                  <Badge className="absolute top-0.5 right-0.5 bg-blue-600 text-[8px] px-1 py-0">Dest.</Badge>
                 )}
               </div>
 
@@ -1622,7 +1846,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   <p className="text-sm font-bold text-blue-600">{formatCurrency(priceCalculations.idealPrice)}</p>
                 </div>
                 {/* Valor em Exposição */}
-                <div className={`p-1.5 rounded ${priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : priceCalculations.isLowMargin ? 'bg-yellow-100 border border-yellow-300' : 'bg-[uss-admin]'}`}>
+                <div className={`p-1.5 rounded ${priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : priceCalculations.isLowMargin ? 'bg-yellow-100 border border-yellow-300' : 'bg-blue-600'}`}>
                   <p className={`text-[8px] uppercase ${priceCalculations.isCriticalMargin ? 'text-red-700' : priceCalculations.isLowMargin ? 'text-yellow-700' : 'text-blue-200'}`}>Vitrine</p>
                   <p className={`text-base font-bold ${priceCalculations.isCriticalMargin ? 'text-red-700' : priceCalculations.isLowMargin ? 'text-yellow-700' : 'text-white'}`}>{formatCurrency(formData.displayPrice)}</p>
                   <p className={`text-[7px] ${priceCalculations.isCriticalMargin ? 'text-red-600' : priceCalculations.isLowMargin ? 'text-yellow-600' : 'text-blue-300'}`}>
@@ -1643,7 +1867,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   Cancelar
                 </Button>
                 {mode !== 'view' && (
-                  <Button type="submit" disabled={loading} className="h-7 text-xs bg-[uss-admin] hover:bg-blue-900 text-white">
+                  <Button type="submit" disabled={loading} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
                     {loading ? '...' : mode === 'create' ? 'Criar' : 'Salvar'}
                   </Button>
                 )}
@@ -1750,7 +1974,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     type="button"
                     onClick={handleSaveSupplier}
                     disabled={savingSupplier}
-                    className="h-7 text-xs bg-[uss-admin] hover:bg-blue-900"
+                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
                   >
                     {savingSupplier ? (
                       <>
@@ -1798,7 +2022,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                         setShowSuppliersListModal(false);
                         setShowSupplierModal(true);
                       }}
-                      className="h-6 text-xs bg-[uss-admin] hover:bg-blue-900"
+                      className="h-6 text-xs bg-blue-600 hover:bg-blue-700"
                     >
                       <Plus className="h-3 w-3 mr-1" />
                       Novo
@@ -1824,7 +2048,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                           setShowSuppliersListModal(false);
                           setShowSupplierModal(true);
                         }}
-                        className="mt-3 h-6 text-xs bg-[uss-admin] hover:bg-blue-900"
+                        className="mt-3 h-6 text-xs bg-blue-600 hover:bg-blue-700"
                       >
                         <Plus className="h-3 w-3 mr-1" />
                         Cadastrar
@@ -1873,6 +2097,490 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     type="button"
                     variant="outline"
                     onClick={() => setShowSuppliersListModal(false)}
+                    className="h-7 text-xs"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Cadastro de Marca */}
+        <AnimatePresence>
+          {showBrandModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300] px-[10%]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowBrandModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-sm"
+              >
+                <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-blue-600" />
+                    Nova Marca
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowBrandModal(false)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="p-3 space-y-2">
+                  <div>
+                    <Label className="text-xs text-gray-600">Nome *</Label>
+                    <Input
+                      value={newBrand.name}
+                      onChange={(e) => setNewBrand(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome da marca"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Slug</Label>
+                    <Input
+                      value={newBrand.slug}
+                      onChange={(e) => setNewBrand(prev => ({ ...prev, slug: e.target.value }))}
+                      placeholder="slug-da-marca"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Descrição</Label>
+                    <Textarea
+                      value={newBrand.description}
+                      onChange={(e) => setNewBrand(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Descrição da marca"
+                      rows={2}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Logo URL</Label>
+                    <Input
+                      value={newBrand.logo}
+                      onChange={(e) => setNewBrand(prev => ({ ...prev, logo: e.target.value }))}
+                      placeholder="https://..."
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Imagem</Label>
+                    <Input
+                      value={newBrand.image}
+                      onChange={(e) => setNewBrand(prev => ({ ...prev, image: e.target.value }))}
+                      placeholder="https://..."
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 border-t border-gray-200 flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowBrandModal(false)}
+                    className="h-7 text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveBrand}
+                    disabled={savingBrand}
+                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                  >
+                    {savingBrand ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3 mr-1" />
+                        Salvar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Lista de Marcas */}
+        <AnimatePresence>
+          {showBrandsListModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] px-[10%]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowBrandsListModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[70vh] flex flex-col"
+              >
+                <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-blue-600" />
+                    Marcas
+                  </h3>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowBrandsListModal(false);
+                        setShowBrandModal(true);
+                      }}
+                      className="h-6 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nova
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowBrandsListModal(false)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3">
+                  {brands.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Tag className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">Nenhuma marca cadastrada</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowBrandsListModal(false);
+                          setShowBrandModal(true);
+                        }}
+                        className="mt-3 h-6 text-xs bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Cadastrar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {brands.map(brand => (
+                        <div
+                          key={brand.id}
+                          className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, brand: brand.id }));
+                            setShowBrandsListModal(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {brand.logo ? (
+                              <img
+                                src={brand.logo}
+                                alt={brand.name}
+                                className="w-6 h-6 rounded object-contain"
+                              />
+                            ) : (
+                              <Tag className="h-4 w-4 text-gray-400" />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{brand.name}</p>
+                              {brand.description && (
+                                <p className="text-xs text-gray-500 line-clamp-1">{brand.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className="bg-blue-500 text-white text-[9px] px-1 py-0">Sel.</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-2 border-t border-gray-200 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowBrandsListModal(false)}
+                    className="h-7 text-xs"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Cadastro de Categoria */}
+        <AnimatePresence>
+          {showCategoryModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300] px-[10%]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowCategoryModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-sm"
+              >
+                <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                    <Package className="h-4 w-4 text-green-600" />
+                    Nova Categoria
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCategoryModal(false)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="p-3 space-y-2">
+                  <div>
+                    <Label className="text-xs text-gray-600">Nome *</Label>
+                    <Input
+                      value={newCategory.name}
+                      onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome da categoria"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Slug</Label>
+                    <Input
+                      value={newCategory.slug}
+                      onChange={(e) => setNewCategory(prev => ({ ...prev, slug: e.target.value }))}
+                      placeholder="slug-da-categoria"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Descrição</Label>
+                    <Textarea
+                      value={newCategory.description}
+                      onChange={(e) => setNewCategory(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Descrição da categoria"
+                      rows={2}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Imagem</Label>
+                    <Input
+                      value={newCategory.image}
+                      onChange={(e) => setNewCategory(prev => ({ ...prev, image: e.target.value }))}
+                      placeholder="https://..."
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600">Categoria Pai</Label>
+                    <Select
+                      value={newCategory.parentId || "none"}
+                      onValueChange={(value) => setNewCategory(prev => ({ ...prev, parentId: value === "none" ? "" : value }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Selecione (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma</SelectItem>
+                        {categories.map(category => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="p-3 border-t border-gray-200 flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCategoryModal(false)}
+                    className="h-7 text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveCategory}
+                    disabled={savingCategory}
+                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                  >
+                    {savingCategory ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3 mr-1" />
+                        Salvar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Lista de Categorias */}
+        <AnimatePresence>
+          {showCategoriesListModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] px-[10%]"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowCategoriesListModal(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[70vh] flex flex-col"
+              >
+                <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                    <Package className="h-4 w-4 text-green-600" />
+                    Categorias
+                  </h3>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowCategoriesListModal(false);
+                        setShowCategoryModal(true);
+                      }}
+                      className="h-6 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nova
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCategoriesListModal(false)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3">
+                  {categories.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Package className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">Nenhuma categoria cadastrada</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowCategoriesListModal(false);
+                          setShowCategoryModal(true);
+                        }}
+                        className="mt-3 h-6 text-xs bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Cadastrar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {categories.map(category => (
+                        <div
+                          key={category.id}
+                          className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, category: category.id }));
+                            setShowCategoriesListModal(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {category.image ? (
+                              <img
+                                src={category.image}
+                                alt={category.name}
+                                className="w-6 h-6 rounded object-contain"
+                              />
+                            ) : (
+                              <Package className="h-4 w-4 text-gray-400" />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{category.name}</p>
+                              {category.description && (
+                                <p className="text-xs text-gray-500 line-clamp-1">{category.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className="bg-blue-500 text-white text-[9px] px-1 py-0">Sel.</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-2 border-t border-gray-200 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCategoriesListModal(false)}
                     className="h-7 text-xs"
                   >
                     Fechar
@@ -2266,7 +2974,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                           <Button
                             type="button"
                             onClick={saveVariation}
-                            className="bg-[uss-admin] hover:bg-blue-900 text-white min-w-[150px]"
+                            className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
                           >
                             <Save className="h-4 w-4 mr-2" />
                             {editingVariationIndex !== null ? 'Atualizar Variação' : 'Adicionar Variação'}
@@ -2442,7 +3150,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                         <Button
                           type="button"
                           onClick={() => setShowVariationsModal(false)}
-                          className="flex-[2] bg-[uss-admin] hover:bg-blue-900 text-white h-10"
+                          className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white h-10"
                         >
                           <Check className="h-4 w-4 mr-2" />
                           Concluir
