@@ -44,7 +44,7 @@ export function AdminPagination({
     ${sizeClasses[size]}
   `
 
-  const activeClass = 'bg-[#001941] text-white border-[#001941] shadow-sm'
+  const activeClass = 'bg-[uss-admin] text-white border-[uss-admin] shadow-sm'
   const inactiveClass = 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
   const disabledClass = 'bg-gray-100 text-gray-400 border-gray-200'
 
@@ -207,7 +207,7 @@ export function PaginationControls({
             <select
               value={limit}
               onChange={(e) => onLimitChange(Number(e.target.value))}
-              className="h-9 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#001941] focus:border-[#001941]"
+              className="h-9 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[uss-admin] focus:border-[uss-admin]"
             >
               {limitOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -233,3 +233,4 @@ export function PaginationControls({
 }
 
 export default AdminPagination
+

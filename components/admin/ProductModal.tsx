@@ -885,7 +885,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[80vw] !max-w-[80vw] sm:!max-w-[80vw] h-[85vh] p-0 gap-0 overflow-hidden flex flex-col" showCloseButton={false}>
-        <DialogHeader className="px-4 py-2 border-b shrink-0 bg-[#001941] text-white">
+        <DialogHeader className="px-4 py-2 border-b shrink-0 bg-[uss-admin] text-white">
           <DialogTitle className="flex items-center gap-2 text-white text-base">
             <Package className="h-4 w-4 text-blue-400" />
             {mode === 'create' && 'Criar Novo Produto'}
@@ -1541,7 +1541,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     placeholder="Valor"
                     className="flex-1 h-7 text-xs text-black"
                   />
-                  <Button type="button" onClick={addSpecification} size="sm" className="h-7 px-2 bg-[#001941] hover:bg-blue-900 text-xs">
+                  <Button type="button" onClick={addSpecification} size="sm" className="h-7 px-2 bg-[uss-admin] hover:bg-blue-900 text-xs">
                     +
                   </Button>
                 </div>
@@ -1599,7 +1599,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   <Badge className="absolute top-0.5 left-0.5 bg-blue-500 text-[8px] px-1 py-0">Novo</Badge>
                 )}
                 {formData.isFeatured && (
-                  <Badge className="absolute top-0.5 right-0.5 bg-[#001941] text-[8px] px-1 py-0">Dest.</Badge>
+                  <Badge className="absolute top-0.5 right-0.5 bg-[uss-admin] text-[8px] px-1 py-0">Dest.</Badge>
                 )}
               </div>
 
@@ -1622,7 +1622,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   <p className="text-sm font-bold text-blue-600">{formatCurrency(priceCalculations.idealPrice)}</p>
                 </div>
                 {/* Valor em Exposição */}
-                <div className={`p-1.5 rounded ${priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : priceCalculations.isLowMargin ? 'bg-yellow-100 border border-yellow-300' : 'bg-[#001941]'}`}>
+                <div className={`p-1.5 rounded ${priceCalculations.isCriticalMargin ? 'bg-red-100 border border-red-300' : priceCalculations.isLowMargin ? 'bg-yellow-100 border border-yellow-300' : 'bg-[uss-admin]'}`}>
                   <p className={`text-[8px] uppercase ${priceCalculations.isCriticalMargin ? 'text-red-700' : priceCalculations.isLowMargin ? 'text-yellow-700' : 'text-blue-200'}`}>Vitrine</p>
                   <p className={`text-base font-bold ${priceCalculations.isCriticalMargin ? 'text-red-700' : priceCalculations.isLowMargin ? 'text-yellow-700' : 'text-white'}`}>{formatCurrency(formData.displayPrice)}</p>
                   <p className={`text-[7px] ${priceCalculations.isCriticalMargin ? 'text-red-600' : priceCalculations.isLowMargin ? 'text-yellow-600' : 'text-blue-300'}`}>
@@ -1643,7 +1643,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                   Cancelar
                 </Button>
                 {mode !== 'view' && (
-                  <Button type="submit" disabled={loading} className="h-7 text-xs bg-[#001941] hover:bg-blue-900 text-white">
+                  <Button type="submit" disabled={loading} className="h-7 text-xs bg-[uss-admin] hover:bg-blue-900 text-white">
                     {loading ? '...' : mode === 'create' ? 'Criar' : 'Salvar'}
                   </Button>
                 )}
@@ -1750,7 +1750,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                     type="button"
                     onClick={handleSaveSupplier}
                     disabled={savingSupplier}
-                    className="h-7 text-xs bg-[#001941] hover:bg-blue-900"
+                    className="h-7 text-xs bg-[uss-admin] hover:bg-blue-900"
                   >
                     {savingSupplier ? (
                       <>
@@ -1798,7 +1798,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                         setShowSuppliersListModal(false);
                         setShowSupplierModal(true);
                       }}
-                      className="h-6 text-xs bg-[#001941] hover:bg-blue-900"
+                      className="h-6 text-xs bg-[uss-admin] hover:bg-blue-900"
                     >
                       <Plus className="h-3 w-3 mr-1" />
                       Novo
@@ -1824,7 +1824,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                           setShowSuppliersListModal(false);
                           setShowSupplierModal(true);
                         }}
-                        className="mt-3 h-6 text-xs bg-[#001941] hover:bg-blue-900"
+                        className="mt-3 h-6 text-xs bg-[uss-admin] hover:bg-blue-900"
                       >
                         <Plus className="h-3 w-3 mr-1" />
                         Cadastrar
@@ -2266,7 +2266,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                           <Button
                             type="button"
                             onClick={saveVariation}
-                            className="bg-[#001941] hover:bg-blue-900 text-white min-w-[150px]"
+                            className="bg-[uss-admin] hover:bg-blue-900 text-white min-w-[150px]"
                           >
                             <Save className="h-4 w-4 mr-2" />
                             {editingVariationIndex !== null ? 'Atualizar Variação' : 'Adicionar Variação'}
@@ -2442,7 +2442,7 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
                         <Button
                           type="button"
                           onClick={() => setShowVariationsModal(false)}
-                          className="flex-[2] bg-[#001941] hover:bg-blue-900 text-white h-10"
+                          className="flex-[2] bg-[uss-admin] hover:bg-blue-900 text-white h-10"
                         >
                           <Check className="h-4 w-4 mr-2" />
                           Concluir
@@ -2489,4 +2489,5 @@ export function ProductModal({ isOpen, onClose, product, onSave, mode, categorie
     </Dialog>
   );
 }
+
 

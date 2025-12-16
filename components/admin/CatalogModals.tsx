@@ -68,7 +68,7 @@ function ModalWrapper({
         exit={{ scale: 0.95, opacity: 0 }}
         className="bg-white rounded-2xl w-[600px] max-h-[85vh] overflow-hidden shadow-2xl"
       >
-        <div className="p-6 border-b bg-[#001941]">
+        <div className="p-6 border-b bg-[uss-admin]">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <Icon className="w-5 h-5" />
@@ -134,7 +134,7 @@ function ImageUploader({
       {label && <Label>{label}</Label>}
       <div
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:border-[#001941] transition-all"
+        className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:border-[uss-admin] transition-all"
       >
         <input
           ref={inputRef}
@@ -145,7 +145,7 @@ function ImageUploader({
         />
 
         {uploading ? (
-          <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#001941]" />
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-[uss-admin]" />
         ) : value ? (
           <div className="space-y-2">
             <img src={value} alt="Preview" className="max-h-24 mx-auto rounded-lg object-contain" />
@@ -314,7 +314,7 @@ export function BrandModal({ isOpen, onClose, brand, token, onSuccess }: BrandMo
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-[#001941] hover:bg-blue-900"
+            className="bg-[uss-admin] hover:bg-blue-900"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {brand ? 'Atualizar' : 'Criar'} Marca
@@ -478,7 +478,7 @@ export function CategoryModal({ isOpen, onClose, category, token, onSuccess }: C
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-[#001941] hover:bg-blue-900"
+            className="bg-[uss-admin] hover:bg-blue-900"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {category ? 'Atualizar' : 'Criar'} Categoria
@@ -618,7 +618,7 @@ export function SubcategoryModal({
           <select
             value={formData.parentCategoryId}
             onChange={(e) => setFormData(p => ({ ...p, parentCategoryId: e.target.value }))}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white focus:border-[#001941] focus:ring-2 focus:ring-blue-100"
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white focus:border-[uss-admin] focus:ring-2 focus:ring-blue-100"
           >
             <option value="">Selecione uma categoria</option>
             {categories.filter(c => !(c as any).parentId).map(cat => (
@@ -678,7 +678,7 @@ export function SubcategoryModal({
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-[#001941] hover:bg-blue-900"
+            className="bg-[uss-admin] hover:bg-blue-900"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {subcategory ? 'Atualizar' : 'Criar'} Subcategoria
@@ -778,3 +778,4 @@ export function CatalogManagementButtons({ token, onDataChange }: CatalogManagem
     </>
   )
 }
+

@@ -766,7 +766,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
             <div 
               className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
                 isActive 
-                  ? 'bg-[#001941] text-white' 
+                  ? 'bg-uss-admin text-white' 
                   : isCompleted 
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-500'
@@ -793,7 +793,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
   return (
     <Dialog open={isOpen} onOpenChange={() => { onClose(); setCurrentStep(1); }}>
       <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] p-0 gap-0 overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b shrink-0 bg-[#001941] text-white">
+        <DialogHeader className="px-6 py-4 border-b shrink-0 bg-uss-admin text-white">
           <DialogTitle className="flex items-center gap-2 text-white text-lg">
             <Package className="h-5 w-5 text-blue-400" />
             {mode === 'create' && 'Criar Novo Pedido'}
@@ -822,7 +822,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                       className="p-6 space-y-6"
                     >
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-[#001941] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-uss-admin flex items-center justify-center">
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -838,24 +838,24 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                           onClick={() => setFormData(prev => ({ ...prev, saleType: 'online' }))}
                           className={`p-4 rounded-xl border-2 transition-all ${
                             formData.saleType === 'online'
-                              ? 'border-[#001941] bg-[#001941]/5'
+                              ? 'border-[uss-admin] bg-[uss-admin]/5'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <Package className={`w-6 h-6 mx-auto mb-2 ${formData.saleType === 'online' ? 'text-[#001941]' : 'text-gray-400'}`} />
-                          <p className={`text-sm font-medium ${formData.saleType === 'online' ? 'text-[#001941]' : 'text-gray-600'}`}>Venda Online</p>
+                          <Package className={`w-6 h-6 mx-auto mb-2 ${formData.saleType === 'online' ? 'text-[uss-admin]' : 'text-gray-400'}`} />
+                          <p className={`text-sm font-medium ${formData.saleType === 'online' ? 'text-[uss-admin]' : 'text-gray-600'}`}>Venda Online</p>
                         </button>
                         <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, saleType: 'presencial' }))}
                           className={`p-4 rounded-xl border-2 transition-all ${
                             formData.saleType === 'presencial'
-                              ? 'border-[#001941] bg-[#001941]/5'
+                              ? 'border-[uss-admin] bg-[uss-admin]/5'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <User className={`w-6 h-6 mx-auto mb-2 ${formData.saleType === 'presencial' ? 'text-[#001941]' : 'text-gray-400'}`} />
-                          <p className={`text-sm font-medium ${formData.saleType === 'presencial' ? 'text-[#001941]' : 'text-gray-600'}`}>Venda Presencial</p>
+                          <User className={`w-6 h-6 mx-auto mb-2 ${formData.saleType === 'presencial' ? 'text-[uss-admin]' : 'text-gray-400'}`} />
+                          <p className={`text-sm font-medium ${formData.saleType === 'presencial' ? 'text-[uss-admin]' : 'text-gray-600'}`}>Venda Presencial</p>
                         </button>
                       </div>
 
@@ -916,7 +916,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                                       setNewCustomerData(prev => ({ ...prev, name: searchTerm }));
                                       setShowCustomerModal(true);
                                     }}
-                                    className="bg-[#001941] hover:bg-[#001941]/90 text-white"
+                                    className="bg-[uss-admin] hover:bg-[uss-admin]/90 text-white"
                                   >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Criar Novo Cliente
@@ -1095,7 +1095,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                       className="p-6 space-y-6"
                     >
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-[#001941] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-[uss-admin] flex items-center justify-center">
                           <Package className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -1230,7 +1230,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                                                 onClick={() => setSelectedColor(color.name)}
                                                 className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs ${
                                                   selectedColor === color.name 
-                                                    ? 'border-[#001941] bg-[#001941]/5' 
+                                                    ? 'border-[uss-admin] bg-[uss-admin]/5' 
                                                     : 'border-gray-200'
                                                 }`}
                                               >
@@ -1255,7 +1255,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                                                 onClick={() => setSelectedStorage(s)}
                                                 className={`px-3 py-1 rounded-full border text-xs ${
                                                   selectedStorage === s 
-                                                    ? 'border-[#001941] bg-[#001941]/5 text-[#001941]' 
+                                                    ? 'border-[uss-admin] bg-[uss-admin]/5 text-[uss-admin]' 
                                                     : 'border-gray-200 text-gray-600'
                                                 }`}
                                               >
@@ -1271,7 +1271,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                                 
                                 <Button
                                   type="button"
-                                  className="w-full bg-[#001941] hover:bg-[#001941]/90"
+                                  className="w-full bg-[uss-admin] hover:bg-[uss-admin]/90"
                                   onClick={confirmAddProductWithVariations}
                                 >
                                   <Plus className="w-4 h-4 mr-2" />
@@ -1397,7 +1397,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                               </div>
                               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                                 <span className="text-gray-900">Total</span>
-                                <span className="text-[#001941]">{formatCurrency(formData.total)}</span>
+                                <span className="text-[uss-admin]">{formatCurrency(formData.total)}</span>
                               </div>
                             </div>
                           </CardContent>
@@ -1416,7 +1416,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                       className="p-6 space-y-6"
                     >
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-[#001941] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-[uss-admin] flex items-center justify-center">
                           <CreditCard className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -1444,15 +1444,15 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                                     }))}
                                     className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
                                       formData.paymentMethod === method.value
-                                        ? 'border-[#001941] bg-[#001941]/5'
+                                        ? 'border-[uss-admin] bg-[uss-admin]/5'
                                         : 'border-gray-200 hover:border-gray-300'
                                     }`}
                                   >
                                     <IconComponent className={`h-6 w-6 mb-2 ${
-                                      formData.paymentMethod === method.value ? 'text-[#001941]' : 'text-gray-500'
+                                      formData.paymentMethod === method.value ? 'text-[uss-admin]' : 'text-gray-500'
                                     }`} />
                                     <span className={`text-sm font-medium ${
-                                      formData.paymentMethod === method.value ? 'text-[#001941]' : 'text-gray-600'
+                                      formData.paymentMethod === method.value ? 'text-[uss-admin]' : 'text-gray-600'
                                     }`}>
                                       {method.label}
                                     </span>
@@ -1496,7 +1496,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                                   onClick={() => setFormData(prev => ({ ...prev, paymentStatus: option.value as any }))}
                                   className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                                     formData.paymentStatus === option.value
-                                      ? 'border-[#001941] bg-[#001941]/5 text-[#001941]'
+                                      ? 'border-[uss-admin] bg-[uss-admin]/5 text-[uss-admin]'
                                       : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                                   }`}
                                 >
@@ -1517,7 +1517,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                           {/* Customer */}
                           <div className="flex items-center gap-3 p-3 bg-white rounded-lg mb-3">
                             <Avatar className="h-10 w-10">
-                              <AvatarFallback className="bg-[#001941] text-white">
+                              <AvatarFallback className="bg-[uss-admin] text-white">
                                 {formData.customer.name?.charAt(0) || '?'}
                               </AvatarFallback>
                             </Avatar>
@@ -1551,7 +1551,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                             )}
                             <div className="flex justify-between text-lg font-bold pt-2 border-t">
                               <span className="text-gray-900">Total</span>
-                              <span className="text-[#001941]">{formatCurrency(formData.total)}</span>
+                              <span className="text-[uss-admin]">{formatCurrency(formData.total)}</span>
                             </div>
                           </div>
                         </CardContent>
@@ -1579,7 +1579,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                     <div
                       key={step.number}
                       className={`w-2 h-2 rounded-full transition-colors ${
-                        currentStep >= step.number ? 'bg-[#001941]' : 'bg-gray-300'
+                        currentStep >= step.number ? 'bg-[uss-admin]' : 'bg-gray-300'
                       }`}
                     />
                   ))}
@@ -1589,7 +1589,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                   <Button
                     type="button"
                     onClick={nextStep}
-                    className="gap-2 bg-[#001941] hover:bg-[#001941]/90"
+                    className="gap-2 bg-[uss-admin] hover:bg-[uss-admin]/90"
                   >
                     Próximo
                     <ChevronRight className="w-4 h-4" />
@@ -1726,7 +1726,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                             setNewCustomerData(prev => ({ ...prev, name: searchTerm }));
                             setShowCustomerModal(true);
                           }}
-                          className="bg-[#001941] hover:bg-[#001941]/90 text-white"
+                          className="bg-[uss-admin] hover:bg-[uss-admin]/90 text-white"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           Criar Novo Cliente
@@ -1917,15 +1917,15 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                           }))}
                           className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${
                             formData.paymentMethod === method.value
-                              ? 'border-[#001941] bg-[#001941]/5'
+                              ? 'border-[uss-admin] bg-[uss-admin]/5'
                               : 'border-gray-200 hover:border-gray-300'
                           } ${mode === 'view' ? 'cursor-default' : 'cursor-pointer'}`}
                         >
                           <IconComponent className={`h-5 w-5 mb-1 ${
-                            formData.paymentMethod === method.value ? 'text-[#001941]' : 'text-gray-500'
+                            formData.paymentMethod === method.value ? 'text-[uss-admin]' : 'text-gray-500'
                           }`} />
                           <span className={`text-xs font-medium ${
-                            formData.paymentMethod === method.value ? 'text-[#001941]' : 'text-gray-600'
+                            formData.paymentMethod === method.value ? 'text-[uss-admin]' : 'text-gray-600'
                           }`}>
                             {method.label}
                           </span>
@@ -1988,7 +1988,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
 
           {/* Right Side - Products & Totals */}
           <div className="flex-1 max-w-[380px] flex flex-col bg-gray-50 h-full border-l">
-            <div className="px-4 py-3 border-b bg-[#001941]">
+            <div className="px-4 py-3 border-b bg-[uss-admin]">
               <h3 className="font-semibold flex items-center gap-2 text-white">
                 <Package className="h-4 w-4 text-blue-400" />
                 Itens do Pedido
@@ -2181,7 +2181,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                         type="button" 
                         size="sm"
                         onClick={confirmAddProductWithVariations}
-                        className="flex-1 bg-[#001941] hover:bg-blue-900 text-white"
+                        className="flex-1 bg-[uss-admin] hover:bg-blue-900 text-white"
                       >
                         <Plus className="w-4 h-4 mr-1" />
                         Adicionar
@@ -2338,7 +2338,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                 )}
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="font-bold text-black">Total</span>
-                  <span className="text-xl font-bold text-[#001941]">
+                  <span className="text-xl font-bold text-[uss-admin]">
                     {formatCurrency(formData.total)}
                   </span>
                 </div>
@@ -2354,7 +2354,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
                   Cancelar
                 </Button>
                 {mode !== 'view' && (
-                  <Button type="submit" disabled={loading} className="w-full bg-[#001941] hover:bg-blue-900 text-white">
+                  <Button type="submit" disabled={loading} className="w-full bg-[uss-admin] hover:bg-blue-900 text-white">
                     {loading ? 'Salvando...' : mode === 'create' ? 'Criar' : 'Salvar'}
                   </Button>
                 )}
@@ -2369,7 +2369,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
       {/* Modal de Criação de Cliente */}
       <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>
         <DialogContent className="w-[600px] max-w-[600px] p-0 gap-0 bg-white">
-          <DialogHeader className="px-6 py-4 border-b bg-[#001941] text-white">
+          <DialogHeader className="px-6 py-4 border-b bg-[uss-admin] text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <User className="h-5 w-5 text-blue-400" />
               Criar Novo Cliente
@@ -2556,7 +2556,7 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
               type="button"
               onClick={handleCreateCustomer}
               disabled={isCreatingCustomer || !!cpfError}
-              className="bg-[#001941] hover:bg-[#001941]/90 text-white"
+              className="bg-[uss-admin] hover:bg-[uss-admin]/90 text-white"
             >
               {isCreatingCustomer ? (
                 <>
@@ -2576,4 +2576,5 @@ export function OrderModal({ isOpen, onClose, order, onSave, mode }: OrderModalP
     </Dialog>
   );
 }
+
 

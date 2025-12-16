@@ -58,6 +58,7 @@ module.exports = {
           'accent': '#54c4cf',         // Turquesa Suave
           'cta': '#007aff',           // Azul Elétrico
           'silver': '#c0c7cd',        // Prata Metálico
+          'admin': '#001941',         // Azul Admin (usado na administração)
           
           // Light Mode
           'bg-primary': '#ffffff',     // Branco Puro

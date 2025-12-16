@@ -15,8 +15,8 @@ interface AnalyticsCardProps {
 
 // USS Brasil - Cores Institucionais
 const USS_COLORS = {
-  primary: '#001941',      // Azul Profundo
-  primaryHover: '#001941', // Azul Médio
+  primary: 'uss-admin',      // Azul Profundo
+  primaryHover: 'uss-admin', // Azul Médio
   accent: '#60a5fa',       // Turquesa Suave
   cta: '#007aff',          // Azul Elétrico
   silver: '#c0c7cd',       // Prata Metálico
@@ -34,12 +34,12 @@ export function AnalyticsCard({
 }: AnalyticsCardProps) {
   const colorVariants = {
     primary: {
-      gradient: 'from-[#001941] to-[#001941]',
-      bg: 'bg-[#001941]/10',
-      text: 'text-[#001941]',
-      border: 'border-[#001941]/20',
-      iconBg: 'bg-[#001941]/10',
-      iconText: 'text-[#001941]'
+      gradient: 'from-[uss-admin] to-[uss-admin]',
+      bg: 'bg-[uss-admin]/10',
+      text: 'text-[uss-admin]',
+      border: 'border-[uss-admin]/20',
+      iconBg: 'bg-[uss-admin]/10',
+      iconText: 'text-[uss-admin]'
     },
     accent: {
       gradient: 'from-[#60a5fa] to-[#3db8c4]',
@@ -237,4 +237,5 @@ export function AnalyticsCard({
     </motion.div>
   )
 }
+
 

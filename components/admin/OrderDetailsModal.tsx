@@ -338,7 +338,7 @@ export function OrderDetailsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 gap-0">
         {/* Header com informações principais */}
-        <DialogHeader className="bg-gradient-to-r from-[#001a4d] to-[#002d7a] text-white p-5 rounded-t-lg">
+        <DialogHeader className="bg-gradient-to-r from-[uss-admin] to-[uss-admin] text-white p-5 rounded-t-lg">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
@@ -1206,3 +1206,4 @@ export function OrderDetailsModal({
 }
 
 export default OrderDetailsModal;
+

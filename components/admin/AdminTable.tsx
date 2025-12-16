@@ -37,7 +37,7 @@ export default function AdminTable({
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-8 h-8 border-2 border-[#001941] border-t-transparent rounded-full"
+            className="w-8 h-8 border-2 border-[uss-admin] border-t-transparent rounded-full"
           />
           <span className="ml-3 text-gray-500">Carregando...</span>
         </div>
@@ -73,9 +73,9 @@ export default function AdminTable({
                     {column.sortable && sortKey === column.key && (
                       <div className="ml-1 lg:ml-2">
                         {sortDirection === 'asc' ? (
-                          <ChevronUp className="w-3 h-3 lg:w-4 lg:h-4 text-[#001941]" />
+                          <ChevronUp className="w-3 h-3 lg:w-4 lg:h-4 text-[uss-admin]" />
                         ) : (
-                          <ChevronDown className="w-3 h-3 lg:w-4 lg:h-4 text-[#001941]" />
+                          <ChevronDown className="w-3 h-3 lg:w-4 lg:h-4 text-[uss-admin]" />
                         )}
                       </div>
                     )}
@@ -109,4 +109,5 @@ export default function AdminTable({
     </div>
   )
 }
+
 

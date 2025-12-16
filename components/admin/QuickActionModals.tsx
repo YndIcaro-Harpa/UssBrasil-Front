@@ -251,7 +251,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
         className="bg-white border border-gray-200 rounded-xl 
                  w-[75vw] max-w-[900px] max-h-[85vh] overflow-hidden shadow-xl flex flex-col"
       >
-        <div className="px-6 py-4 border-b bg-[#001941]">
+        <div className="px-6 py-4 border-b bg-[uss-admin]">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Icon className="w-5 h-5" />
@@ -302,7 +302,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
-                   text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                   text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[uss-admin] 
                    focus:ring-2 focus:ring-blue-400/20 transition-all resize-none"
         />
       ) : (
@@ -312,7 +312,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
-                   text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                   text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[uss-admin] 
                    focus:ring-2 focus:ring-blue-400/20 transition-all"
         />
       )}
@@ -340,7 +340,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl 
-                 text-gray-900 focus:outline-none focus:border-[#001941] focus:ring-2 
+                 text-gray-900 focus:outline-none focus:border-[uss-admin] focus:ring-2 
                  focus:ring-blue-400/20 transition-all"
       >
         {options.map((option) => (
@@ -458,7 +458,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
               )}
 
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center
-                            hover:border-[#001941] transition-colors">
+                            hover:border-[uss-admin] transition-colors">
                 <input
                   type="file"
                   accept="image/*"
@@ -469,11 +469,11 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
                 />
                 <label htmlFor="product-image-quick" className="cursor-pointer">
                   <div className="flex flex-col items-center space-y-2">
-                    <div className="p-3 rounded-lg bg-[#001941]/10">
+                    <div className="p-3 rounded-lg bg-[uss-admin]/10">
                       {uploading ? (
-                        <Loader2 className="w-6 h-6 text-[#001941] animate-spin" />
+                        <Loader2 className="w-6 h-6 text-[uss-admin] animate-spin" />
                       ) : (
-                        <Camera className="w-6 h-6 text-[#001941]" />
+                        <Camera className="w-6 h-6 text-[uss-admin]" />
                       )}
                     </div>
                     <div>
@@ -498,7 +498,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
               <button
                 onClick={handleCreateProduct}
                 disabled={loading}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[uss-admin] 
                          text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all disabled:opacity-50"
               >
@@ -527,7 +527,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
               </p>
               <button
                 onClick={() => { onClose(); window.location.href = '/admin/orders' }}
-                className="px-6 py-2.5 bg-[#001941] text-white rounded-xl hover:bg-blue-900"
+                className="px-6 py-2.5 bg-[uss-admin] text-white rounded-xl hover:bg-blue-900"
               >
                 Ir para Pedidos
               </button>
@@ -657,7 +657,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
               <button
                 onClick={handleCreateCustomer}
                 disabled={loading}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[uss-admin] 
                          text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all disabled:opacity-50"
               >
@@ -759,7 +759,7 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
               <button
                 onClick={handleGenerateReport}
                 disabled={loading}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-[#001941] 
+                className="flex items-center space-x-2 px-6 py-2.5 bg-[uss-admin] 
                          text-white rounded-xl hover:bg-blue-900 hover:shadow-lg 
                          transition-all disabled:opacity-50"
               >
@@ -773,4 +773,5 @@ export default function QuickActionModals({ activeModal, onClose }: QuickActionM
     </AnimatePresence>
   )
 }
+
 

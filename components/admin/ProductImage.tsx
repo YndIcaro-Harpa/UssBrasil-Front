@@ -71,7 +71,7 @@ export default function ProductImage({
                     bg-white/10 border border-white/20`}>
       {imageLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#001941] 
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[uss-admin] 
                         border-t-transparent"></div>
         </div>
       )}
@@ -93,4 +93,5 @@ export default function ProductImage({
     </div>
   )
 }
+
 

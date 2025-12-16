@@ -68,14 +68,14 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
       <div className="flex items-center space-x-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+          className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-[uss-admin] hover:bg-blue-50 
                    transition-colors"
         >
           <Menu className="w-4 h-4" />
         </button>
         
         <div className="hidden md:block">
-          <h1 className="text-[#001941] font-semibold text-sm">
+          <h1 className="text-[uss-admin] font-semibold text-sm">
             Dashboard
           </h1>
           <p className="text-gray-500 text-[10px]">
@@ -92,7 +92,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
             type="text"
             placeholder="Pesquisar produtos, pedidos, clientes..."
             className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg 
-                     text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#001941] 
+                     text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[uss-admin] 
                      focus:ring-2 focus:ring-blue-400/20 transition-all text-xs"
           />
         </div>
@@ -101,7 +101,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
       {/* Right Section */}
       <div className="flex items-center space-x-2">
         {/* Theme Toggle */}
-        <button className="p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+        <button className="p-1.5 rounded-lg text-gray-500 hover:text-[uss-admin] hover:bg-blue-50 
                          transition-colors" 
                 title="Alternar tema">
           <Sun className="w-4 h-4" />
@@ -111,7 +111,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+            className="relative p-1.5 rounded-lg text-gray-500 hover:text-[uss-admin] hover:bg-blue-50 
                      transition-colors"
             title="Notificações"
           >
@@ -133,7 +133,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
                        border border-gray-200 rounded-lg shadow-xl py-1.5 z-50"
             >
               <div className="px-3 py-1.5 border-b border-gray-200">
-                <h3 className="text-[#001941] font-medium text-xs">Notificações</h3>
+                <h3 className="text-[uss-admin] font-medium text-xs">Notificações</h3>
               </div>
               <div className="max-h-56 overflow-y-auto">
                 {notifications.map((notification) => (
@@ -142,7 +142,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
                     className={`px-3 py-2 hover:bg-blue-50 transition-colors cursor-pointer
                               ${notification.unread ? 'bg-blue-50/50' : ''}`}
                   >
-                    <p className={`text-[10px] ${notification.unread ? 'text-[#001941]' : 'text-gray-600'}`}>
+                    <p className={`text-[10px] ${notification.unread ? 'text-[uss-admin]' : 'text-gray-600'}`}>
                       {notification.message}
                     </p>
                     <p className="text-[9px] text-gray-400 mt-0.5">{notification.time}</p>
@@ -150,7 +150,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
                 ))}
               </div>
               <div className="px-3 py-1.5 border-t border-gray-200">
-                <button className="text-blue-600 text-[10px] hover:text-[#001941] transition-colors">
+                <button className="text-blue-600 text-[10px] hover:text-[uss-admin] transition-colors">
                   Ver todas
                 </button>
               </div>
@@ -159,7 +159,7 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
         </div>
 
         {/* Settings */}
-        <button className="p-1.5 rounded-lg text-gray-500 hover:text-[#001941] hover:bg-blue-50 
+        <button className="p-1.5 rounded-lg text-gray-500 hover:text-[uss-admin] hover:bg-blue-50 
                          transition-colors" 
                 title="Configurações">
           <Settings className="w-4 h-4" />
@@ -169,15 +169,15 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
         <div className="relative">
           <button
             onClick={() => setShowProfile(!showProfile)}
-            className="flex items-center space-x-1.5 p-1.5 rounded-lg text-gray-500 hover:text-[#001941] 
+            className="flex items-center space-x-1.5 p-1.5 rounded-lg text-gray-500 hover:text-[uss-admin] 
                      hover:bg-blue-50 transition-colors"
           >
-            <div className="w-6 h-6 bg-[#001941] rounded-full 
+            <div className="w-6 h-6 bg-[uss-admin] rounded-full 
                           flex items-center justify-center">
               <User className="w-3 h-3 text-white" />
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-[#001941] text-[10px] font-medium">Admin</p>
+              <p className="text-[uss-admin] text-[10px] font-medium">Admin</p>
               <p className="text-gray-500 text-[9px]">Administrador</p>
             </div>
           </button>
@@ -191,19 +191,19 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
                        border border-gray-200 rounded-lg shadow-xl py-1.5 z-50"
             >
               <div className="px-3 py-1.5 border-b border-gray-200">
-                <p className="text-[#001941] font-medium text-[10px]">Admin User</p>
+                <p className="text-[uss-admin] font-medium text-[10px]">Admin User</p>
                 <p className="text-gray-500 text-[9px]">admin@ussbrasil.com</p>
               </div>
               <div className="py-0.5">
-                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[#001941] 
+                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[uss-admin] 
                                  hover:bg-blue-50 transition-colors text-[10px]">
                   Meu Perfil
                 </button>
-                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[#001941] 
+                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[uss-admin] 
                                  hover:bg-blue-50 transition-colors text-[10px]">
                   Configurações
                 </button>
-                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[#001941] 
+                <button className="w-full px-3 py-1.5 text-left text-gray-600 hover:text-[uss-admin] 
                                  hover:bg-blue-50 transition-colors text-[10px]">
                   Ajuda
                 </button>
@@ -221,4 +221,5 @@ export default function AdminHeader({ sidebarCollapsed = false, onToggleSidebar 
     </motion.header>
   )
 }
+
 
